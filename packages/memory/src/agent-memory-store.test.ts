@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { openMemoryDatabase } from '../src/db.js'
-import { AgentMemoryStore } from '../src/agent-memory-store.js'
+import { openRunDatabase } from './db.js'
+import { AgentMemoryStore } from './agent-memory-store.js'
 import type Database from 'better-sqlite3'
 
 let db: Database.Database
 let store: AgentMemoryStore
 
 beforeEach(() => {
-  db = openMemoryDatabase(':memory:')
+  db = openRunDatabase(':memory:')
   store = new AgentMemoryStore(db)
 })
 

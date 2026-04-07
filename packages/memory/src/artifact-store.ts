@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from 
 import { getOrchexHome } from './db.js'
 
 export class ArtifactStore {
-  private getDir(runId: string): string {
+  public getDir(runId: string): string {
     return join(getOrchexHome(), 'artifacts', runId)
   }
 
@@ -25,9 +25,5 @@ export class ArtifactStore {
     const dir = this.getDir(runId)
     if (!existsSync(dir)) return []
     return readdirSync(dir)
-  }
-
-  dir(runId: string): string {
-    return this.getDir(runId)
   }
 }

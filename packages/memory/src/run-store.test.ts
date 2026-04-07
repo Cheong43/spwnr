@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { openMemoryDatabase } from '../src/db.js'
-import { RunStore } from '../src/run-store.js'
+import { openRunDatabase } from './db.js'
+import { RunStore } from './run-store.js'
 import { OrchexError } from '@orchex/core-types'
 import type Database from 'better-sqlite3'
 
@@ -8,43 +8,43 @@ let db: Database.Database
 let store: RunStore
 
 beforeEach(() => {
-  db = openMemoryDatabase(':memory:')
+  db = openRunDatabase(':memory:')
   store = new RunStore(db)
 })
 
 describe('RunStore', () => {
-  it('create() returns RunRow with status CREATED', () => {
-    const row = store.create({ packageName: 'pkg-a', version: '1.0.0', input: { x: 1 } })
-    expect(row.status).toBe('CREATED')
-    expect(row.package_name).toBe('pkg-a')
-    expect(row.version).toBe('1.0.0')
-    expect(row.input_json).toBe(JSON.stringify({ x: 1 }))
+  it('create() returns RunRecord with status CREATED', () => {
+    const record = store.create({ packageName: 'pkg-a', version: '1.0.0', input: { x: 1 } })
+    expect(record.status).toBe('CREATED')
+    expect(record.subagentName).toBe('pkg-a')
+    expect(record.subagentVersion).toBe('1.0.0')
+    expect(record.input).toEqual({ x: 1 })
   })
 
-  it('create() generates unique id and traceId', () => {
+  it('create() generates unique runId and traceId', () => {
     const r1 = store.create({ packageName: 'pkg-a', version: '1.0.0', input: {} })
     const r2 = store.create({ packageName: 'pkg-a', version: '1.0.0', input: {} })
-    expect(r1.id).not.toBe(r2.id)
-    expect(r1.trace_id).not.toBe(r2.trace_id)
-    expect(r1.id).toMatch(/^[0-9a-f-]{36}$/)
+    expect(r1.runId).not.toBe(r2.runId)
+    expect(r1.traceId).not.toBe(r2.traceId)
+    expect(r1.runId).toMatch(/^[0-9a-f-]{36}$/)
   })
 
   it('updateStatus() changes status to provided value', () => {
     const run = store.create({ packageName: 'pkg-a', version: '1.0.0', input: {} })
-    const updated = store.updateStatus(run.id, 'RUNNING')
+    const updated = store.updateStatus(run.runId, 'RUNNING')
     expect(updated.status).toBe('RUNNING')
   })
 
-  it('updateStatus() persists output JSON', () => {
+  it('updateStatus() persists output', () => {
     const run = store.create({ packageName: 'pkg-a', version: '1.0.0', input: {} })
-    const updated = store.updateStatus(run.id, 'COMPLETED', { output: { result: 42 } })
-    expect(updated.output_json).toBe(JSON.stringify({ result: 42 }))
+    const updated = store.updateStatus(run.runId, 'COMPLETED', { output: { result: 42 } })
+    expect(updated.output).toEqual({ result: 42 })
   })
 
-  it('updateStatus() persists error JSON', () => {
+  it('updateStatus() persists errorCode', () => {
     const run = store.create({ packageName: 'pkg-a', version: '1.0.0', input: {} })
-    const updated = store.updateStatus(run.id, 'FAILED', { error: { code: 'ERR' } })
-    expect(updated.error_json).toBe(JSON.stringify({ code: 'ERR' }))
+    const updated = store.updateStatus(run.runId, 'FAILED', { errorCode: 'ERR_CODE' })
+    expect(updated.errorCode).toBe('ERR_CODE')
   })
 
   it('updateStatus() throws RUN_NOT_FOUND for unknown id', () => {
@@ -52,6 +52,15 @@ describe('RunStore', () => {
     try { store.updateStatus('no-such-id', 'RUNNING') } catch (e) { err = e }
     expect(err).toBeInstanceOf(OrchexError)
     expect((err as OrchexError).code).toBe('RUN_NOT_FOUND')
+  })
+
+  it('updateStatus() throws RUN_ALREADY_COMPLETED when run is in terminal state', () => {
+    const run = store.create({ packageName: 'pkg-a', version: '1.0.0', input: {} })
+    store.updateStatus(run.runId, 'COMPLETED')
+    let err: unknown
+    try { store.updateStatus(run.runId, 'RUNNING') } catch (e) { err = e }
+    expect(err).toBeInstanceOf(OrchexError)
+    expect((err as OrchexError).code).toBe('RUN_ALREADY_COMPLETED')
   })
 
   it('get() returns null for unknown id', () => {
@@ -69,3 +78,4 @@ describe('RunStore', () => {
     expect(store.list('pkg-c')).toHaveLength(0)
   })
 })
+

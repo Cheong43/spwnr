@@ -1,21 +1,11 @@
-import Database from 'better-sqlite3'
-import { join } from 'path'
-import { mkdirSync } from 'fs'
+import type Database from 'better-sqlite3'
+import { openDatabase, getOrchexHome, getDbPath } from '@orchex/registry'
 
-export function getOrchexHome(): string {
-  return process.env.ORCHEX_HOME ?? join(process.env.HOME ?? '~', '.orchex')
-}
+export { getOrchexHome }
+export { getDbPath as getMemoryDbPath }
 
-export function getMemoryDbPath(): string {
-  return join(getOrchexHome(), 'sqlite', 'orchex.db')
-}
-
-export function openMemoryDatabase(dbPath?: string): Database.Database {
-  const path = dbPath ?? getMemoryDbPath()
-  mkdirSync(join(path, '..'), { recursive: true })
-  const db = new Database(path)
-  db.pragma('journal_mode = WAL')
-  db.pragma('foreign_keys = ON')
+export function openRunDatabase(dbPath?: string): Database.Database {
+  const db = openDatabase(dbPath)
   runMemoryMigrations(db)
   return db
 }
@@ -29,10 +19,12 @@ function runMemoryMigrations(db: Database.Database): void {
       status TEXT NOT NULL DEFAULT 'CREATED',
       input_json TEXT NOT NULL,
       output_json TEXT,
-      error_json TEXT,
+      error_code TEXT,
       trace_id TEXT NOT NULL,
       backend TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      started_at TEXT,
+      ended_at TEXT,
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -58,3 +50,4 @@ function runMemoryMigrations(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_memory_package ON agent_memory(package_name);
   `)
 }
+

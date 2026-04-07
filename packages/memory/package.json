@@ -6,6 +6,7 @@
   "scripts": { "build": "tsc", "test": "vitest run" },
   "dependencies": {
     "@orchex/core-types": "workspace:*",
+    "@orchex/registry": "workspace:*",
     "better-sqlite3": "^12.8.0"
   },
   "devDependencies": {

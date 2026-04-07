@@ -13,19 +13,12 @@ export class AgentMemoryStore {
   constructor(private readonly db: Database.Database) {}
 
   set(packageName: string, key: string, value: unknown): void {
-    const existing = this.db.prepare<[string, string], { id: string }>(
-      'SELECT id FROM agent_memory WHERE package_name = ? AND key = ?'
-    ).get(packageName, key)
-
-    if (existing) {
-      this.db.prepare(
-        `UPDATE agent_memory SET value_json = ?, updated_at = datetime('now') WHERE id = ?`
-      ).run(JSON.stringify(value), existing.id)
-    } else {
-      this.db.prepare(
-        'INSERT INTO agent_memory (id, package_name, key, value_json) VALUES (?, ?, ?, ?)'
-      ).run(randomUUID(), packageName, key, JSON.stringify(value))
-    }
+    this.db.prepare(
+      `INSERT INTO agent_memory (id, package_name, key, value_json, updated_at)
+       VALUES (?, ?, ?, ?, datetime('now'))
+       ON CONFLICT(package_name, key)
+       DO UPDATE SET value_json = excluded.value_json, updated_at = datetime('now')`
+    ).run(randomUUID(), packageName, key, JSON.stringify(value))
   }
 
   get(packageName: string, key: string): unknown | null {

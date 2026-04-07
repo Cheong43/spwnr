@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { ArtifactStore } from '../src/artifact-store.js'
+import { ArtifactStore } from './artifact-store.js'
 import { join } from 'path'
 import { rmSync, existsSync } from 'fs'
 import { randomUUID } from 'crypto'

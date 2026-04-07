@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { openMemoryDatabase } from '../src/db.js'
-import { RunStore } from '../src/run-store.js'
-import { CheckpointStore } from '../src/checkpoint-store.js'
+import { openRunDatabase } from './db.js'
+import { RunStore } from './run-store.js'
+import { CheckpointStore } from './checkpoint-store.js'
 import type Database from 'better-sqlite3'
 
 let db: Database.Database
@@ -10,18 +10,18 @@ let store: CheckpointStore
 let runId: string
 
 beforeEach(() => {
-  db = openMemoryDatabase(':memory:')
+  db = openRunDatabase(':memory:')
   runStore = new RunStore(db)
   store = new CheckpointStore(db)
-  runId = runStore.create({ packageName: 'pkg-a', version: '1.0.0', input: {} }).id
+  runId = runStore.create({ packageName: 'pkg-a', version: '1.0.0', input: {} }).runId
 })
 
 describe('CheckpointStore', () => {
-  it('save() creates checkpoint with correct run_id and step_name', () => {
+  it('save() creates checkpoint with correct runId and workflowStep', () => {
     const cp = store.save(runId, 'step-1', { counter: 0 })
-    expect(cp.run_id).toBe(runId)
-    expect(cp.step_name).toBe('step-1')
-    expect(cp.state_json).toBe(JSON.stringify({ counter: 0 }))
+    expect(cp.runId).toBe(runId)
+    expect(cp.workflowStep).toBe('step-1')
+    expect(cp.state).toEqual({ counter: 0 })
   })
 
   it('load() returns most recent checkpoint for run+step', () => {
@@ -29,7 +29,7 @@ describe('CheckpointStore', () => {
     store.save(runId, 'step-1', { counter: 1 })
     const cp = store.load(runId, 'step-1')
     expect(cp).not.toBeNull()
-    expect(JSON.parse(cp!.state_json)).toEqual({ counter: 1 })
+    expect(cp!.state).toEqual({ counter: 1 })
   })
 
   it('load() returns null for unknown combination', () => {
@@ -43,12 +43,13 @@ describe('CheckpointStore', () => {
     store.save(runId, 'step-3', { c: 3 })
     const list = store.listForRun(runId)
     expect(list).toHaveLength(3)
-    expect(list[0].step_name).toBe('step-1')
-    expect(list[2].step_name).toBe('step-3')
+    expect(list[0].workflowStep).toBe('step-1')
+    expect(list[2].workflowStep).toBe('step-3')
   })
 
   it('listForRun() returns empty array for run with no checkpoints', () => {
     const other = runStore.create({ packageName: 'pkg-b', version: '1.0.0', input: {} })
-    expect(store.listForRun(other.id)).toEqual([])
+    expect(store.listForRun(other.runId)).toEqual([])
   })
 })
+
