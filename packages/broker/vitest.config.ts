@@ -12,6 +12,7 @@ export default defineConfig({
       '@orchex/registry': new URL('../registry/src/index.ts', import.meta.url).pathname,
       '@orchex/policy': new URL('../policy/src/index.ts', import.meta.url).pathname,
       '@orchex/memory': new URL('../memory/src/index.ts', import.meta.url).pathname,
+      '@orchex/adapters': new URL('../adapters/src/index.ts', import.meta.url).pathname,
     },
   },
 });
