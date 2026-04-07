@@ -1,0 +1,28 @@
+{
+  "name": "@orchex/registry",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@orchex/core-types": "workspace:*",
+    "@orchex/manifest-schema": "workspace:*",
+    "better-sqlite3": "^12.8.0",
+    "tar": "^7.4.0",
+    "yaml": "^2.4.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/tar": "^6.1.13",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  }
+}
