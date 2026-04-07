@@ -49,20 +49,24 @@ describe('OrchexError', () => {
 });
 
 describe('ErrorCodes', () => {
-  it('should have all 12 error code keys', () => {
+  it('should have all 15 error code keys', () => {
     const keys = Object.keys(ErrorCodes);
-    expect(keys).toHaveLength(12);
+    expect(keys).toHaveLength(15);
     expect(keys).toContain('MANIFEST_INVALID');
     expect(keys).toContain('WORKFLOW_INVALID');
     expect(keys).toContain('PACKAGE_NOT_FOUND');
     expect(keys).toContain('BACKEND_UNAVAILABLE');
     expect(keys).toContain('POLICY_DENIED');
     expect(keys).toContain('APPROVAL_REQUIRED');
+    expect(keys).toContain('APPROVAL_TIMEOUT');
     expect(keys).toContain('RUN_NOT_FOUND');
     expect(keys).toContain('RUN_ALREADY_FINISHED');
+    expect(keys).toContain('RUN_ALREADY_COMPLETED');
+    expect(keys).toContain('INPUT_INVALID');
     expect(keys).toContain('ADAPTER_PROTOCOL_ERROR');
     expect(keys).toContain('OUTPUT_SCHEMA_INVALID');
     expect(keys).toContain('SIGNATURE_INVALID');
+    expect(keys).toContain('VERSION_CONFLICT');
     expect(keys).toContain('VERSION_CONFLICT');
   });
 });
