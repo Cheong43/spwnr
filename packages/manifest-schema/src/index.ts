@@ -3,16 +3,16 @@ export {
   SubagentManifestSchema,
   type ValidationResult,
   type ValidationError,
-} from './manifest-validator';
+} from './manifest-validator.js';
 
 export {
   loadPackage,
   type LoadResult,
   type LoadError,
   type LoadOutcome,
-} from './package-loader';
+} from './package-loader.js';
 
 export {
   validatePackageLayout,
   type LayoutError,
-} from './package-validator';
+} from './package-validator.js';

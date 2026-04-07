@@ -4,7 +4,7 @@ import { RegistryService } from '@orchex/registry'
 export function makeListCommand(): Command {
   return new Command('list')
     .alias('ls')
-    .description('List all installed subagent packages')
+    .description('List published subagent packages in the local registry')
     .action(() => {
       const registry = new RegistryService()
       try {

@@ -5,7 +5,9 @@
   "main": "./dist/index.js",
   "exports": {
     ".": {
-      "default": "./src/index.ts"
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     }
   },
   "scripts": {
