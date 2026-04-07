@@ -1,0 +1,33 @@
+id: main
+description: Code review workflow
+
+steps:
+  - id: read-diff
+    type: tool
+    tool: git.diff
+    input:
+      baseRef: "{{ input.baseRef }}"
+      headRef: "{{ input.headRef }}"
+    output: diff
+
+  - id: read-files
+    type: tool
+    tool: fs.glob
+    input:
+      patterns: "{{ diff.changedFiles }}"
+    output: fileContents
+
+  - id: analyze
+    type: skill
+    skill: diff-reader
+    input:
+      diff: "{{ diff }}"
+      files: "{{ fileContents }}"
+    output: analysis
+
+  - id: report
+    type: skill
+    skill: repo-navigator
+    input:
+      analysis: "{{ analysis }}"
+    output: report

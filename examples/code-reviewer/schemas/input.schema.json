@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CodeReviewerInput",
+  "type": "object",
+  "required": ["repoPath", "baseRef"],
+  "properties": {
+    "repoPath": {
+      "type": "string",
+      "description": "Absolute path to the git repository"
+    },
+    "baseRef": {
+      "type": "string",
+      "description": "Base git ref to diff against (e.g. main, HEAD~1)"
+    },
+    "headRef": {
+      "type": "string",
+      "description": "Head git ref (defaults to working tree)"
+    },
+    "focusFiles": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional list of files to focus review on"
+    }
+  },
+  "additionalProperties": false
+}

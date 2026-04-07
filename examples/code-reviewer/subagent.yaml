@@ -1,0 +1,56 @@
+apiVersion: subagent.io/v0.1
+kind: Subagent
+metadata:
+  name: code-reviewer
+  version: 0.1.0
+  description: Review git diff and produce actionable feedback
+  tags:
+    - code-review
+    - git
+spec:
+  persona:
+    role: senior-code-reviewer
+    style: systematic
+    tone: concise
+  input:
+    schema: ./schemas/input.schema.json
+  output:
+    schema: ./schemas/output.schema.json
+  workflow:
+    entry: main
+  skills:
+    refs:
+      - name: diff-reader
+        path: ./skills/diff-reader
+      - name: repo-navigator
+        path: ./skills/repo-navigator
+  tools:
+    allow:
+      - git.diff
+      - fs.read
+      - fs.glob
+    ask:
+      - bash.exec
+    deny:
+      - network.*
+  memory:
+    scope: repo
+    schema: ./schemas/memory.schema.json
+  compatibility:
+    hosts:
+      - opencode
+      - claude_code
+    mode: cross_host
+    badges:
+      - opencode
+      - claude_code
+  artifacts:
+    - report
+    - patch
+  modelBinding:
+    mode: injectable
+    defaultProvider: local_host
+    defaultModel: null
+    allowOverride: true
+    billing:
+      mode: passthrough
