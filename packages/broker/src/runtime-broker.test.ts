@@ -63,7 +63,10 @@ function makeDeps(overrides: {
   const mockRunStore = {
     create: vi.fn().mockReturnValue(makeRunRecord(runId, 'CREATED')),
     updateStatus: vi.fn((id: string, status: string) => makeRunRecord(id, status)),
-    get: vi.fn().mockReturnValue(makeRunRecord(runId, 'COMPLETED')),
+    // First call: guard check inside retryStrategy (non-terminal); subsequent calls: finalRun lookup
+    get: vi.fn()
+      .mockReturnValueOnce(makeRunRecord(runId, 'SCHEDULED'))
+      .mockReturnValue(makeRunRecord(runId, 'COMPLETED')),
     list: vi.fn().mockReturnValue([]),
     ...overrides.runStore,
   } as unknown as RunStore;
@@ -130,7 +133,6 @@ describe('RuntimeBroker', () => {
 
     const { broker, mockRunStore, mockArtifactStore } = makeDeps({ adapter: simAdapter });
     mockArtifactStore.list = vi.fn().mockReturnValue(['output.txt']);
-    (mockRunStore.get as ReturnType<typeof vi.fn>).mockReturnValue(makeRunRecord('x', 'COMPLETED'));
 
     const result = await broker.run({ packageName: 'test-pkg' });
 
@@ -169,7 +171,10 @@ describe('RuntimeBroker', () => {
     ];
 
     const { broker, mockRunStore } = makeDeps({ adapter: simAdapter });
-    (mockRunStore.get as ReturnType<typeof vi.fn>).mockReturnValue(makeRunRecord('x', 'FAILED', 'adapter error'));
+    (mockRunStore.get as ReturnType<typeof vi.fn>)
+      .mockReset()
+      .mockReturnValueOnce(makeRunRecord('fixed-run-id', 'SCHEDULED'))
+      .mockReturnValue(makeRunRecord('x', 'FAILED', 'adapter error'));
 
     const result = await broker.run({ packageName: 'test-pkg' });
 
