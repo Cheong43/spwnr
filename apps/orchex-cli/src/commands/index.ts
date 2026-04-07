@@ -1,7 +1,6 @@
 import type { Command } from 'commander'
+import { makeValidateCommand } from './validate.js'
 
-// Import and register all commands
-// (to be filled in as commands are added in Tasks 12-15)
-export function registerCommands(_program: Command): void {
-  // commands registered here
+export function registerCommands(program: Command): void {
+  program.addCommand(makeValidateCommand())
 }

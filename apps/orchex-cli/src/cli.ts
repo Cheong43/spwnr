@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander'
+import { registerCommands } from './commands/index.js'
 
 const program = new Command()
 
@@ -8,7 +9,6 @@ program
   .description('Orchex — Subagent package manager')
   .version('0.1.0')
 
-// Commands will be registered in separate files and imported here
-// (validate, publish, install, list, info)
+registerCommands(program)
 
 program.parse(process.argv)
