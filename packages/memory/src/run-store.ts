@@ -36,7 +36,7 @@ function rowToRecord(row: RunRow): RunRecord {
     subagentVersion: row.version,
     status: row.status as RunStatus,
     traceId: row.trace_id,
-    backend: row.backend as BackendType,
+    backend: (row.backend ?? 'simulated') as BackendType,
     input: JSON.parse(row.input_json),
     output: row.output_json ? JSON.parse(row.output_json) : undefined,
     errorCode: row.error_code ?? undefined,
