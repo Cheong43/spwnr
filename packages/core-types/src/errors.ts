@@ -14,6 +14,7 @@ export const ErrorCodes = {
   OUTPUT_SCHEMA_INVALID: 'OUTPUT_SCHEMA_INVALID',
   SIGNATURE_INVALID: 'SIGNATURE_INVALID',
   VERSION_CONFLICT: 'VERSION_CONFLICT',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
 } as const;
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];

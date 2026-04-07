@@ -1,4 +1,12 @@
-export type BackendType = 'opencode' | 'claude_code' | 'openclaw' | 'codex' | 'cline';
+export const BackendType = {
+  OPENCODE: 'opencode',
+  CLAUDE_CODE: 'claude_code',
+  OPENCLAW: 'openclaw',
+  CODEX: 'codex',
+  CLINE: 'cline',
+  SIMULATED: 'simulated',
+} as const;
+export type BackendType = (typeof BackendType)[keyof typeof BackendType];
 
 export type PolicyDecision = 'allow' | 'ask' | 'deny';
 

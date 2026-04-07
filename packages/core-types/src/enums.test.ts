@@ -5,13 +5,14 @@ import type { SubagentManifest } from './manifest.js';
 
 describe('BackendType', () => {
   it('should accept all valid backend types', () => {
-    const backends: BackendType[] = ['opencode', 'claude_code', 'openclaw', 'codex', 'cline'];
-    expect(backends).toHaveLength(5);
+    const backends: BackendType[] = ['opencode', 'claude_code', 'openclaw', 'codex', 'cline', 'simulated'];
+    expect(backends).toHaveLength(6);
     expect(backends).toContain('opencode');
     expect(backends).toContain('claude_code');
     expect(backends).toContain('openclaw');
     expect(backends).toContain('codex');
     expect(backends).toContain('cline');
+    expect(backends).toContain('simulated');
   });
 });
 
@@ -51,7 +52,7 @@ describe('OrchexError', () => {
 describe('ErrorCodes', () => {
   it('should have all 15 error code keys', () => {
     const keys = Object.keys(ErrorCodes);
-    expect(keys).toHaveLength(15);
+    expect(keys).toHaveLength(16);
     expect(keys).toContain('MANIFEST_INVALID');
     expect(keys).toContain('WORKFLOW_INVALID');
     expect(keys).toContain('PACKAGE_NOT_FOUND');
@@ -67,7 +68,7 @@ describe('ErrorCodes', () => {
     expect(keys).toContain('OUTPUT_SCHEMA_INVALID');
     expect(keys).toContain('SIGNATURE_INVALID');
     expect(keys).toContain('VERSION_CONFLICT');
-    expect(keys).toContain('VERSION_CONFLICT');
+    expect(keys).toContain('INTERNAL_ERROR');
   });
 });
 
