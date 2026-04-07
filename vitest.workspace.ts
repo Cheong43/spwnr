@@ -1,4 +1,4 @@
-import { defineWorkspace } from 'vitest/workspace';
+import { defineWorkspace } from 'vitest/config';
 
 export default defineWorkspace([
   'packages/*/vitest.config.ts',
