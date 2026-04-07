@@ -1,0 +1,16 @@
+{
+  "name": "@orchex/memory",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": { ".": { "default": "./src/index.ts" } },
+  "scripts": { "build": "tsc", "test": "vitest run" },
+  "dependencies": {
+    "@orchex/core-types": "workspace:*",
+    "better-sqlite3": "^12.8.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.8",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  }
+}
