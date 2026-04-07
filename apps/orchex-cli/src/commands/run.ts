@@ -26,6 +26,10 @@ export function makeRunCommand(): Command {
 
       const backendPreference = options.backend as BackendType | undefined
 
+      if (options.watch) {
+        console.warn('Warning: --watch is not yet implemented and will be ignored.')
+      }
+
       try {
         const registry = new RegistryService()
 
@@ -70,8 +74,8 @@ export function makeRunCommand(): Command {
         if (result.artifacts.length > 0) {
           console.log(`Artifacts: ${result.artifacts.join(', ')}`)
         }
-        if (result.error) {
-          console.error(`Error: ${result.error}`)
+        if (result.status === 'FAILED') {
+          console.error(`Error: ${result.error ?? 'Unknown failure'}`)
           process.exit(1)
         }
       } catch (err) {

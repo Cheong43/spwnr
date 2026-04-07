@@ -24,6 +24,7 @@
     "@orchex/core-types": "workspace:*",
     "@orchex/manifest-schema": "workspace:*",
     "@orchex/memory": "workspace:*",
+    "@orchex/policy": "workspace:*",
     "@orchex/registry": "workspace:*",
     "commander": "^12.1.0"
   },
