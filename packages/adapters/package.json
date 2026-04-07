@@ -1,0 +1,17 @@
+{
+  "name": "@orchex/adapters",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "test": "vitest run" },
+  "dependencies": {
+    "@orchex/core-types": "workspace:*",
+    "@orchex/broker": "workspace:*",
+    "@orchex/policy": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  }
+}
