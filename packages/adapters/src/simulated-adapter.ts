@@ -3,7 +3,7 @@ import { BackendType } from '@orchex/core-types';
 
 export interface SimulatedAdapterOptions {
   available?: boolean;
-  events?: Partial<AdapterEvent>[];
+  events?: Array<{ type: AdapterEvent['type']; data?: unknown }>;
   delayMs?: number;
 }
 
@@ -25,7 +25,7 @@ export class SimulatedAdapter implements BackendAdapter {
       if (this.options.delayMs) {
         await new Promise(r => setTimeout(r, this.options.delayMs));
       }
-      yield { type: event.type!, runId: opts.runId, data: event.data };
+      yield { type: event.type, runId: opts.runId, data: event.data };
     }
   }
 }
