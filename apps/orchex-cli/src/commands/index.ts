@@ -4,6 +4,7 @@ import { makePublishCommand } from './publish.js'
 import { makeInstallCommand } from './install.js'
 import { makeListCommand } from './list.js'
 import { makeInfoCommand } from './info.js'
+import { makeRunCommand } from './run.js'
 
 export function registerCommands(program: Command): void {
   program.addCommand(makeValidateCommand())
@@ -11,4 +12,5 @@ export function registerCommands(program: Command): void {
   program.addCommand(makeInstallCommand())
   program.addCommand(makeListCommand())
   program.addCommand(makeInfoCommand())
+  program.addCommand(makeRunCommand())
 }

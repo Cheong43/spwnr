@@ -19,8 +19,11 @@
     "dev": "tsx src/cli.ts"
   },
   "dependencies": {
+    "@orchex/adapters": "workspace:*",
+    "@orchex/broker": "workspace:*",
     "@orchex/core-types": "workspace:*",
     "@orchex/manifest-schema": "workspace:*",
+    "@orchex/memory": "workspace:*",
     "@orchex/registry": "workspace:*",
     "commander": "^12.1.0"
   },
