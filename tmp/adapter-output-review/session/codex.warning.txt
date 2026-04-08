@@ -1,1 +1,0 @@
-! Codex session injection is preview-only in this release.

@@ -8,3 +8,4 @@ dist/
 coverage/
 .orchex/
 site-dist/
+tmp/
