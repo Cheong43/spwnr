@@ -51,7 +51,7 @@ export class PackageStore {
   }): PackageVersionRow {
     const packageId = this.upsertPackage(
       opts.packageName,
-      opts.manifest.metadata?.description,
+      opts.manifest.metadata?.description ?? opts.manifest.metadata.instruction,
     )
 
     const existing = this.db

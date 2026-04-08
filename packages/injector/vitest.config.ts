@@ -7,6 +7,7 @@ export default defineConfig({
     alias: {
       '@spwnr/adapters': resolve(__dirname, '../adapters/src/index.ts'),
       '@spwnr/core-types': resolve(__dirname, '../core-types/src/index.ts'),
+      '@spwnr/manifest-schema': resolve(__dirname, '../manifest-schema/src/index.ts'),
       '@spwnr/registry': resolve(__dirname, '../registry/src/index.ts'),
     },
   },

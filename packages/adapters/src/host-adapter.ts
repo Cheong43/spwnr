@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import type { HostScope, HostType, SkillRef, SubagentManifest } from '@spwnr/core-types';
+import type { HostScope, HostType, SubagentManifest } from '@spwnr/core-types';
 
 export type InjectionMode = 'static' | 'session';
 
@@ -15,7 +15,9 @@ export interface CompiledHostAgent {
   packageDir: string;
   slug: string;
   title: string;
-  systemPrompt: string;
+  description: string | null;
+  instruction: string;
+  agentMarkdown: string;
 }
 
 export interface StaticMaterializationTarget {
@@ -62,8 +64,12 @@ export function slugifyAgentName(name: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-export function readSystemPrompt(packageDir: string, manifest: SubagentManifest): string {
-  return readFileSync(join(packageDir, manifest.spec.instructions.system), 'utf-8').trim();
+export function readAgentMarkdown(packageDir: string, manifest: SubagentManifest): string {
+  return readFileSync(join(packageDir, manifest.spec.agent.path), 'utf-8').trim();
+}
+
+export function normalizeInstructionSummary(instruction: string): string {
+  return instruction.replace(/\s+/g, ' ').trim();
 }
 
 export function materializeTextFiles(
@@ -87,56 +93,6 @@ export function materializeTextFiles(
   };
 }
 
-export function renderSkillList(skills: SkillRef[] = []): string {
-  if (skills.length === 0) {
-    return 'No packaged skills declared.';
-  }
-
-  return skills
-    .map((skill) => {
-      const pathText = skill.path ? ` (${skill.path})` : '';
-      const versionText = skill.version ? ` @${skill.version}` : '';
-      return `- ${skill.name}${versionText}${pathText}`;
-    })
-    .join('\n');
-}
-
-export function renderModelBinding(manifest: SubagentManifest): string {
-  if (!manifest.spec.modelBinding) {
-    return 'No model binding declared.';
-  }
-
-  const binding = manifest.spec.modelBinding;
-  const provider = binding.defaultProvider ?? 'host-default';
-  const model = binding.defaultModel ?? 'host-default';
-  return `mode=${binding.mode}, provider=${provider}, model=${model}`;
-}
-
-export function renderAgentMarkdown(compiled: CompiledHostAgent, heading = compiled.title): string {
-  const description = compiled.manifest.metadata.description ?? 'No description provided.';
-  const skills = renderSkillList(compiled.manifest.spec.skills?.refs ?? []);
-  const modelBinding = renderModelBinding(compiled.manifest);
-
-  return [
-    `# ${heading}`,
-    '',
-    description,
-    '',
-    '## System Prompt',
-    '',
-    compiled.systemPrompt,
-    '',
-    '## Skills',
-    '',
-    skills,
-    '',
-    '## Model Binding',
-    '',
-    modelBinding,
-    '',
-  ].join('\n');
-}
-
 export function compileHostAgent(host: HostType, input: HostAdapterCompileInput): CompiledHostAgent {
   return {
     host,
@@ -144,6 +100,8 @@ export function compileHostAgent(host: HostType, input: HostAdapterCompileInput)
     packageDir: input.packageDir,
     slug: slugifyAgentName(input.manifest.metadata.name),
     title: input.manifest.metadata.name,
-    systemPrompt: readSystemPrompt(input.packageDir, input.manifest),
+    description: input.manifest.metadata.description ?? null,
+    instruction: normalizeInstructionSummary(input.manifest.metadata.instruction),
+    agentMarkdown: readAgentMarkdown(input.packageDir, input.manifest),
   };
 }

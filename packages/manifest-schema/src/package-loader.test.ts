@@ -15,36 +15,35 @@ describe('PackageLoader', () => {
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  const minimalValidManifestYaml = `apiVersion: subagent.io/v0.1
+  const minimalValidManifestYaml = `apiVersion: subagent.io/v0.2
 kind: Subagent
 metadata:
   name: test-agent
   version: 0.1.0
+  instruction: Review code changes carefully.
 spec:
-  instructions:
-    system: ./prompts/system.md
-  input:
-    schema: ./schemas/input.schema.json
-  output:
-    schema: ./schemas/output.schema.json
+  agent:
+    path: ./agent.md
+  schemas:
+    input: ./schemas/input.schema.json
+    output: ./schemas/output.schema.json
 `;
 
   const minimalValidManifestJson = JSON.stringify({
-    apiVersion: 'subagent.io/v0.1',
+    apiVersion: 'subagent.io/v0.2',
     kind: 'Subagent',
     metadata: {
       name: 'test-agent',
       version: '0.1.0',
+      instruction: 'Review code changes carefully.',
     },
     spec: {
-      instructions: {
-        system: './prompts/system.md',
+      agent: {
+        path: './agent.md',
       },
-      input: {
-        schema: './schemas/input.schema.json',
-      },
-      output: {
-        schema: './schemas/output.schema.json',
+      schemas: {
+        input: './schemas/input.schema.json',
+        output: './schemas/output.schema.json',
       },
     },
   });
@@ -59,7 +58,7 @@ spec:
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.result.manifest.metadata.name).toBe('test-agent');
-      expect(result.result.manifest.spec.instructions.system).toBe('./prompts/system.md');
+      expect(result.result.manifest.spec.agent.path).toBe('./agent.md');
       expect(result.result.packageDir).toBe(pkgDir);
     }
   });
@@ -95,14 +94,15 @@ spec:
     mkdirSync(pkgDir, { recursive: true });
     writeFileSync(
       join(pkgDir, 'subagent.yaml'),
-      `apiVersion: subagent.io/v0.1
+      `apiVersion: subagent.io/v0.2
 kind: Subagent
 metadata:
   name: test-agent
   version: 0.1.0
+  instruction: Review code changes carefully.
 spec:
-  input:
-    schema: ./schemas/input.schema.json
+  schemas:
+    input: ./schemas/input.schema.json
 `,
     );
 
@@ -110,7 +110,7 @@ spec:
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.message).toContain('instructions');
+      expect(result.error.message).toContain('agent');
     }
   });
 });

@@ -6,13 +6,19 @@ const mockInfo = {
   name: 'code-reviewer',
   version: '0.1.0',
   manifest: {
-    apiVersion: 'subagent.io/v0.1',
+    apiVersion: 'subagent.io/v0.2',
     kind: 'Subagent',
-    metadata: { name: 'code-reviewer', version: '0.1.0' },
+    metadata: {
+      name: 'code-reviewer',
+      version: '0.1.0',
+      instruction: 'Review git changes carefully.',
+    },
     spec: {
-      instructions: { system: './prompts/system.md' },
-      input: { schema: './schemas/input.schema.json' },
-      output: { schema: './schemas/output.schema.json' },
+      agent: { path: './agent.md' },
+      schemas: {
+        input: './schemas/input.schema.json',
+        output: './schemas/output.schema.json',
+      },
       compatibility: { hosts: ['claude_code', 'codex'] },
       injection: {
         hosts: {
@@ -64,6 +70,8 @@ describe('info command', () => {
     expect(output).toContain('Published:')
     expect(output).toContain('Signature:')
     expect(output).toContain('Tarball:')
+    expect(output).toContain('Instruction:')
+    expect(output).toContain('Schemas:')
     expect(output).toContain('Hosts:')
     expect(output).toContain('claude_code: static(project), session(user)')
   })

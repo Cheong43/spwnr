@@ -1,6 +1,6 @@
 import { HostType } from '@spwnr/core-types';
 import type { HostAdapter, HostAdapterCompileInput, SessionComposition, SessionContext, StaticMaterialization, StaticMaterializationTarget } from './host-adapter.js';
-import { compileHostAgent, materializeTextFiles, renderAgentMarkdown } from './host-adapter.js';
+import { compileHostAgent, materializeTextFiles } from './host-adapter.js';
 
 export class CodexAdapter implements HostAdapter {
   readonly host = HostType.CODEX;
@@ -16,14 +16,15 @@ export class CodexAdapter implements HostAdapter {
   materializeStatic(compiled: ReturnType<CodexAdapter['compile']>, target: StaticMaterializationTarget): StaticMaterialization {
     const metadata = JSON.stringify({
       name: compiled.slug,
-      description: compiled.manifest.metadata.description ?? '',
+      description: compiled.instruction,
+      details: compiled.description,
       source: compiled.manifest.metadata.name,
     }, null, 2);
 
     return materializeTextFiles(this.host, target.directory, [
       {
         relativePath: `${compiled.slug}/SKILL.md`,
-        content: renderAgentMarkdown(compiled, compiled.title),
+        content: `${compiled.agentMarkdown}\n`,
       },
       {
         relativePath: `${compiled.slug}/agent.json`,
@@ -38,7 +39,8 @@ export class CodexAdapter implements HostAdapter {
       host: this.host,
       skill: {
         name: compiled.slug,
-        prompt: compiled.systemPrompt,
+        description: compiled.instruction,
+        prompt: compiled.agentMarkdown,
       },
     };
 

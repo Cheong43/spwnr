@@ -25,7 +25,7 @@ git submodule update --init --recursive
 
 ## What Spwnr Includes
 
-- prompt-first subagent manifest types and validation
+- agent-first subagent manifest types and validation
 - local registry with publish, resolve, install, list, and info flows
 - host adapters that compile a shared package manifest into host-native assets
 - an injector layer for static file materialization and session descriptor composition
@@ -135,9 +135,8 @@ The bundled sample package lives at `examples/code-reviewer`:
 ```text
 examples/code-reviewer/
   subagent.yaml
-  prompts/system.md
-  workflow/main.yaml
-  schemas/
+  agent.md
+  schemas/            # optional
     input.schema.json
     output.schema.json
     memory.schema.json
@@ -148,7 +147,9 @@ examples/code-reviewer/
 
 Its manifest demonstrates:
 
-- `spec.instructions.system` as the primary prompt entry
+- `metadata.instruction` as the short retrieval summary
+- `spec.agent.path` as the primary prompt entry
+- optional `spec.schemas`
 - `spec.injection.hosts` for host-specific static and session support
 - local skill references
 - tool allow/ask/deny hints
@@ -158,7 +159,6 @@ Its manifest demonstrates:
 - memory schema declaration
 - artifact declarations
 - model binding metadata
-- legacy `workflow` metadata retained without execution semantics
 
 ## Typical Flow
 

@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -6,23 +6,21 @@ import { CopilotAdapter } from './copilot-adapter.js';
 
 function createPackageDir(): string {
   const dir = mkdtempSync(join(tmpdir(), 'spwnr-copilot-adapter-'));
-  mkdirSync(join(dir, 'prompts'), { recursive: true });
-  writeFileSync(join(dir, 'prompts', 'system.md'), 'Draft a clear plan.');
+  writeFileSync(join(dir, 'agent.md'), '# Planner\n\nDraft a clear plan.');
   return dir;
 }
 
 const manifest = {
-  apiVersion: 'subagent.io/v0.1',
+  apiVersion: 'subagent.io/v0.2',
   kind: 'Subagent' as const,
   metadata: {
     name: 'Planner',
     version: '0.1.0',
+    instruction: 'Draft implementation plans directly.',
     description: 'Draft implementation plans.',
   },
   spec: {
-    instructions: { system: './prompts/system.md' },
-    input: { schema: './schemas/input.schema.json' },
-    output: { schema: './schemas/output.schema.json' },
+    agent: { path: './agent.md' },
   },
 };
 
@@ -45,6 +43,8 @@ describe('CopilotAdapter', () => {
     adapter.materializeStatic(compiled, { directory: targetDir, scope: 'project' });
 
     expect(readFileSync(join(targetDir, 'planner.agent.md'), 'utf-8')).toContain('name: planner');
+    expect(readFileSync(join(targetDir, 'planner.agent.md'), 'utf-8')).toContain('description: "Draft implementation plans directly."');
+    expect(readFileSync(join(targetDir, 'planner.agent.md'), 'utf-8')).not.toContain('## Model Binding');
   });
 
   it('returns a lightweight profile descriptor for sessions', () => {
@@ -57,7 +57,10 @@ describe('CopilotAdapter', () => {
 
     expect(result.descriptor).toEqual(
       expect.objectContaining({
-        profile: expect.objectContaining({ name: 'planner' }),
+        profile: expect.objectContaining({
+          name: 'planner',
+          description: 'Draft implementation plans directly.',
+        }),
       }),
     );
     expect(result.shellCommand).toContain('copilot --agent=planner');

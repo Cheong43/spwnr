@@ -1,4 +1,4 @@
-name: Publish Orchex Registry Portal
+name: Publish Spwnr Registry Portal
 
 on:
   workflow_dispatch:
@@ -6,7 +6,7 @@ on:
     branches:
       - main
     paths:
-      - '.github/workflows/orchex-registry-portal.yml'
+      - '.github/workflows/spwnr-registry-portal.yml'
       - 'scripts/build-registry-portal.mjs'
       - 'site/registry-portal/**'
       - 'vendor/spwnr-registry'
@@ -18,7 +18,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: orchex-registry-portal
+  group: spwnr-registry-portal
   cancel-in-progress: true
 
 jobs:

@@ -15,14 +15,16 @@ function tempDbPath(): string {
 
 function makeManifest(name: string, version: string, description?: string): SubagentManifest {
   return {
-    apiVersion: '1',
+    apiVersion: 'subagent.io/v0.2',
     kind: 'Subagent',
-    metadata: { name, version, description },
+    metadata: {
+      name,
+      version,
+      instruction: `Use ${name} directly.`,
+      description,
+    },
     spec: {
-      instructions: { system: './prompts/system.md' },
-      input: { schema: '{}' },
-      output: { schema: '{}' },
-      workflow: { entry: 'start' },
+      agent: { path: './agent.md' },
     },
   }
 }

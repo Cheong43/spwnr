@@ -20,16 +20,6 @@ export interface PermissionPolicy {
   tools?: PolicyRule[];
 }
 
-export interface WorkflowStep {
-  id: string;
-  type: string;
-  tool?: string;
-  prompt?: string;
-  input?: Record<string, unknown>;
-  output?: string;
-  next?: string | { condition: string; then: string; else: string };
-}
-
 export interface SkillRef {
   name: string;
   path?: string;
@@ -75,8 +65,14 @@ export interface ModelBinding {
   };
 }
 
-export interface PromptInstructions {
-  system: string;
+export interface AgentDefinition {
+  path: string;
+}
+
+export interface ManifestSchemas {
+  input?: string;
+  output?: string;
+  memory?: string;
 }
 
 export interface InjectionModeConfig {
@@ -97,11 +93,12 @@ export interface InjectionHosts {
 }
 
 export interface SubagentManifest {
-  apiVersion: string;
+  apiVersion: 'subagent.io/v0.2';
   kind: 'Subagent';
   metadata: {
     name: string;
     version: string;
+    instruction: string;
     description?: string;
     tags?: string[];
     authors?: ManifestAuthor[];
@@ -115,13 +112,8 @@ export interface SubagentManifest {
       tone?: string;
       style?: string;
     };
-    instructions: PromptInstructions;
-    input: { schema: string };
-    output: { schema: string };
-    workflow?: {
-      entry: string;
-      steps?: WorkflowStep[];
-    };
+    agent: AgentDefinition;
+    schemas?: ManifestSchemas;
     injection?: {
       hosts?: InjectionHosts;
     };
@@ -132,7 +124,6 @@ export interface SubagentManifest {
     permissions?: PermissionPolicy;
     memory?: {
       scope: 'run' | 'repo' | 'project' | 'workspace';
-      schema?: string;
     };
     compatibility?: {
       hosts: HostType[];

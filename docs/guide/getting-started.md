@@ -43,11 +43,8 @@ The included example package lives at `examples/code-reviewer`:
 ```text
 examples/code-reviewer/
   subagent.yaml
-  prompts/
-    system.md
-  workflow/
-    main.yaml
-  schemas/
+  agent.md
+  schemas/            # optional
     input.schema.json
     output.schema.json
     memory.schema.json
@@ -60,14 +57,15 @@ examples/code-reviewer/
 
 ## Manifest Shape
 
-The mainline manifest is prompt-first and injection-first:
+The mainline manifest is agent-first and injection-first:
 
 ```yaml
-apiVersion: subagent.io/v0.1
+apiVersion: subagent.io/v0.2
 kind: Subagent
 metadata:
   name: code-reviewer
   version: 0.1.0
+  instruction: Review git diffs and surface concrete, actionable issues.
   description: Review git diff and produce actionable feedback
   authors:
     - name: Spwnr Team
@@ -78,12 +76,12 @@ spec:
     role: senior-code-reviewer
     style: systematic
     tone: concise
-  instructions:
-    system: ./prompts/system.md
-  input:
-    schema: ./schemas/input.schema.json
-  output:
-    schema: ./schemas/output.schema.json
+  agent:
+    path: ./agent.md
+  schemas:
+    input: ./schemas/input.schema.json
+    output: ./schemas/output.schema.json
+    memory: ./schemas/memory.schema.json
   injection:
     hosts:
       claude_code:
@@ -100,8 +98,6 @@ spec:
         session:
           enabled: true
           defaultScope: project
-  workflow:
-    entry: main
   skills:
     refs:
       - name: diff-reader
@@ -123,11 +119,12 @@ spec:
 
 Notes:
 
-- `spec.instructions.system` is required and is the main prompt entry.
+- `metadata.instruction` is required and must be between 1 and 400 Unicode characters.
+- `spec.agent.path` is required and points to the canonical `agent.md` prompt asset.
+- `spec.schemas` is optional. Declare only the schemas you actually ship.
 - `spec.injection.hosts` declares which hosts support static and session injection.
 - `metadata.authors` captures maintainers for registry presentation and review handoff.
 - `spec.dependencies.packages` captures structured dependency metadata for package consumers.
-- `workflow` is allowed as legacy metadata, but Spwnr does not execute it.
 - `compatibility.hosts` uses host names, not runtime names.
 
 ## Validate
@@ -185,6 +182,8 @@ Typical `info` output includes the host matrix:
 ```text
 Name:      code-reviewer
 Version:   0.1.0
+Instruction: Review git diffs and surface concrete, actionable issues.
+Schemas:   input, output, memory
 Tarball:   /tmp/spwnr-demo/tarballs/code-reviewer/0.1.0.tar.gz
 Hosts:
   claude_code: static(project), session(user)

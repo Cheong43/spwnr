@@ -6,14 +6,15 @@ describe('SignatureService', () => {
   const service = new SignatureService()
 
   const manifest = {
-    apiVersion: 'subagent.io/v0.1',
+    apiVersion: 'subagent.io/v0.2',
     kind: 'Subagent' as const,
-    metadata: { name: 'test', version: '1.0.0' },
+    metadata: {
+      name: 'test',
+      version: '1.0.0',
+      instruction: 'Use the test agent directly.',
+    },
     spec: {
-      instructions: { system: './prompts/system.md' },
-      input: { schema: './schemas/input.json' },
-      output: { schema: './schemas/output.json' },
-      workflow: { entry: 'main' },
+      agent: { path: './agent.md' },
     },
   } satisfies SubagentManifest
 
@@ -31,7 +32,11 @@ describe('SignatureService', () => {
   it('sign() returns different values for different manifests', () => {
     const manifest2 = {
       ...manifest,
-      metadata: { name: 'test2', version: '1.0.0' },
+      metadata: {
+        ...manifest.metadata,
+        name: 'test2',
+        version: '1.0.0',
+      },
     }
     const sig1 = service.sign(manifest)
     const sig2 = service.sign(manifest2)
@@ -47,7 +52,11 @@ describe('SignatureService', () => {
     const signature = service.sign(manifest)
     const modifiedManifest = {
       ...manifest,
-      metadata: { name: 'modified', version: '1.0.0' },
+      metadata: {
+        ...manifest.metadata,
+        name: 'modified',
+        version: '1.0.0',
+      },
     }
     expect(service.verify(modifiedManifest, signature)).toBe(false)
   })

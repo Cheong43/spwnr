@@ -1,6 +1,6 @@
 import { HostType } from '@spwnr/core-types';
 import type { HostAdapter, HostAdapterCompileInput, SessionComposition, SessionContext, StaticMaterialization, StaticMaterializationTarget } from './host-adapter.js';
-import { compileHostAgent, materializeTextFiles, renderAgentMarkdown } from './host-adapter.js';
+import { compileHostAgent, materializeTextFiles } from './host-adapter.js';
 
 export class OpenCodeAdapter implements HostAdapter {
   readonly host = HostType.OPENCODE;
@@ -17,7 +17,7 @@ export class OpenCodeAdapter implements HostAdapter {
     return materializeTextFiles(this.host, target.directory, [
       {
         relativePath: `${compiled.slug}.md`,
-        content: renderAgentMarkdown(compiled),
+        content: `${compiled.agentMarkdown}\n`,
       },
     ]);
   }
@@ -28,7 +28,8 @@ export class OpenCodeAdapter implements HostAdapter {
         agents: [
           {
             key: compiled.slug,
-            prompt: compiled.systemPrompt,
+            description: compiled.instruction,
+            prompt: compiled.agentMarkdown,
           },
         ],
       },

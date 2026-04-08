@@ -18,24 +18,20 @@ describe('PackageValidator', () => {
 
   function createManifest(overrides: Partial<SubagentManifest> = {}): SubagentManifest {
     return {
-      apiVersion: 'subagent.io/v0.1',
+      apiVersion: 'subagent.io/v0.2',
       kind: 'Subagent',
       metadata: {
         name: 'test-agent',
         version: '0.1.0',
+        instruction: 'Review repository changes carefully.',
       },
       spec: {
-        instructions: {
-          system: './prompts/system.md',
+        agent: {
+          path: './agent.md',
         },
-        input: {
-          schema: './schemas/input.schema.json',
-        },
-        output: {
-          schema: './schemas/output.schema.json',
-        },
-        workflow: {
-          entry: 'main',
+        schemas: {
+          input: './schemas/input.schema.json',
+          output: './schemas/output.schema.json',
         },
       },
       ...overrides,
@@ -44,61 +40,68 @@ describe('PackageValidator', () => {
 
   it('returns no errors for a valid layout', () => {
     const pkgDir = join(tempDir, 'valid-layout');
-    mkdirSync(join(pkgDir, 'prompts'), { recursive: true });
     mkdirSync(join(pkgDir, 'schemas'), { recursive: true });
-    mkdirSync(join(pkgDir, 'workflow'), { recursive: true });
 
-    writeFileSync(join(pkgDir, 'prompts', 'system.md'), 'Be helpful.');
+    writeFileSync(join(pkgDir, 'agent.md'), '# Agent\n');
     writeFileSync(join(pkgDir, 'schemas', 'input.schema.json'), '{}');
     writeFileSync(join(pkgDir, 'schemas', 'output.schema.json'), '{}');
-    writeFileSync(join(pkgDir, 'workflow', 'main.yaml'), 'steps: []');
 
     expect(validatePackageLayout(pkgDir, createManifest())).toEqual([]);
   });
 
-  it('returns an error when the system prompt is missing', () => {
+  it('returns an error when the agent markdown file is missing', () => {
     const pkgDir = join(tempDir, 'missing-prompt');
     mkdirSync(join(pkgDir, 'schemas'), { recursive: true });
-    mkdirSync(join(pkgDir, 'workflow'), { recursive: true });
 
-    writeFileSync(join(pkgDir, 'schemas', 'input.schema.json'), '{}');
-    writeFileSync(join(pkgDir, 'schemas', 'output.schema.json'), '{}');
-    writeFileSync(join(pkgDir, 'workflow', 'main.yaml'), 'steps: []');
-
-    const errors = validatePackageLayout(pkgDir, createManifest());
-    expect(errors.some((error) => error.message.includes('spec.instructions.system'))).toBe(true);
-  });
-
-  it('returns an error when legacy workflow metadata points to a missing file', () => {
-    const pkgDir = join(tempDir, 'missing-workflow');
-    mkdirSync(join(pkgDir, 'prompts'), { recursive: true });
-    mkdirSync(join(pkgDir, 'schemas'), { recursive: true });
-
-    writeFileSync(join(pkgDir, 'prompts', 'system.md'), 'Be helpful.');
     writeFileSync(join(pkgDir, 'schemas', 'input.schema.json'), '{}');
     writeFileSync(join(pkgDir, 'schemas', 'output.schema.json'), '{}');
 
     const errors = validatePackageLayout(pkgDir, createManifest());
-    expect(errors.some((error) => error.code === 'WORKFLOW_INVALID')).toBe(true);
+    expect(errors.some((error) => error.message.includes('spec.agent.path'))).toBe(true);
   });
 
-  it('skips workflow validation when workflow metadata is absent', () => {
-    const pkgDir = join(tempDir, 'no-workflow');
-    mkdirSync(join(pkgDir, 'prompts'), { recursive: true });
+  it('returns an error only when a declared schema file is missing', () => {
+    const pkgDir = join(tempDir, 'missing-schema');
     mkdirSync(join(pkgDir, 'schemas'), { recursive: true });
 
-    writeFileSync(join(pkgDir, 'prompts', 'system.md'), 'Be helpful.');
+    writeFileSync(join(pkgDir, 'agent.md'), '# Agent\n');
     writeFileSync(join(pkgDir, 'schemas', 'input.schema.json'), '{}');
-    writeFileSync(join(pkgDir, 'schemas', 'output.schema.json'), '{}');
+
+    const errors = validatePackageLayout(pkgDir, createManifest());
+    expect(errors.some((error) => error.message.includes('spec.schemas.output'))).toBe(true);
+  });
+
+  it('passes when schemas are omitted entirely', () => {
+    const pkgDir = join(tempDir, 'no-schemas');
+    mkdirSync(pkgDir, { recursive: true });
+    writeFileSync(join(pkgDir, 'agent.md'), '# Agent\n');
 
     const manifest = createManifest({
       spec: {
-        instructions: { system: './prompts/system.md' },
-        input: { schema: './schemas/input.schema.json' },
-        output: { schema: './schemas/output.schema.json' },
+        agent: { path: './agent.md' },
       },
     });
 
     expect(validatePackageLayout(pkgDir, manifest)).toEqual([]);
+  });
+
+  it('strict mode parses only declared schema files', () => {
+    const pkgDir = join(tempDir, 'strict-schemas');
+    mkdirSync(pkgDir, { recursive: true });
+    mkdirSync(join(pkgDir, 'schemas'), { recursive: true });
+    writeFileSync(join(pkgDir, 'agent.md'), '# Agent\n');
+    writeFileSync(join(pkgDir, 'schemas', 'input.schema.json'), '{');
+
+    const manifest = createManifest({
+      spec: {
+        agent: { path: './agent.md' },
+        schemas: {
+          input: './schemas/input.schema.json',
+        },
+      },
+    });
+
+    const errors = validatePackageLayout(pkgDir, manifest, { strict: true });
+    expect(errors.some((error) => error.message.includes('invalid JSON'))).toBe(true);
   });
 });

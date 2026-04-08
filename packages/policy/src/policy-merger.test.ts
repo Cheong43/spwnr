@@ -19,13 +19,15 @@ describe('NoopPolicyProvider', () => {
       host: 'claude_code',
       mode: 'static',
       manifest: {
-        apiVersion: 'subagent.io/v0.1',
+        apiVersion: 'subagent.io/v0.2',
         kind: 'Subagent',
-        metadata: { name: 'demo', version: '0.1.0' },
+        metadata: {
+          name: 'demo',
+          version: '0.1.0',
+          instruction: 'Use the demo agent directly.',
+        },
         spec: {
-          instructions: { system: './prompts/system.md' },
-          input: { schema: './schemas/input.schema.json' },
-          output: { schema: './schemas/output.schema.json' },
+          agent: { path: './agent.md' },
         },
       },
     });

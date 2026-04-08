@@ -15,50 +15,43 @@ export function validatePackageLayout(
 ): LayoutError[] {
   const errors: LayoutError[] = [];
 
-  const systemPromptPath = join(packageDir, manifest.spec.instructions.system);
-  if (!existsSync(systemPromptPath)) {
+  const agentPath = join(packageDir, manifest.spec.agent.path);
+  if (!existsSync(agentPath)) {
     errors.push({
       code: 'MANIFEST_INVALID',
-      message: `spec.instructions.system file not found: ${manifest.spec.instructions.system}`,
-      path: systemPromptPath,
+      message: `spec.agent.path file not found: ${manifest.spec.agent.path}`,
+      path: agentPath,
     });
   }
 
-  // Check 1: spec.input.schema file exists
-  const inputSchemaPath = join(packageDir, manifest.spec.input.schema);
-  if (!existsSync(inputSchemaPath)) {
-    errors.push({
-      code: 'MANIFEST_INVALID',
-      message: `spec.input.schema file not found: ${manifest.spec.input.schema}`,
-      path: inputSchemaPath,
-    });
-  }
+  const declaredSchemaPaths = Object.entries(manifest.spec.schemas ?? {}).reduce<Array<{
+    schemaKind: string;
+    relativePath: string;
+    absolutePath: string;
+  }>>((paths, [schemaKind, schemaPath]) => {
+    if (!schemaPath) {
+      return paths;
+    }
 
-  // Check 2: spec.output.schema file exists
-  const outputSchemaPath = join(packageDir, manifest.spec.output.schema);
-  if (!existsSync(outputSchemaPath)) {
-    errors.push({
-      code: 'MANIFEST_INVALID',
-      message: `spec.output.schema file not found: ${manifest.spec.output.schema}`,
-      path: outputSchemaPath,
+    paths.push({
+      schemaKind,
+      relativePath: schemaPath,
+      absolutePath: join(packageDir, schemaPath),
     });
-  }
+    return paths;
+  }, []);
 
-  // Check 3: legacy workflow entry file exists when workflow metadata is declared.
-  if (manifest.spec.workflow) {
-    const entry = manifest.spec.workflow.entry;
-    const workflowYaml = join(packageDir, 'workflow', `${entry}.yaml`);
-    const workflowYml = join(packageDir, 'workflow', `${entry}.yml`);
-    if (!existsSync(workflowYaml) && !existsSync(workflowYml)) {
+  for (const schema of declaredSchemaPaths) {
+    if (!existsSync(schema.absolutePath)) {
       errors.push({
-        code: 'WORKFLOW_INVALID',
-        message: `Workflow entry file not found: workflow/${entry}.yaml`,
-        path: workflowYaml,
+        code: 'MANIFEST_INVALID',
+        message: `spec.schemas.${schema.schemaKind} file not found: ${schema.relativePath}`,
+        path: schema.absolutePath,
       });
     }
   }
 
-  // Check 4: skill paths exist (if skills are declared with a path)
+  // Check 2: skill paths exist (if skills are declared with a path)
   if (manifest.spec.skills?.refs) {
     for (const skill of manifest.spec.skills.refs) {
       if (skill.path) {
@@ -74,17 +67,17 @@ export function validatePackageLayout(
     }
   }
 
-  // Check 5: strict mode — validate JSON schema files are valid JSON
+  // Check 3: strict mode — validate declared JSON schema files are valid JSON
   if (options.strict) {
-    for (const schemaPath of [inputSchemaPath, outputSchemaPath]) {
-      if (existsSync(schemaPath)) {
+    for (const schema of declaredSchemaPaths) {
+      if (existsSync(schema.absolutePath)) {
         try {
-          JSON.parse(readFileSync(schemaPath, 'utf-8'));
+          JSON.parse(readFileSync(schema.absolutePath, 'utf-8'));
         } catch {
           errors.push({
             code: 'MANIFEST_INVALID',
-            message: `Schema file contains invalid JSON: ${schemaPath}`,
-            path: schemaPath,
+            message: `Schema file contains invalid JSON: ${schema.absolutePath}`,
+            path: schema.absolutePath,
           });
         }
       }

@@ -7,31 +7,26 @@ import { RegistryService } from '@spwnr/registry';
 import { composeSession, injectStatic } from './service.js';
 
 function createPackage(dir: string): void {
-  mkdirSync(join(dir, 'prompts'), { recursive: true });
   mkdirSync(join(dir, 'schemas'), { recursive: true });
-  mkdirSync(join(dir, 'workflow'), { recursive: true });
 
-  writeFileSync(join(dir, 'prompts', 'system.md'), 'Review carefully.');
+  writeFileSync(join(dir, 'agent.md'), '# Review Agent\n\nReview carefully.');
   writeFileSync(join(dir, 'schemas', 'input.schema.json'), '{"type":"object"}');
   writeFileSync(join(dir, 'schemas', 'output.schema.json'), '{"type":"object"}');
-  writeFileSync(join(dir, 'workflow', 'main.yaml'), 'steps: []');
   writeFileSync(
     join(dir, 'subagent.yaml'),
-    `apiVersion: subagent.io/v0.1
+    `apiVersion: subagent.io/v0.2
 kind: Subagent
 metadata:
   name: review-agent
   version: 0.1.0
+  instruction: Review code changes carefully.
   description: Review code changes
 spec:
-  instructions:
-    system: ./prompts/system.md
-  input:
-    schema: ./schemas/input.schema.json
-  output:
-    schema: ./schemas/output.schema.json
-  workflow:
-    entry: main
+  agent:
+    path: ./agent.md
+  schemas:
+    input: ./schemas/input.schema.json
+    output: ./schemas/output.schema.json
   compatibility:
     hosts:
       - claude_code
@@ -79,6 +74,7 @@ describe('injector service', () => {
 
     expect(result.files).toHaveLength(1);
     expect(readFileSync(join(targetDir, filename), 'utf-8')).toContain('Review carefully.');
+    expect(readFileSync(join(targetDir, filename), 'utf-8')).not.toContain('## System Prompt');
   });
 
   it('writes codex static files into a skill directory', async () => {

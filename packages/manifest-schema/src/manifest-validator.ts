@@ -34,23 +34,6 @@ const PermissionPolicySchema = z.object({
   tools: z.array(PolicyRuleSchema).optional(),
 });
 
-const WorkflowStepSchema = z.object({
-  id: z.string(),
-  type: z.string(),
-  tool: z.string().optional(),
-  prompt: z.string().optional(),
-  input: z.record(z.unknown()).optional(),
-  output: z.string().optional(),
-  next: z.union([
-    z.string(),
-    z.object({
-      condition: z.string(),
-      then: z.string(),
-      else: z.string(),
-    }),
-  ]).optional(),
-});
-
 const SkillRefSchema = z.object({
   name: z.string(),
   path: z.string().optional(),
@@ -97,13 +80,40 @@ const HostInjectionConfigSchema = z.object({
 });
 
 const SemverRegex = /^\d+\.\d+\.\d+$/;
+const ApiVersionSchema = z.literal('subagent.io/v0.2');
+
+function countUnicodeCharacters(value: string): number {
+  return [...value].length;
+}
+
+const InstructionSummarySchema = z
+  .string()
+  .transform((value) => value.trim())
+  .superRefine((value, ctx) => {
+    const length = countUnicodeCharacters(value);
+
+    if (length < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Instruction must contain at least 1 character',
+      });
+    }
+
+    if (length > 400) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Instruction must be 400 characters or fewer',
+      });
+    }
+  });
 
 export const SubagentManifestSchema = z.object({
-  apiVersion: z.string(),
+  apiVersion: ApiVersionSchema,
   kind: z.literal('Subagent'),
   metadata: z.object({
     name: z.string().min(1),
     version: z.string().regex(SemverRegex, 'Version must be in semver format (x.y.z)'),
+    instruction: InstructionSummarySchema,
     description: z.string().optional(),
     tags: z.array(z.string()).optional(),
     authors: z.array(AuthorSchema).optional(),
@@ -117,14 +127,13 @@ export const SubagentManifestSchema = z.object({
       tone: z.string().optional(),
       style: z.string().optional(),
     }).optional(),
-    instructions: z.object({
-      system: z.string(),
+    agent: z.object({
+      path: z.string().min(1),
     }),
-    input: z.object({ schema: z.string() }),
-    output: z.object({ schema: z.string() }),
-    workflow: z.object({
-      entry: z.string(),
-      steps: z.array(WorkflowStepSchema).optional(),
+    schemas: z.object({
+      input: z.string().optional(),
+      output: z.string().optional(),
+      memory: z.string().optional(),
     }).optional(),
     injection: z.object({
       hosts: z.object({
@@ -141,7 +150,6 @@ export const SubagentManifestSchema = z.object({
     permissions: PermissionPolicySchema.optional(),
     memory: z.object({
       scope: z.enum(['run', 'repo', 'project', 'workspace']),
-      schema: z.string().optional(),
     }).optional(),
     compatibility: z.object({
       hosts: z.array(HostTypeSchema).min(1),

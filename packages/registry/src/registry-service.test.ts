@@ -6,32 +6,27 @@ import { tmpdir } from 'os'
 import { randomUUID } from 'crypto'
 
 function createTestPackage(dir: string, name = 'test-agent', version = '0.1.0') {
-  mkdirSync(join(dir, 'prompts'), { recursive: true })
   mkdirSync(join(dir, 'schemas'), { recursive: true })
-  mkdirSync(join(dir, 'workflow'), { recursive: true })
 
   writeFileSync(
     join(dir, 'subagent.yaml'),
-    `apiVersion: subagent.io/v0.1
+    `apiVersion: subagent.io/v0.2
 kind: Subagent
 metadata:
   name: ${name}
   version: ${version}
+  instruction: Review changes carefully.
 spec:
-  instructions:
-    system: ./prompts/system.md
-  input:
-    schema: ./schemas/input.json
-  output:
-    schema: ./schemas/output.json
-  workflow:
-    entry: main
+  agent:
+    path: ./agent.md
+  schemas:
+    input: ./schemas/input.json
+    output: ./schemas/output.json
 `,
   )
-  writeFileSync(join(dir, 'prompts', 'system.md'), 'Review changes carefully.')
+  writeFileSync(join(dir, 'agent.md'), '# Test Agent\n\nReview changes carefully.')
   writeFileSync(join(dir, 'schemas', 'input.json'), '{"type":"object"}')
   writeFileSync(join(dir, 'schemas', 'output.json'), '{"type":"object"}')
-  writeFileSync(join(dir, 'workflow', 'main.yaml'), 'steps: []')
 }
 
 describe('RegistryService', () => {

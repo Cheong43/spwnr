@@ -11,8 +11,11 @@ export function makeInfoCommand(): Command {
       const registry = new RegistryService()
       try {
         const info = registry.info(name, version)
+        const schemas = formatSchemas(info.manifest)
         console.log(`Name:      ${info.name}`)
         console.log(`Version:   ${info.version}`)
+        console.log(`Instruction: ${info.manifest.metadata.instruction}`)
+        console.log(`Schemas:   ${schemas}`)
         console.log(`Published: ${info.publishedAt}`)
         console.log(`Signature: ${info.signature}`)
         console.log(`Tarball:   ${info.tarballPath}`)
@@ -32,6 +35,14 @@ export function makeInfoCommand(): Command {
         registry.close()
       }
     })
+}
+
+function formatSchemas(manifest: SubagentManifest): string {
+  const labels = Object.entries(manifest.spec.schemas ?? {})
+    .filter(([, path]) => Boolean(path))
+    .map(([schemaName]) => schemaName)
+
+  return labels.length > 0 ? labels.join(', ') : 'none'
 }
 
 function formatInjectionMatrix(manifest: SubagentManifest): string[] {

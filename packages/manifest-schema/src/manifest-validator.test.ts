@@ -2,13 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { validateManifest } from './manifest-validator.js';
 
 const minimalManifest = {
-  apiVersion: 'subagent.io/v0.1',
+  apiVersion: 'subagent.io/v0.2',
   kind: 'Subagent',
-  metadata: { name: 'test-agent', version: '0.1.0' },
+  metadata: {
+    name: 'test-agent',
+    version: '0.1.0',
+    instruction: 'Review code changes carefully.',
+  },
   spec: {
-    instructions: { system: './prompts/system.md' },
-    input: { schema: './schemas/input.schema.json' },
-    output: { schema: './schemas/output.schema.json' },
+    agent: { path: './agent.md' },
+    schemas: {
+      input: './schemas/input.schema.json',
+      output: './schemas/output.schema.json',
+    },
   },
 };
 
@@ -36,10 +42,6 @@ describe('ManifestValidator', () => {
       },
       spec: {
         ...minimalManifest.spec,
-        workflow: {
-          entry: 'main',
-          steps: [{ id: 'step-1', type: 'prompt', prompt: 'Hello' }],
-        },
         compatibility: {
           hosts: ['claude_code', 'codex', 'copilot', 'opencode'],
           mode: 'cross_host',
@@ -83,18 +85,49 @@ describe('ManifestValidator', () => {
     expect(result.success).toBe(true);
   });
 
-  it('fails when instructions.system is missing', () => {
+  it('fails when metadata.instruction is missing', () => {
     const result = validateManifest({
       ...minimalManifest,
-      spec: {
-        input: { schema: './schemas/input.schema.json' },
-        output: { schema: './schemas/output.schema.json' },
+      metadata: {
+        name: 'test-agent',
+        version: '0.1.0',
       },
     });
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.errors.some((error) => error.path.includes('instructions'))).toBe(true);
+      expect(result.errors.some((error) => error.path.includes('instruction'))).toBe(true);
+    }
+  });
+
+  it('fails when spec.agent.path is missing', () => {
+    const result = validateManifest({
+      ...minimalManifest,
+      spec: {
+        schemas: {
+          input: './schemas/input.schema.json',
+        },
+      },
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.some((error) => error.path.includes('agent'))).toBe(true);
+    }
+  });
+
+  it('fails when metadata.instruction exceeds 400 Unicode characters', () => {
+    const result = validateManifest({
+      ...minimalManifest,
+      metadata: {
+        ...minimalManifest.metadata,
+        instruction: '你'.repeat(401),
+      },
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.some((error) => error.message.includes('400 characters or fewer'))).toBe(true);
     }
   });
 

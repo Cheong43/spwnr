@@ -69,11 +69,11 @@ Mainline manifest fields:
 
 - `metadata.name`
 - `metadata.version`
+- `metadata.instruction`
 - `metadata.description`
 - `spec.persona`
-- `spec.instructions.system`
-- `spec.input.schema`
-- `spec.output.schema`
+- `spec.agent.path`
+- `spec.schemas`
 - `spec.injection.hosts`
 - `spec.skills.refs`
 - `spec.tools`
@@ -82,19 +82,14 @@ Mainline manifest fields:
 - `spec.artifacts`
 - `spec.modelBinding`
 
-Legacy but allowed:
-
-- `spec.workflow`
-
-`workflow` is validated as metadata only. It is not executed by Spwnr.
-
 ### Validation Rules
 
 `packages/manifest-schema` enforces:
 
-- `spec.instructions.system` is required
-- the referenced prompt file exists
-- input/output schema files exist
+- `metadata.instruction` is required
+- `spec.agent.path` is required
+- the referenced `agent.md` file exists
+- declared schema files exist when present
 - skill refs resolve on disk
 - host compatibility only allows mainline hosts
 - `spec.injection.hosts.<host>` follows the static/session shape
@@ -187,7 +182,8 @@ spwnr info <name> [version]
 
 It demonstrates:
 
-- required `spec.instructions.system`
+- required `metadata.instruction`
+- required `spec.agent.path`
 - `spec.injection.hosts` declarations
 - host compatibility for Claude Code, Codex, Copilot, and OpenCode
 - local skills, schemas, memory, artifacts, and model binding metadata

@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -6,22 +6,20 @@ import { OpenCodeAdapter } from './opencode-adapter.js';
 
 function createPackageDir(): string {
   const dir = mkdtempSync(join(tmpdir(), 'spwnr-opencode-adapter-'));
-  mkdirSync(join(dir, 'prompts'), { recursive: true });
-  writeFileSync(join(dir, 'prompts', 'system.md'), 'Navigate repos quickly.');
+  writeFileSync(join(dir, 'agent.md'), '# Repo Navigator\n\nNavigate repos quickly.');
   return dir;
 }
 
 const manifest = {
-  apiVersion: 'subagent.io/v0.1',
+  apiVersion: 'subagent.io/v0.2',
   kind: 'Subagent' as const,
   metadata: {
     name: 'Repo Navigator',
     version: '0.1.0',
+    instruction: 'Navigate repositories quickly.',
   },
   spec: {
-    instructions: { system: './prompts/system.md' },
-    input: { schema: './schemas/input.schema.json' },
-    output: { schema: './schemas/output.schema.json' },
+    agent: { path: './agent.md' },
   },
 };
 
@@ -44,6 +42,7 @@ describe('OpenCodeAdapter', () => {
     adapter.materializeStatic(compiled, { directory: targetDir, scope: 'project' });
 
     expect(readFileSync(join(targetDir, 'repo-navigator.md'), 'utf-8')).toContain('Navigate repos quickly.');
+    expect(readFileSync(join(targetDir, 'repo-navigator.md'), 'utf-8')).not.toContain('## Skills');
   });
 
   it('produces an overlay descriptor', () => {

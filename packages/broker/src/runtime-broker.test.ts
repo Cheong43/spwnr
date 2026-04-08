@@ -10,13 +10,15 @@ import type { BackendAdapter, AdapterEvent, BackendAdapterRunOptions } from './t
 import type { SubagentManifest } from '@spwnr/core-types';
 
 const makeManifest = (name = 'test-pkg'): SubagentManifest => ({
-  apiVersion: 'v1',
+  apiVersion: 'subagent.io/v0.2',
   kind: 'Subagent',
-  metadata: { name, version: '1.0.0' },
+  metadata: {
+    name,
+    version: '1.0.0',
+    instruction: 'Execute the test package directly.',
+  },
   spec: {
-    input: { schema: '{}' },
-    output: { schema: '{}' },
-    workflow: { entry: 'start' },
+    agent: { path: './agent.md' },
   },
 });
 

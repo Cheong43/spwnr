@@ -1,6 +1,6 @@
 import { HostType } from '@spwnr/core-types';
 import type { HostAdapter, HostAdapterCompileInput, SessionComposition, SessionContext, StaticMaterialization, StaticMaterializationTarget } from './host-adapter.js';
-import { compileHostAgent, materializeTextFiles, renderAgentMarkdown } from './host-adapter.js';
+import { compileHostAgent, materializeTextFiles } from './host-adapter.js';
 
 export class ClaudeAdapter implements HostAdapter {
   readonly host = HostType.CLAUDE_CODE;
@@ -17,7 +17,7 @@ export class ClaudeAdapter implements HostAdapter {
     return materializeTextFiles(this.host, target.directory, [
       {
         relativePath: `${compiled.slug}.md`,
-        content: renderAgentMarkdown(compiled),
+        content: `${compiled.agentMarkdown}\n`,
       },
     ]);
   }
@@ -27,8 +27,8 @@ export class ClaudeAdapter implements HostAdapter {
       agents: [
         {
           name: compiled.slug,
-          description: compiled.manifest.metadata.description ?? '',
-          prompt: compiled.systemPrompt,
+          description: compiled.instruction,
+          prompt: compiled.agentMarkdown,
         },
       ],
     };
