@@ -1,0 +1,3 @@
+[submodule "vendor/spwnr-registry"]
+	path = vendor/spwnr-registry
+	url = git@github.com:Cheong43/spwnr-registry.git
