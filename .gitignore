@@ -6,6 +6,5 @@ dist/
 *.db-shm
 *.db-wal
 coverage/
-.orchex/
 site-dist/
 tmp/
