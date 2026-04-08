@@ -1,0 +1,25 @@
+{
+  "roles": {
+    "research": {
+      "required": true,
+      "preferredAgents": [
+        "general-researcher"
+      ]
+    },
+    "execute": {
+      "required": true,
+      "preferredAgents": [
+        "general-executor"
+      ]
+    },
+    "review": {
+      "required": true,
+      "preferredAgents": [
+        "general-reviewer"
+      ],
+      "fallbackAgents": [
+        "code-reviewer"
+      ]
+    }
+  }
+}

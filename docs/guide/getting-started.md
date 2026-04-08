@@ -327,7 +327,6 @@ SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- session code-reviewer
 
 ## Next Reading
 
-- [Spwnr PRD and TDD](../../Spwnr-PRD-AND-TDD.md)
-- [M1/M2 design notes](../superpowers/specs/2026-04-07-spwnr-m1-m2-design.md)
-- [M3/M4/M5 design notes](../superpowers/specs/2026-04-07-spwnr-m3-m4-m5-design.md)
+- [Claude Plugin Workflow](./claude-plugin-workflow.md)
+- [Spwnr PRD and TDD](../archive/Spwnr-PRD-AND-TDD.md)
 - [Code reviewer example](../../examples/code-reviewer)

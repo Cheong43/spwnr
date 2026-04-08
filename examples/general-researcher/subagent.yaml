@@ -1,0 +1,55 @@
+apiVersion: subagent.io/v0.3
+kind: Subagent
+metadata:
+  name: general-researcher
+  version: 0.1.0
+  instruction: Gather context, evidence, and options, then recommend a direction.
+  description: Research worker for the Spwnr workflow plugin
+  authors:
+    - name: Spwnr Team
+      github: Cheong43
+      url: https://github.com/Cheong43
+  tags:
+    - research
+    - workflow
+  license: MIT
+  homepage: https://github.com/Cheong43/spwnr
+  repository: https://github.com/Cheong43/spwnr
+spec:
+  persona:
+    role: researcher
+    style: analytical
+    tone: concise
+  agent:
+    path: ./agent.md
+  injection:
+    hosts:
+      claude_code:
+        static:
+          enabled: true
+          defaultScope: project
+        session:
+          enabled: true
+          defaultScope: user
+  skills:
+    universal:
+      - name: evidence-gathering
+        path: ./skills/universal/evidence-gathering
+  memory:
+    scope: repo
+  compatibility:
+    hosts:
+      - claude_code
+    mode: single_host
+    badges:
+      - claude_code
+  artifacts:
+    - briefing
+    - recommendation
+  modelBinding:
+    mode: injectable
+    defaultProvider: local_host
+    defaultModel: null
+    allowOverride: true
+    billing:
+      mode: passthrough

@@ -4,7 +4,7 @@ Spwnr is a pnpm monorepo for packaging and declaratively injecting agent capabil
 
 Spwnr does not run agents for the host. It owns package definition, validation, publishing, installation, static injection, and session descriptor composition. Scheduling and execution stay inside the host itself.
 
-The current direction is documented in [Spwnr-PRD-AND-TDD.md](./Spwnr-PRD-AND-TDD.md). A usage walkthrough lives in [docs/guide/getting-started.md](./docs/guide/getting-started.md).
+The current direction is documented in [docs/archive/Spwnr-PRD-AND-TDD.md](./docs/archive/Spwnr-PRD-AND-TDD.md). A usage walkthrough lives in [docs/guide/getting-started.md](./docs/guide/getting-started.md).
 
 ## Community Registry
 
@@ -49,9 +49,10 @@ packages/
   registry/             local registry, tarballs, package metadata
 examples/
   code-reviewer/        example agent package
+  general-*/            workflow worker subagent examples
 docs/
   guide/                usage walkthroughs
-  superpowers/specs/    design notes
+  archive/              archived design notes
 ```
 
 ## Requirements
@@ -67,7 +68,18 @@ pnpm build
 pnpm test
 ```
 
-Current verified status in this branch: `126` tests across `28` test files passed with `pnpm test`.
+Run `pnpm test` after changes to verify the workspace and repo-level workflow smoke tests.
+
+## Repo Claude Plugin
+
+This repository now also carries a repo-root Claude Code plugin for dogfooding a controller-plus-worker workflow:
+
+- plugin root: [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json)
+- commands: [`commands/`](./commands)
+- hooks: [`hooks/`](./hooks)
+- skills: [`skills/`](./skills)
+
+The plugin is not a published Spwnr package. It is a repository-local workflow asset that coordinates worker subagents already injected into Claude Code.
 
 ## CLI Surface
 
@@ -128,7 +140,7 @@ SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- list
 
 Spwnr does not provide compatibility fallbacks for older names or older home directories.
 
-## Example Package
+## Example Packages
 
 The bundled sample package lives at `examples/code-reviewer`:
 
@@ -164,6 +176,12 @@ Its manifest demonstrates:
 - memory schema declaration
 - artifact declarations
 - model binding metadata
+
+Additional workflow-oriented worker examples now live under:
+
+- `examples/general-researcher`
+- `examples/general-executor`
+- `examples/general-reviewer`
 
 ## Typical Flow
 
@@ -208,6 +226,5 @@ SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- session code-reviewer
 ## Next Reading
 
 - [Getting Started](./docs/guide/getting-started.md)
-- [PRD and TDD](./Spwnr-PRD-AND-TDD.md)
-- [M1/M2 design notes](./docs/superpowers/specs/2026-04-07-spwnr-m1-m2-design.md)
-- [M3/M4/M5 design notes](./docs/superpowers/specs/2026-04-07-spwnr-m3-m4-m5-design.md)
+- [Claude Plugin Workflow](./docs/guide/claude-plugin-workflow.md)
+- [Archived PRD and TDD](./docs/archive/Spwnr-PRD-AND-TDD.md)

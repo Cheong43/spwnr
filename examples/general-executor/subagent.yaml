@@ -1,0 +1,55 @@
+apiVersion: subagent.io/v0.3
+kind: Subagent
+metadata:
+  name: general-executor
+  version: 0.1.0
+  instruction: Turn a researched plan into the main working output for the task.
+  description: Execution worker for the Spwnr workflow plugin
+  authors:
+    - name: Spwnr Team
+      github: Cheong43
+      url: https://github.com/Cheong43
+  tags:
+    - execution
+    - workflow
+  license: MIT
+  homepage: https://github.com/Cheong43/spwnr
+  repository: https://github.com/Cheong43/spwnr
+spec:
+  persona:
+    role: executor
+    style: practical
+    tone: concise
+  agent:
+    path: ./agent.md
+  injection:
+    hosts:
+      claude_code:
+        static:
+          enabled: true
+          defaultScope: project
+        session:
+          enabled: true
+          defaultScope: user
+  skills:
+    universal:
+      - name: structured-delivery
+        path: ./skills/universal/structured-delivery
+  memory:
+    scope: repo
+  compatibility:
+    hosts:
+      - claude_code
+    mode: single_host
+    badges:
+      - claude_code
+  artifacts:
+    - draft
+    - implementation
+  modelBinding:
+    mode: injectable
+    defaultProvider: local_host
+    defaultModel: null
+    allowOverride: true
+    billing:
+      mode: passthrough

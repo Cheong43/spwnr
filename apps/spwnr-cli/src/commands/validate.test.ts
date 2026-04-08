@@ -35,7 +35,12 @@ describe('validate command', () => {
     expect(opt).toBeDefined()
   })
 
-  it('prints success for valid package (examples/code-reviewer)', async () => {
+  it.each([
+    'code-reviewer',
+    'general-researcher',
+    'general-executor',
+    'general-reviewer',
+  ])('prints success for valid package (examples/%s)', async (exampleName) => {
     const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {}) as any)
 
@@ -43,7 +48,7 @@ describe('validate command', () => {
     const program = new Command()
     program.addCommand(cmd)
 
-    const examplesDir = resolve(__dirname, '../../../../examples/code-reviewer')
+    const examplesDir = resolve(__dirname, `../../../../examples/${exampleName}`)
     await program.parseAsync(['node', 'spwnr', 'validate', examplesDir])
 
     expect(exitSpy).not.toHaveBeenCalled()
