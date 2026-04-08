@@ -75,7 +75,8 @@ Mainline manifest fields:
 - `spec.agent.path`
 - `spec.schemas`
 - `spec.injection.hosts`
-- `spec.skills.refs`
+- `spec.skills.universal`
+- `spec.skills.hosts`
 - `spec.tools`
 - `spec.memory`
 - `spec.compatibility.hosts`

@@ -15,7 +15,7 @@ function tempDbPath(): string {
 
 function makeManifest(name: string, version: string, description?: string): SubagentManifest {
   return {
-    apiVersion: 'subagent.io/v0.2',
+    apiVersion: 'subagent.io/v0.3',
     kind: 'Subagent',
     metadata: {
       name,

@@ -7,12 +7,15 @@ import { ClaudeAdapter } from './claude-adapter.js';
 function createPackageDir(): string {
   const dir = mkdtempSync(join(tmpdir(), 'spwnr-claude-adapter-'));
   writeFileSync(join(dir, 'agent.md'), '# Code Reviewer\n\nReview with care.');
+  writeFileSync(join(dir, 'diff-reader-universal.md'), '# diff-reader\n\nParse diffs universally.');
+  writeFileSync(join(dir, 'diff-reader-claude.md'), '# diff-reader\n\nUse Claude-specific diff tools.');
+  writeFileSync(join(dir, 'repo-navigator.md'), '# repo-navigator\n\nInspect repository files.');
   return dir;
 }
 
 function createManifest() {
   return {
-    apiVersion: 'subagent.io/v0.2',
+    apiVersion: 'subagent.io/v0.3',
     kind: 'Subagent' as const,
     metadata: {
       name: 'Code Reviewer',
@@ -25,7 +28,18 @@ function createManifest() {
         path: './agent.md',
       },
       skills: {
-        refs: [{ name: 'diff-reader', path: './skills/diff-reader' }],
+        universal: [
+          { name: 'diff-reader', path: './diff-reader-universal.md' },
+          { name: 'repo-navigator', path: './repo-navigator.md' },
+        ],
+        hosts: {
+          claude_code: [
+            { name: 'diff-reader', path: './diff-reader-claude.md' },
+          ],
+        },
+      },
+      compatibility: {
+        hosts: ['claude_code'],
       },
     },
   };
@@ -49,9 +63,18 @@ describe('ClaudeAdapter', () => {
 
     const result = adapter.materializeStatic(compiled, { directory: targetDir, scope: 'project' });
 
-    expect(result.files).toHaveLength(1);
+    expect(result.files).toHaveLength(3);
+    expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('---');
+    expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('name: code-reviewer');
+    expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('description: "Review pull requests carefully."');
+    expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('skills:');
+    expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('  - diff-reader');
     expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('Review with care.');
+    expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('spwnr inject "Code Reviewer" --host claude_code --scope project');
     expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).not.toContain('## System Prompt');
+    expect(readFileSync(join(packageDir, 'skills', 'diff-reader', 'SKILL.md'), 'utf-8')).toContain('Use Claude-specific diff tools.');
+    expect(readFileSync(join(packageDir, 'skills', 'diff-reader', 'SKILL.md'), 'utf-8')).not.toContain('Parse diffs universally.');
+    expect(readFileSync(join(packageDir, 'skills', 'repo-navigator', 'SKILL.md'), 'utf-8')).toContain('Inspect repository files.');
   });
 
   it('composes a claude session bundle', () => {
@@ -64,12 +87,11 @@ describe('ClaudeAdapter', () => {
 
     expect(result.descriptor).toEqual(
       expect.objectContaining({
-        agents: [
-          expect.objectContaining({
-            name: 'code-reviewer',
+        'code-reviewer': expect.objectContaining({
             description: 'Review pull requests carefully.',
+            skills: ['diff-reader', 'repo-navigator'],
+            prompt: expect.stringContaining('## Preloaded Skills'),
           }),
-        ],
       }),
     );
     expect(result.shellCommand).toContain('claude --agents');

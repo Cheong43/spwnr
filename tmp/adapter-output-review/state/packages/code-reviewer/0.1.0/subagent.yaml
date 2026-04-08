@@ -1,0 +1,108 @@
+apiVersion: subagent.io/v0.2
+kind: Subagent
+metadata:
+  name: code-reviewer
+  version: 0.1.0
+  instruction: Review git diffs and surface concrete, actionable issues.
+  description: Review git diff and produce actionable feedback
+  authors:
+    - name: Spwnr Team
+      github: Cheong43
+      url: https://github.com/Cheong43
+  tags:
+    - code-review
+    - git
+  license: MIT
+  homepage: https://cheong43.github.io/spwnr-registry/template.html?name=code-reviewer
+  repository: https://github.com/Cheong43/spwnr-registry
+spec:
+  persona:
+    role: senior-code-reviewer
+    style: systematic
+    tone: concise
+  agent:
+    path: ./agent.md
+  schemas:
+    input: ./schemas/input.schema.json
+    output: ./schemas/output.schema.json
+    memory: ./schemas/memory.schema.json
+  injection:
+    hosts:
+      claude_code:
+        static:
+          enabled: true
+          defaultScope: project
+        session:
+          enabled: true
+          defaultScope: user
+      codex:
+        static:
+          enabled: true
+          defaultScope: project
+        session:
+          enabled: true
+          defaultScope: project
+      copilot:
+        static:
+          enabled: true
+          defaultScope: project
+        session:
+          enabled: true
+          defaultScope: user
+      opencode:
+        static:
+          enabled: true
+          defaultScope: project
+        session:
+          enabled: true
+          defaultScope: project
+  skills:
+    refs:
+      - name: diff-reader
+        path: ./skills/diff-reader
+      - name: repo-navigator
+        path: ./skills/repo-navigator
+  tools:
+    allow:
+      - git.diff
+      - fs.read
+      - fs.glob
+    ask:
+      - bash.exec
+    deny:
+      - network.*
+  memory:
+    scope: repo
+  compatibility:
+    hosts:
+      - claude_code
+      - codex
+      - copilot
+      - opencode
+    mode: cross_host
+    badges:
+      - claude_code
+      - codex
+      - copilot
+      - opencode
+  artifacts:
+    - report
+    - patch
+  modelBinding:
+    mode: injectable
+    defaultProvider: local_host
+    defaultModel: null
+    allowOverride: true
+    billing:
+      mode: passthrough
+  dependencies:
+    packages:
+      - ecosystem: binary
+        name: git
+        reason: Reads diffs and repository history
+      - ecosystem: npm
+        name: gh
+        versionRange: ^2.0.0
+        optional: true
+        reason: Optional GitHub review workflow automation
+        installHint: brew install gh

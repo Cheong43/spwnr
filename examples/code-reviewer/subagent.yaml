@@ -1,4 +1,4 @@
-apiVersion: subagent.io/v0.2
+apiVersion: subagent.io/v0.3
 kind: Subagent
 metadata:
   name: code-reviewer
@@ -57,20 +57,18 @@ spec:
           enabled: true
           defaultScope: project
   skills:
-    refs:
+    universal:
       - name: diff-reader
-        path: ./skills/diff-reader
+        path: ./skills/universal/diff-reader
       - name: repo-navigator
-        path: ./skills/repo-navigator
-  tools:
-    allow:
-      - git.diff
-      - fs.read
-      - fs.glob
-    ask:
-      - bash.exec
-    deny:
-      - network.*
+        path: ./skills/universal/repo-navigator
+    hosts:
+      claude_code:
+        - name: diff-reader
+          path: ./skills/claude_code/diff-reader
+      codex:
+        - name: diff-reader
+          path: ./skills/codex/diff-reader
   memory:
     scope: repo
   compatibility:

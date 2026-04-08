@@ -1,6 +1,6 @@
 import { HostType } from '@spwnr/core-types';
 import type { HostAdapter, HostAdapterCompileInput, SessionComposition, SessionContext, StaticMaterialization, StaticMaterializationTarget } from './host-adapter.js';
-import { compileHostAgent, materializeTextFiles } from './host-adapter.js';
+import { appendCompiledSkills, compileHostAgent, materializeTextFiles } from './host-adapter.js';
 
 export class OpenCodeAdapter implements HostAdapter {
   readonly host = HostType.OPENCODE;
@@ -14,22 +14,24 @@ export class OpenCodeAdapter implements HostAdapter {
   }
 
   materializeStatic(compiled: ReturnType<OpenCodeAdapter['compile']>, target: StaticMaterializationTarget): StaticMaterialization {
+    const prompt = appendCompiledSkills(compiled.agentMarkdown, compiled.skills);
     return materializeTextFiles(this.host, target.directory, [
       {
         relativePath: `${compiled.slug}.md`,
-        content: `${compiled.agentMarkdown}\n`,
+        content: `${prompt}\n`,
       },
     ]);
   }
 
   composeSession(compiled: ReturnType<OpenCodeAdapter['compile']>, _context: SessionContext): SessionComposition {
+    const prompt = appendCompiledSkills(compiled.agentMarkdown, compiled.skills);
     const descriptor = {
       overlay: {
         agents: [
           {
             key: compiled.slug,
             description: compiled.instruction,
-            prompt: compiled.agentMarkdown,
+            prompt,
           },
         ],
       },

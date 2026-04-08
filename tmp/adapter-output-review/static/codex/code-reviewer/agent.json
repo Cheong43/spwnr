@@ -1,0 +1,6 @@
+{
+  "name": "code-reviewer",
+  "description": "Review git diffs and surface concrete, actionable issues.",
+  "details": "Review git diff and produce actionable feedback",
+  "source": "code-reviewer"
+}

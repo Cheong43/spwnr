@@ -141,8 +141,13 @@ examples/code-reviewer/
     output.schema.json
     memory.schema.json
   skills/
-    diff-reader/SKILL.md
-    repo-navigator/SKILL.md
+    universal/
+      diff-reader/SKILL.md
+      repo-navigator/SKILL.md
+    claude_code/
+      diff-reader/SKILL.md
+    codex/
+      diff-reader/SKILL.md
 ```
 
 Its manifest demonstrates:
@@ -151,8 +156,8 @@ Its manifest demonstrates:
 - `spec.agent.path` as the primary prompt entry
 - optional `spec.schemas`
 - `spec.injection.hosts` for host-specific static and session support
-- local skill references
-- tool allow/ask/deny hints
+- layered `spec.skills` with universal and host-specific skill variants
+- host-specific tool binding notes written directly in each `SKILL.md`
 - compatibility targets
 - metadata authors and project links
 - structured package dependency declarations

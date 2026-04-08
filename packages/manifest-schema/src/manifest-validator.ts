@@ -40,6 +40,18 @@ const SkillRefSchema = z.object({
   version: z.string().optional(),
 });
 
+const SkillRefsSchema = z.array(SkillRefSchema);
+
+const LayeredSkillsSchema = z.object({
+  universal: SkillRefsSchema.optional(),
+  hosts: z.object({
+    claude_code: SkillRefsSchema.optional(),
+    codex: SkillRefsSchema.optional(),
+    copilot: SkillRefsSchema.optional(),
+    opencode: SkillRefsSchema.optional(),
+  }).strict().optional(),
+}).strict();
+
 const AuthorSchema = z.object({
   name: z.string().min(1),
   github: z.string().min(1).optional(),
@@ -80,7 +92,23 @@ const HostInjectionConfigSchema = z.object({
 });
 
 const SemverRegex = /^\d+\.\d+\.\d+$/;
-const ApiVersionSchema = z.literal('subagent.io/v0.2');
+const ApiVersionSchema = z.literal('subagent.io/v0.3');
+
+function findDuplicateSkillNames(skills: Array<{ name: string }>): string[] {
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+
+  for (const skill of skills) {
+    if (seen.has(skill.name)) {
+      duplicates.add(skill.name);
+      continue;
+    }
+
+    seen.add(skill.name);
+  }
+
+  return [...duplicates];
+}
 
 function countUnicodeCharacters(value: string): number {
   return [...value].length;
@@ -143,9 +171,7 @@ export const SubagentManifestSchema = z.object({
         opencode: HostInjectionConfigSchema.optional(),
       }).optional(),
     }).optional(),
-    skills: z.object({
-      refs: z.array(SkillRefSchema),
-    }).optional(),
+    skills: LayeredSkillsSchema.optional(),
     tools: ToolPolicySchema.optional(),
     permissions: PermissionPolicySchema.optional(),
     memory: z.object({
@@ -163,6 +189,39 @@ export const SubagentManifestSchema = z.object({
       packages: z.array(PackageDependencySchema),
     }).optional(),
   }),
+}).superRefine((manifest, ctx) => {
+  const universalSkillNames = findDuplicateSkillNames(manifest.spec.skills?.universal ?? []);
+  for (const duplicateName of universalSkillNames) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['spec', 'skills', 'universal'],
+      message: `Duplicate skill name in universal layer: ${duplicateName}`,
+    });
+  }
+
+  const compatibleHosts = new Set(manifest.spec.compatibility?.hosts ?? []);
+  for (const [host, skills] of Object.entries(manifest.spec.skills?.hosts ?? {})) {
+    if (!skills) {
+      continue;
+    }
+
+    const duplicateNames = findDuplicateSkillNames(skills);
+    for (const duplicateName of duplicateNames) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['spec', 'skills', 'hosts', host],
+        message: `Duplicate skill name in ${host} layer: ${duplicateName}`,
+      });
+    }
+
+    if (manifest.spec.compatibility?.hosts && !compatibleHosts.has(host)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['spec', 'skills', 'hosts', host],
+        message: `Skill host layer must be declared in spec.compatibility.hosts: ${host}`,
+      });
+    }
+  }
 });
 
 export function validateManifest(input: unknown): ValidationResult {

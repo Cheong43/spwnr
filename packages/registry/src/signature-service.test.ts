@@ -6,7 +6,7 @@ describe('SignatureService', () => {
   const service = new SignatureService()
 
   const manifest = {
-    apiVersion: 'subagent.io/v0.2',
+    apiVersion: 'subagent.io/v0.3',
     kind: 'Subagent' as const,
     metadata: {
       name: 'test',

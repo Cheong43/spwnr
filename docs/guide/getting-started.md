@@ -49,10 +49,17 @@ examples/code-reviewer/
     output.schema.json
     memory.schema.json
   skills/
-    diff-reader/
-      SKILL.md
-    repo-navigator/
-      SKILL.md
+    universal/
+      diff-reader/
+        SKILL.md
+      repo-navigator/
+        SKILL.md
+    claude_code/
+      diff-reader/
+        SKILL.md
+    codex/
+      diff-reader/
+        SKILL.md
 ```
 
 ## Manifest Shape
@@ -60,7 +67,7 @@ examples/code-reviewer/
 The mainline manifest is agent-first and injection-first:
 
 ```yaml
-apiVersion: subagent.io/v0.2
+apiVersion: subagent.io/v0.3
 kind: Subagent
 metadata:
   name: code-reviewer
@@ -99,9 +106,18 @@ spec:
           enabled: true
           defaultScope: project
   skills:
-    refs:
+    universal:
       - name: diff-reader
-        path: ./skills/diff-reader
+        path: ./skills/universal/diff-reader
+      - name: repo-navigator
+        path: ./skills/universal/repo-navigator
+    hosts:
+      claude_code:
+        - name: diff-reader
+          path: ./skills/claude_code/diff-reader
+      codex:
+        - name: diff-reader
+          path: ./skills/codex/diff-reader
   compatibility:
     hosts:
       - claude_code
@@ -123,6 +139,8 @@ Notes:
 - `spec.agent.path` is required and points to the canonical `agent.md` prompt asset.
 - `spec.schemas` is optional. Declare only the schemas you actually ship.
 - `spec.injection.hosts` declares which hosts support static and session injection.
+- `spec.skills.universal` is the host-neutral baseline; `spec.skills.hosts.<host>` overrides same-named skills for that host.
+- Put host-specific tool binding notes directly inside the matching `SKILL.md` files instead of in structured manifest fields.
 - `metadata.authors` captures maintainers for registry presentation and review handoff.
 - `spec.dependencies.packages` captures structured dependency metadata for package consumers.
 - `compatibility.hosts` uses host names, not runtime names.

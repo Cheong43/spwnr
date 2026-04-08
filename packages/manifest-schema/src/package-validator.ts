@@ -1,11 +1,33 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { SubagentManifest } from '@spwnr/core-types';
+import type { HostType, LayeredSkills, SkillRef, SubagentManifest } from '@spwnr/core-types';
 
 export interface LayoutError {
   code: string;
   message: string;
   path?: string;
+}
+
+function getLayeredSkillEntries(skills: LayeredSkills | undefined): Array<{ layer: 'universal' | HostType; refs: SkillRef[] }> {
+  if (!skills) {
+    return [];
+  }
+
+  const entries: Array<{ layer: 'universal' | HostType; refs: SkillRef[] }> = [];
+
+  if (skills.universal?.length) {
+    entries.push({ layer: 'universal', refs: skills.universal });
+  }
+
+  for (const [host, refs] of Object.entries(skills.hosts ?? {}) as Array<[HostType, SkillRef[] | undefined]>) {
+    if (!refs?.length) {
+      continue;
+    }
+
+    entries.push({ layer: host, refs });
+  }
+
+  return entries;
 }
 
 export function validatePackageLayout(
@@ -51,15 +73,22 @@ export function validatePackageLayout(
     }
   }
 
-  // Check 2: skill paths exist (if skills are declared with a path)
-  if (manifest.spec.skills?.refs) {
-    for (const skill of manifest.spec.skills.refs) {
+  const compatibilityHosts = new Set(manifest.spec.compatibility?.hosts ?? []);
+  for (const { layer, refs } of getLayeredSkillEntries(manifest.spec.skills)) {
+    if (layer !== 'universal' && manifest.spec.compatibility?.hosts && !compatibilityHosts.has(layer)) {
+      errors.push({
+        code: 'MANIFEST_INVALID',
+        message: `Skill host layer not declared in spec.compatibility.hosts: ${layer}`,
+      });
+    }
+
+    for (const skill of refs) {
       if (skill.path) {
         const skillDir = join(packageDir, skill.path);
         if (!existsSync(skillDir)) {
           errors.push({
             code: 'MANIFEST_INVALID',
-            message: `Skill path not found: ${skill.path} (skill: ${skill.name})`,
+            message: `Skill path not found in ${layer} layer: ${skill.path} (skill: ${skill.name})`,
             path: skillDir,
           });
         }

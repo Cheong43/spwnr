@@ -6,7 +6,7 @@ const mockInfo = {
   name: 'code-reviewer',
   version: '0.1.0',
   manifest: {
-    apiVersion: 'subagent.io/v0.2',
+    apiVersion: 'subagent.io/v0.3',
     kind: 'Subagent',
     metadata: {
       name: 'code-reviewer',

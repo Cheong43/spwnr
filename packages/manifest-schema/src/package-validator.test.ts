@@ -18,7 +18,7 @@ describe('PackageValidator', () => {
 
   function createManifest(overrides: Partial<SubagentManifest> = {}): SubagentManifest {
     return {
-      apiVersion: 'subagent.io/v0.2',
+      apiVersion: 'subagent.io/v0.3',
       kind: 'Subagent',
       metadata: {
         name: 'test-agent',
@@ -103,5 +103,106 @@ describe('PackageValidator', () => {
 
     const errors = validatePackageLayout(pkgDir, manifest, { strict: true });
     expect(errors.some((error) => error.message.includes('invalid JSON'))).toBe(true);
+  });
+
+  it('validates layered skill paths across universal and host layers', () => {
+    const pkgDir = join(tempDir, 'layered-skills');
+    mkdirSync(join(pkgDir, 'schemas'), { recursive: true });
+    mkdirSync(join(pkgDir, 'skills', 'universal', 'diff-reader'), { recursive: true });
+    mkdirSync(join(pkgDir, 'skills', 'claude_code', 'diff-reader'), { recursive: true });
+    writeFileSync(join(pkgDir, 'agent.md'), '# Agent\n');
+    writeFileSync(join(pkgDir, 'schemas', 'input.schema.json'), '{}');
+    writeFileSync(join(pkgDir, 'schemas', 'output.schema.json'), '{}');
+    writeFileSync(join(pkgDir, 'skills', 'universal', 'diff-reader', 'SKILL.md'), '# universal\n');
+    writeFileSync(join(pkgDir, 'skills', 'claude_code', 'diff-reader', 'SKILL.md'), '# claude\n');
+
+    const manifest = createManifest({
+      spec: {
+        agent: { path: './agent.md' },
+        schemas: {
+          input: './schemas/input.schema.json',
+          output: './schemas/output.schema.json',
+        },
+        skills: {
+          universal: [
+            { name: 'diff-reader', path: './skills/universal/diff-reader' },
+          ],
+          hosts: {
+            claude_code: [
+              { name: 'diff-reader', path: './skills/claude_code/diff-reader' },
+            ],
+          },
+        },
+        compatibility: {
+          hosts: ['claude_code'],
+        },
+      },
+    });
+
+    expect(validatePackageLayout(pkgDir, manifest)).toEqual([]);
+  });
+
+  it('returns an error when a layered skill path is missing', () => {
+    const pkgDir = join(tempDir, 'missing-layered-skill');
+    mkdirSync(join(pkgDir, 'schemas'), { recursive: true });
+    writeFileSync(join(pkgDir, 'agent.md'), '# Agent\n');
+    writeFileSync(join(pkgDir, 'schemas', 'input.schema.json'), '{}');
+    writeFileSync(join(pkgDir, 'schemas', 'output.schema.json'), '{}');
+
+    const manifest = createManifest({
+      spec: {
+        agent: { path: './agent.md' },
+        schemas: {
+          input: './schemas/input.schema.json',
+          output: './schemas/output.schema.json',
+        },
+        skills: {
+          hosts: {
+            codex: [
+              { name: 'diff-reader', path: './skills/codex/diff-reader' },
+            ],
+          },
+        },
+        compatibility: {
+          hosts: ['codex'],
+        },
+      },
+    });
+
+    const errors = validatePackageLayout(pkgDir, manifest);
+    expect(errors.some((error) => error.message.includes('Skill path not found in codex layer'))).toBe(true);
+  });
+
+  it('returns an error when a skill host layer is outside compatibility.hosts', () => {
+    const pkgDir = join(tempDir, 'mismatched-skill-host');
+    mkdirSync(join(pkgDir, 'schemas'), { recursive: true });
+    mkdirSync(join(pkgDir, 'skills', 'codex', 'diff-reader'), { recursive: true });
+    writeFileSync(join(pkgDir, 'agent.md'), '# Agent\n');
+    writeFileSync(join(pkgDir, 'schemas', 'input.schema.json'), '{}');
+    writeFileSync(join(pkgDir, 'schemas', 'output.schema.json'), '{}');
+    writeFileSync(join(pkgDir, 'skills', 'codex', 'diff-reader', 'SKILL.md'), '# codex\n');
+
+    const manifest = createManifest({
+      spec: {
+        agent: { path: './agent.md' },
+        schemas: {
+          input: './schemas/input.schema.json',
+          output: './schemas/output.schema.json',
+        },
+        skills: {
+          hosts: {
+            codex: [
+              { name: 'diff-reader', path: './skills/codex/diff-reader' },
+            ],
+          },
+        },
+        compatibility: {
+          hosts: ['claude_code'],
+        },
+      },
+    });
+
+    const errors = validatePackageLayout(pkgDir, manifest);
+    expect(errors.some((error) => error.message.includes('Skill host layer not declared'))).toBe(true);
   });
 });

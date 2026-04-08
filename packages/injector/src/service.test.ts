@@ -8,13 +8,25 @@ import { composeSession, injectStatic } from './service.js';
 
 function createPackage(dir: string): void {
   mkdirSync(join(dir, 'schemas'), { recursive: true });
+  mkdirSync(join(dir, 'skills', 'universal', 'repo-navigator'), { recursive: true });
+  mkdirSync(join(dir, 'skills', 'universal', 'diff-reader'), { recursive: true });
+  mkdirSync(join(dir, 'skills', 'claude_code', 'diff-reader'), { recursive: true });
+  mkdirSync(join(dir, 'skills', 'codex', 'diff-reader'), { recursive: true });
+  mkdirSync(join(dir, 'skills', 'copilot', 'diff-reader'), { recursive: true });
+  mkdirSync(join(dir, 'skills', 'opencode', 'diff-reader'), { recursive: true });
 
   writeFileSync(join(dir, 'agent.md'), '# Review Agent\n\nReview carefully.');
   writeFileSync(join(dir, 'schemas', 'input.schema.json'), '{"type":"object"}');
   writeFileSync(join(dir, 'schemas', 'output.schema.json'), '{"type":"object"}');
+  writeFileSync(join(dir, 'skills', 'universal', 'repo-navigator', 'SKILL.md'), '# repo-navigator\n\nInspect nearby files.');
+  writeFileSync(join(dir, 'skills', 'universal', 'diff-reader', 'SKILL.md'), '# diff-reader\n\nUse the universal diff reader.');
+  writeFileSync(join(dir, 'skills', 'claude_code', 'diff-reader', 'SKILL.md'), '# diff-reader\n\nUse Claude Code diff bindings.');
+  writeFileSync(join(dir, 'skills', 'codex', 'diff-reader', 'SKILL.md'), '# diff-reader\n\nUse Codex diff bindings.');
+  writeFileSync(join(dir, 'skills', 'copilot', 'diff-reader', 'SKILL.md'), '# diff-reader\n\nUse Copilot diff bindings.');
+  writeFileSync(join(dir, 'skills', 'opencode', 'diff-reader', 'SKILL.md'), '# diff-reader\n\nUse OpenCode diff bindings.');
   writeFileSync(
     join(dir, 'subagent.yaml'),
-    `apiVersion: subagent.io/v0.2
+    `apiVersion: subagent.io/v0.3
 kind: Subagent
 metadata:
   name: review-agent
@@ -27,6 +39,25 @@ spec:
   schemas:
     input: ./schemas/input.schema.json
     output: ./schemas/output.schema.json
+  skills:
+    universal:
+      - name: diff-reader
+        path: ./skills/universal/diff-reader
+      - name: repo-navigator
+        path: ./skills/universal/repo-navigator
+    hosts:
+      claude_code:
+        - name: diff-reader
+          path: ./skills/claude_code/diff-reader
+      codex:
+        - name: diff-reader
+          path: ./skills/codex/diff-reader
+      copilot:
+        - name: diff-reader
+          path: ./skills/copilot/diff-reader
+      opencode:
+        - name: diff-reader
+          path: ./skills/opencode/diff-reader
   compatibility:
     hosts:
       - claude_code
@@ -55,10 +86,10 @@ describe('injector service', () => {
   });
 
   it.each([
-    ['claude_code', 'review-agent.md'],
-    ['copilot', 'review-agent.agent.md'],
-    ['opencode', 'review-agent.md'],
-  ] as const)('writes static host files for %s', async (host, filename) => {
+    ['claude_code', 'review-agent.md', 'Use Claude Code diff bindings.'],
+    ['copilot', 'review-agent.agent.md', 'Use Copilot diff bindings.'],
+    ['opencode', 'review-agent.md', 'Use OpenCode diff bindings.'],
+  ] as const)('writes static host files for %s', async (host, filename, expectedSkillText) => {
     const pkgDir = join(baseDir, `${host}-pkg`);
     mkdirSync(pkgDir, { recursive: true });
     createPackage(pkgDir);
@@ -72,9 +103,17 @@ describe('injector service', () => {
       targetDir,
     });
 
-    expect(result.files).toHaveLength(1);
     expect(readFileSync(join(targetDir, filename), 'utf-8')).toContain('Review carefully.');
     expect(readFileSync(join(targetDir, filename), 'utf-8')).not.toContain('## System Prompt');
+    if (host === 'claude_code') {
+      expect(readFileSync(join(targetDir, filename), 'utf-8')).toContain('Claude Code should preload these skills');
+      expect(result.files).toHaveLength(3);
+      expect(readFileSync(join(baseDir, 'targets', 'skills', 'diff-reader', 'SKILL.md'), 'utf-8')).toContain('Use Claude Code diff bindings.');
+      expect(readFileSync(join(baseDir, 'targets', 'skills', 'repo-navigator', 'SKILL.md'), 'utf-8')).toContain('Inspect nearby files.');
+    } else {
+      expect(readFileSync(join(targetDir, filename), 'utf-8')).toContain(expectedSkillText);
+      expect(readFileSync(join(targetDir, filename), 'utf-8')).toContain('Inspect nearby files.');
+    }
   });
 
   it('writes codex static files into a skill directory', async () => {
@@ -93,15 +132,18 @@ describe('injector service', () => {
 
     expect(result.files).toHaveLength(2);
     expect(readFileSync(join(targetDir, 'review-agent', 'SKILL.md'), 'utf-8')).toContain('Review carefully.');
+    expect(readFileSync(join(targetDir, 'review-agent', 'SKILL.md'), 'utf-8')).toContain('Use Codex diff bindings.');
+    expect(readFileSync(join(targetDir, 'review-agent', 'SKILL.md'), 'utf-8')).toContain('Inspect nearby files.');
+    expect(readFileSync(join(targetDir, 'review-agent', 'SKILL.md'), 'utf-8')).not.toContain('Use the universal diff reader.');
     expect(readFileSync(join(targetDir, 'review-agent', 'agent.json'), 'utf-8')).toContain('"name": "review-agent"');
   });
 
   it.each([
-    ['claude_code', 'json'],
-    ['copilot', 'shell'],
-    ['opencode', 'json'],
-    ['codex', 'shell'],
-  ] as const)('composes %s session output in %s format', async (host, format) => {
+    ['claude_code', 'json', 'Use Claude Code diff bindings.'],
+    ['copilot', 'shell', 'Use Copilot diff bindings.'],
+    ['opencode', 'json', 'Use OpenCode diff bindings.'],
+    ['codex', 'shell', 'Use Codex diff bindings.'],
+  ] as const)('composes %s session output in %s format', async (host, format, expectedSkillText) => {
     const pkgDir = join(baseDir, `${host}-session-pkg`);
     mkdirSync(pkgDir, { recursive: true });
     createPackage(pkgDir);
@@ -115,6 +157,12 @@ describe('injector service', () => {
     });
 
     expect(result.content.length).toBeGreaterThan(0);
+    if (host === 'claude_code') {
+      expect(JSON.stringify(result.descriptor)).toContain('"skills":["diff-reader","repo-navigator"]');
+    } else {
+      expect(JSON.stringify(result.descriptor)).toContain(expectedSkillText);
+      expect(JSON.stringify(result.descriptor)).toContain('Inspect nearby files.');
+    }
     if (format === 'json') {
       expect(() => JSON.parse(result.content)).not.toThrow();
     } else {

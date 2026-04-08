@@ -1,6 +1,6 @@
 import { HostType } from '@spwnr/core-types';
 import type { HostAdapter, HostAdapterCompileInput, SessionComposition, SessionContext, StaticMaterialization, StaticMaterializationTarget } from './host-adapter.js';
-import { compileHostAgent, materializeTextFiles } from './host-adapter.js';
+import { appendCompiledSkills, compileHostAgent, materializeTextFiles } from './host-adapter.js';
 
 export class CopilotAdapter implements HostAdapter {
   readonly host = HostType.COPILOT;
@@ -14,13 +14,14 @@ export class CopilotAdapter implements HostAdapter {
   }
 
   materializeStatic(compiled: ReturnType<CopilotAdapter['compile']>, target: StaticMaterializationTarget): StaticMaterialization {
+    const prompt = appendCompiledSkills(compiled.agentMarkdown, compiled.skills);
     const markdown = [
       '---',
       `name: ${compiled.slug}`,
       `description: ${JSON.stringify(compiled.instruction)}`,
       '---',
       '',
-      compiled.agentMarkdown,
+      prompt,
       '',
     ].join('\n');
 
@@ -33,11 +34,12 @@ export class CopilotAdapter implements HostAdapter {
   }
 
   composeSession(compiled: ReturnType<CopilotAdapter['compile']>, _context: SessionContext): SessionComposition {
+    const prompt = appendCompiledSkills(compiled.agentMarkdown, compiled.skills);
     const descriptor = {
       profile: {
         name: compiled.slug,
         description: compiled.instruction,
-        instructions: compiled.agentMarkdown,
+        instructions: prompt,
       },
     };
 

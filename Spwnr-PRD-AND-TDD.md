@@ -187,10 +187,17 @@ examples/code-reviewer/
     output.schema.json
     memory.schema.json
   skills/
-    diff-reader/
-      SKILL.md
-    repo-navigator/
-      SKILL.md
+    universal/
+      diff-reader/
+        SKILL.md
+      repo-navigator/
+        SKILL.md
+    claude_code/
+      diff-reader/
+        SKILL.md
+    codex/
+      diff-reader/
+        SKILL.md
 ```
 
 ### 9.2 主线字段
@@ -203,7 +210,8 @@ examples/code-reviewer/
 - `spec.agent.path`
 - `spec.schemas`
 - `spec.injection.hosts`
-- `spec.skills.refs`
+- `spec.skills.universal`
+- `spec.skills.hosts`
 - `spec.tools`
 - `spec.memory`
 - `spec.compatibility`

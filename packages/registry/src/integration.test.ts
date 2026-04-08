@@ -52,7 +52,7 @@ describe('Integration: full publish→list→info→install cycle', () => {
     const info = svc.info('code-reviewer', '0.1.0')
     expect(info.name).toBe('code-reviewer')
     expect(info.version).toBe('0.1.0')
-    expect(info.manifest.apiVersion).toBe('subagent.io/v0.2')
+    expect(info.manifest.apiVersion).toBe('subagent.io/v0.3')
     expect(info.manifest.kind).toBe('Subagent')
     expect(info.manifest.metadata.instruction).toBe('Review git diffs and surface concrete, actionable issues.')
     expect(info.signature).toMatch(/^[a-f0-9]{64}$/)

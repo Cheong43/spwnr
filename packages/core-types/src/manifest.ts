@@ -26,6 +26,11 @@ export interface SkillRef {
   version?: string;
 }
 
+export interface LayeredSkills {
+  universal?: SkillRef[];
+  hosts?: Partial<Record<HostType, SkillRef[]>>;
+}
+
 export interface ManifestAuthor {
   name: string;
   github?: string;
@@ -93,7 +98,7 @@ export interface InjectionHosts {
 }
 
 export interface SubagentManifest {
-  apiVersion: 'subagent.io/v0.2';
+  apiVersion: 'subagent.io/v0.3';
   kind: 'Subagent';
   metadata: {
     name: string;
@@ -117,9 +122,7 @@ export interface SubagentManifest {
     injection?: {
       hosts?: InjectionHosts;
     };
-    skills?: {
-      refs: SkillRef[];
-    };
+    skills?: LayeredSkills;
     tools?: ToolPolicy;
     permissions?: PermissionPolicy;
     memory?: {
@@ -137,4 +140,22 @@ export interface SubagentManifest {
       packages: PackageDependency[];
     };
   };
+}
+
+export function resolveSkillsForHost(manifest: SubagentManifest, host: HostType): SkillRef[] {
+  const resolved = [...(manifest.spec.skills?.universal ?? [])];
+  const byName = new Map(resolved.map((skill, index) => [skill.name, index]));
+
+  for (const skill of manifest.spec.skills?.hosts?.[host] ?? []) {
+    const existingIndex = byName.get(skill.name);
+    if (existingIndex === undefined) {
+      byName.set(skill.name, resolved.length);
+      resolved.push(skill);
+      continue;
+    }
+
+    resolved[existingIndex] = skill;
+  }
+
+  return resolved;
 }

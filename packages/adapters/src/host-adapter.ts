@@ -1,6 +1,6 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import type { HostScope, HostType, SubagentManifest } from '@spwnr/core-types';
+import { resolveSkillsForHost, type HostScope, type HostType, type SkillRef, type SubagentManifest } from '@spwnr/core-types';
 
 export type InjectionMode = 'static' | 'session';
 
@@ -18,6 +18,14 @@ export interface CompiledHostAgent {
   description: string | null;
   instruction: string;
   agentMarkdown: string;
+  skills: CompiledSkill[];
+}
+
+export interface CompiledSkill {
+  name: string;
+  slug: string;
+  path: string | null;
+  content: string | null;
 }
 
 export interface StaticMaterializationTarget {
@@ -72,6 +80,59 @@ export function normalizeInstructionSummary(instruction: string): string {
   return instruction.replace(/\s+/g, ' ').trim();
 }
 
+export function resolveSkillFile(packageDir: string, skill: SkillRef): string | null {
+  if (!skill.path) {
+    return null;
+  }
+
+  const directorySkillPath = join(packageDir, skill.path, 'SKILL.md');
+  if (existsSync(directorySkillPath)) {
+    return directorySkillPath;
+  }
+
+  const directSkillPath = join(packageDir, skill.path);
+  if (existsSync(directSkillPath)) {
+    return directSkillPath;
+  }
+
+  return null;
+}
+
+export function compileSkills(packageDir: string, manifest: SubagentManifest, host: HostType): CompiledSkill[] {
+  return resolveSkillsForHost(manifest, host).map((skill) => {
+    const resolvedPath = resolveSkillFile(packageDir, skill);
+
+    return {
+      name: skill.name,
+      slug: slugifyAgentName(skill.name),
+      path: resolvedPath,
+      content: resolvedPath ? readFileSync(resolvedPath, 'utf-8').trim() : null,
+    };
+  });
+}
+
+export function renderCompiledSkillsAppendix(skills: CompiledSkill[], heading = '## Resolved Skills'): string {
+  const renderedSkills = skills
+    .filter((skill) => skill.content)
+    .map((skill) => `### ${skill.name}\n\n${skill.content}`)
+    .join('\n\n');
+
+  if (!renderedSkills) {
+    return '';
+  }
+
+  return `${heading}\n\n${renderedSkills}`;
+}
+
+export function appendCompiledSkills(agentMarkdown: string, skills: CompiledSkill[], heading?: string): string {
+  const appendix = renderCompiledSkillsAppendix(skills, heading);
+  if (!appendix) {
+    return agentMarkdown;
+  }
+
+  return `${agentMarkdown}\n\n${appendix}`;
+}
+
 export function materializeTextFiles(
   host: HostType,
   targetDir: string,
@@ -103,5 +164,6 @@ export function compileHostAgent(host: HostType, input: HostAdapterCompileInput)
     description: input.manifest.metadata.description ?? null,
     instruction: normalizeInstructionSummary(input.manifest.metadata.instruction),
     agentMarkdown: readAgentMarkdown(input.packageDir, input.manifest),
+    skills: compileSkills(input.packageDir, input.manifest, host),
   };
 }

@@ -7,11 +7,13 @@ import { CopilotAdapter } from './copilot-adapter.js';
 function createPackageDir(): string {
   const dir = mkdtempSync(join(tmpdir(), 'spwnr-copilot-adapter-'));
   writeFileSync(join(dir, 'agent.md'), '# Planner\n\nDraft a clear plan.');
+  writeFileSync(join(dir, 'repo-navigator.md'), '# repo-navigator\n\nInspect workspace files.');
+  writeFileSync(join(dir, 'diff-reader-copilot.md'), '# diff-reader\n\nUse Copilot agent file tools.');
   return dir;
 }
 
 const manifest = {
-  apiVersion: 'subagent.io/v0.2',
+  apiVersion: 'subagent.io/v0.3',
   kind: 'Subagent' as const,
   metadata: {
     name: 'Planner',
@@ -21,6 +23,19 @@ const manifest = {
   },
   spec: {
     agent: { path: './agent.md' },
+    skills: {
+      universal: [
+        { name: 'repo-navigator', path: './repo-navigator.md' },
+      ],
+      hosts: {
+        copilot: [
+          { name: 'diff-reader', path: './diff-reader-copilot.md' },
+        ],
+      },
+    },
+    compatibility: {
+      hosts: ['copilot'],
+    },
   },
 };
 
@@ -44,6 +59,8 @@ describe('CopilotAdapter', () => {
 
     expect(readFileSync(join(targetDir, 'planner.agent.md'), 'utf-8')).toContain('name: planner');
     expect(readFileSync(join(targetDir, 'planner.agent.md'), 'utf-8')).toContain('description: "Draft implementation plans directly."');
+    expect(readFileSync(join(targetDir, 'planner.agent.md'), 'utf-8')).toContain('Use Copilot agent file tools.');
+    expect(readFileSync(join(targetDir, 'planner.agent.md'), 'utf-8')).toContain('Inspect workspace files.');
     expect(readFileSync(join(targetDir, 'planner.agent.md'), 'utf-8')).not.toContain('## Model Binding');
   });
 
@@ -60,6 +77,7 @@ describe('CopilotAdapter', () => {
         profile: expect.objectContaining({
           name: 'planner',
           description: 'Draft implementation plans directly.',
+          instructions: expect.stringContaining('Use Copilot agent file tools.'),
         }),
       }),
     );
