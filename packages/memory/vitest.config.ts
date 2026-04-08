@@ -5,8 +5,8 @@ export default defineConfig({
   test: { environment: 'node' },
   resolve: {
     alias: {
-      '@orchex/core-types': resolve(__dirname, '../core-types/src/index.ts'),
-      '@orchex/registry': resolve(__dirname, '../registry/src/index.ts'),
+      '@spwnr/core-types': resolve(__dirname, '../core-types/src/index.ts'),
+      '@spwnr/registry': resolve(__dirname, '../registry/src/index.ts'),
     },
   },
 })

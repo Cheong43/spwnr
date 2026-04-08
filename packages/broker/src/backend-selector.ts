@@ -1,5 +1,5 @@
-import { OrchexError, ErrorCodes } from '@orchex/core-types';
-import type { BackendType } from '@orchex/core-types';
+import { SpwnrError, ErrorCodes } from '@spwnr/core-types';
+import type { BackendType } from '@spwnr/core-types';
 import type { BackendAdapter } from './types.js';
 
 export class BackendSelector {
@@ -13,6 +13,6 @@ export class BackendSelector {
     for (const adapter of this.adapters) {
       if (await adapter.isAvailable()) return adapter;
     }
-    throw new OrchexError(ErrorCodes.BACKEND_UNAVAILABLE, 'No available backend adapter');
+    throw new SpwnrError(ErrorCodes.BACKEND_UNAVAILABLE, 'No available backend adapter');
   }
 }

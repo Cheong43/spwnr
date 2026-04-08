@@ -4,18 +4,18 @@ import { join } from 'path'
 import { rmSync, existsSync } from 'fs'
 import { randomUUID } from 'crypto'
 
-const TEST_HOME = join(process.cwd(), '.test-orchex-home-' + randomUUID())
+const TEST_HOME = join(process.cwd(), '.test-spwnr-home-' + randomUUID())
 let store: ArtifactStore
 let runId: string
 
 beforeEach(() => {
-  process.env.ORCHEX_HOME = TEST_HOME
+  process.env.SPWNR_HOME = TEST_HOME
   store = new ArtifactStore()
   runId = randomUUID()
 })
 
 afterEach(() => {
-  delete process.env.ORCHEX_HOME
+  delete process.env.SPWNR_HOME
   if (existsSync(TEST_HOME)) {
     rmSync(TEST_HOME, { recursive: true, force: true })
   }

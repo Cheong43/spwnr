@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { BackendSelector } from './backend-selector.js';
-import { BackendType, OrchexError, ErrorCodes } from '@orchex/core-types';
+import { BackendType, SpwnrError, ErrorCodes } from '@spwnr/core-types';
 import type { BackendAdapter, AdapterEvent, BackendAdapterRunOptions } from './types.js';
 
 class MockAdapter implements BackendAdapter {
@@ -49,7 +49,7 @@ describe('BackendSelector', () => {
 
   it('throws BACKEND_UNAVAILABLE with no adapters at all', async () => {
     const selector = new BackendSelector([]);
-    await expect(selector.select()).rejects.toBeInstanceOf(OrchexError);
+    await expect(selector.select()).rejects.toBeInstanceOf(SpwnrError);
   });
 
   it('returns preferred adapter even when fallback is also available', async () => {

@@ -1,18 +1,27 @@
 import { describe, it, expect } from 'vitest';
-import type { BackendType, RunStatus } from './enums.js';
-import { ErrorCodes, OrchexError } from './errors.js';
+import type { BackendType, HostType, RunStatus } from './enums.js';
+import { BackendType as BackendTypes, HostType as HostTypes, HostScope } from './enums.js';
+import { ErrorCodes, SpwnrError } from './errors.js';
 import type { SubagentManifest } from './manifest.js';
 
+describe('HostType', () => {
+  it('accepts all supported host targets', () => {
+    const hosts: HostType[] = ['claude_code', 'codex', 'copilot', 'opencode'];
+    expect(hosts).toHaveLength(4);
+    expect(hosts).toEqual(Object.values(HostTypes));
+  });
+});
+
 describe('BackendType', () => {
-  it('should accept all valid backend types', () => {
-    const backends: BackendType[] = ['opencode', 'claude_code', 'openclaw', 'codex', 'cline', 'simulated'];
-    expect(backends).toHaveLength(6);
-    expect(backends).toContain('opencode');
-    expect(backends).toContain('claude_code');
-    expect(backends).toContain('openclaw');
-    expect(backends).toContain('codex');
-    expect(backends).toContain('cline');
-    expect(backends).toContain('simulated');
+  it('keeps legacy runtime values for deprecated internal packages', () => {
+    const backends: BackendType[] = ['opencode', 'claude_code', 'openclaw', 'codex', 'cline', 'simulated', 'copilot'];
+    expect([...backends].sort()).toEqual([...Object.values(BackendTypes)].sort());
+  });
+});
+
+describe('HostScope', () => {
+  it('supports project and user scopes', () => {
+    expect(Object.values(HostScope)).toEqual(['project', 'user']);
   });
 });
 
@@ -27,23 +36,23 @@ describe('RunStatus', () => {
   });
 });
 
-describe('OrchexError', () => {
+describe('SpwnrError', () => {
   it('should extend Error', () => {
-    const error = new OrchexError('MANIFEST_INVALID', 'Test error');
+    const error = new SpwnrError('MANIFEST_INVALID', 'Test error');
     expect(error).toBeInstanceOf(Error);
   });
 
   it('should have code and details fields', () => {
     const details = { field: 'test' };
-    const error = new OrchexError('MANIFEST_INVALID', 'Test error', details);
+    const error = new SpwnrError('MANIFEST_INVALID', 'Test error', details);
     expect(error.code).toBe('MANIFEST_INVALID');
     expect(error.details).toEqual(details);
     expect(error.message).toBe('Test error');
-    expect(error.name).toBe('OrchexError');
+    expect(error.name).toBe('SpwnrError');
   });
 
   it('should work without details', () => {
-    const error = new OrchexError('POLICY_DENIED', 'Access denied');
+    const error = new SpwnrError('POLICY_DENIED', 'Access denied');
     expect(error.code).toBe('POLICY_DENIED');
     expect(error.details).toBeUndefined();
   });
@@ -82,11 +91,11 @@ describe('SubagentManifest', () => {
         version: '1.0.0',
       },
       spec: {
+        instructions: {
+          system: './prompts/system.md',
+        },
         input: { schema: 'string' },
         output: { schema: 'string' },
-        workflow: {
-          entry: 'start',
-        },
       },
     };
     
@@ -94,9 +103,9 @@ describe('SubagentManifest', () => {
     expect(manifest.kind).toBe('Subagent');
     expect(manifest.metadata.name).toBe('test-agent');
     expect(manifest.metadata.version).toBe('1.0.0');
+    expect(manifest.spec.instructions.system).toBe('./prompts/system.md');
     expect(manifest.spec.input.schema).toBe('string');
     expect(manifest.spec.output.schema).toBe('string');
-    expect(manifest.spec.workflow.entry).toBe('start');
   });
 
   it('should support optional fields in manifest', () => {
@@ -115,8 +124,25 @@ describe('SubagentManifest', () => {
           tone: 'professional',
           style: 'concise',
         },
+        instructions: {
+          system: './prompts/system.md',
+        },
         input: { schema: 'string' },
         output: { schema: 'string' },
+        injection: {
+          hosts: {
+            claude_code: {
+              static: {
+                enabled: true,
+                defaultScope: 'project',
+              },
+              session: {
+                enabled: true,
+                defaultScope: 'user',
+              },
+            },
+          },
+        },
         workflow: {
           entry: 'start',
           steps: [
@@ -137,7 +163,8 @@ describe('SubagentManifest', () => {
     expect(manifest.metadata.description).toBe('A test agent');
     expect(manifest.metadata.tags).toEqual(['test', 'demo']);
     expect(manifest.spec.persona?.role).toBe('assistant');
-    expect(manifest.spec.workflow.steps).toHaveLength(1);
+    expect(manifest.spec.workflow?.steps).toHaveLength(1);
+    expect(manifest.spec.injection?.hosts?.claude_code?.static?.defaultScope).toBe('project');
     expect(manifest.spec.compatibility?.hosts).toContain('opencode');
   });
 });

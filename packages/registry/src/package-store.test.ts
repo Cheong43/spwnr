@@ -5,9 +5,9 @@ import { rmSync } from 'fs'
 import { join } from 'path'
 import { openDatabase } from './db.js'
 import { PackageStore } from './package-store.js'
-import { OrchexError, ErrorCodes } from '@orchex/core-types'
+import { SpwnrError, ErrorCodes } from '@spwnr/core-types'
 import type Database from 'better-sqlite3'
-import type { SubagentManifest } from '@orchex/core-types'
+import type { SubagentManifest } from '@spwnr/core-types'
 
 function tempDbPath(): string {
   return join(tmpdir(), `${randomUUID()}.db`)
@@ -19,6 +19,7 @@ function makeManifest(name: string, version: string, description?: string): Suba
     kind: 'Subagent',
     metadata: { name, version, description },
     spec: {
+      instructions: { system: './prompts/system.md' },
       input: { schema: '{}' },
       output: { schema: '{}' },
       workflow: { entry: 'start' },
@@ -79,7 +80,7 @@ describe('PackageStore', () => {
       tarballPath: '/path.tgz',
     }
     store.publishVersion(opts)
-    expect(() => store.publishVersion(opts)).toThrow(OrchexError)
+    expect(() => store.publishVersion(opts)).toThrow(SpwnrError)
     expect(() => store.publishVersion(opts)).toThrow(
       expect.objectContaining({ code: ErrorCodes.VERSION_CONFLICT }),
     )

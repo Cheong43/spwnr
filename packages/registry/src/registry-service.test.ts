@@ -6,6 +6,7 @@ import { tmpdir } from 'os'
 import { randomUUID } from 'crypto'
 
 function createTestPackage(dir: string, name = 'test-agent', version = '0.1.0') {
+  mkdirSync(join(dir, 'prompts'), { recursive: true })
   mkdirSync(join(dir, 'schemas'), { recursive: true })
   mkdirSync(join(dir, 'workflow'), { recursive: true })
 
@@ -17,6 +18,8 @@ metadata:
   name: ${name}
   version: ${version}
 spec:
+  instructions:
+    system: ./prompts/system.md
   input:
     schema: ./schemas/input.json
   output:
@@ -25,6 +28,7 @@ spec:
     entry: main
 `,
   )
+  writeFileSync(join(dir, 'prompts', 'system.md'), 'Review changes carefully.')
   writeFileSync(join(dir, 'schemas', 'input.json'), '{"type":"object"}')
   writeFileSync(join(dir, 'schemas', 'output.json'), '{"type":"object"}')
   writeFileSync(join(dir, 'workflow', 'main.yaml'), 'steps: []')
@@ -38,15 +42,15 @@ describe('RegistryService', () => {
   beforeEach(() => {
     tmpBase = join(tmpdir(), randomUUID())
     mkdirSync(tmpBase, { recursive: true })
-    process.env.ORCHEX_HOME = tmpBase
+    process.env.SPWNR_HOME = tmpBase
     dbPath = join(tmpBase, 'test.db')
     svc = new RegistryService(dbPath)
   })
 
   afterEach(() => {
-    svc.close()
+    svc?.close()
     rmSync(tmpBase, { recursive: true, force: true })
-    delete process.env.ORCHEX_HOME
+    delete process.env.SPWNR_HOME
   })
 
   it('publish() returns name, version, signature, tarballPath', async () => {

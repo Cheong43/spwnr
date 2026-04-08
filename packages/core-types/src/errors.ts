@@ -19,13 +19,13 @@ export const ErrorCodes = {
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
 
-export class OrchexError extends Error {
+export class SpwnrError extends Error {
   constructor(
     public readonly code: ErrorCode,
     message: string,
     public readonly details?: unknown,
   ) {
     super(message);
-    this.name = 'OrchexError';
+    this.name = 'SpwnrError';
   }
 }

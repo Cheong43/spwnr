@@ -10,11 +10,11 @@ import { BackendSelector } from './backend-selector.js';
 import { RetryStrategy } from './retry-strategy.js';
 import type { BackendAdapterRunOptions, AdapterEvent } from './types.js';
 
-import { RegistryService } from '@orchex/registry';
-import { openRunDatabase, RunStore, CheckpointStore, AgentMemoryStore, ArtifactStore } from '@orchex/memory';
-import { PolicyMerger } from '@orchex/policy';
-import { SimulatedAdapter } from '@orchex/adapters';
-import { OrchexError, ErrorCodes } from '@orchex/core-types';
+import { RegistryService } from '@spwnr/registry';
+import { openRunDatabase, RunStore, CheckpointStore, AgentMemoryStore, ArtifactStore } from '@spwnr/memory';
+import { PolicyMerger } from '@spwnr/policy';
+import { SimulatedAdapter } from '@spwnr/adapters';
+import { SpwnrError, ErrorCodes } from '@spwnr/core-types';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -26,11 +26,11 @@ let tempDir: string;
 beforeEach(() => {
   tempDir = join(tmpdir(), randomUUID());
   mkdirSync(tempDir, { recursive: true });
-  process.env.ORCHEX_HOME = tempDir;
+  process.env.SPWNR_HOME = tempDir;
 });
 
 afterEach(() => {
-  delete process.env.ORCHEX_HOME;
+  delete process.env.SPWNR_HOME;
   rmSync(tempDir, { recursive: true, force: true });
 });
 

@@ -1,12 +1,12 @@
 {
-  "name": "@orchex/memory",
+  "name": "@spwnr/memory",
   "version": "0.1.0",
   "type": "module",
   "exports": { ".": { "default": "./src/index.ts" } },
   "scripts": { "build": "tsc", "test": "vitest run" },
   "dependencies": {
-    "@orchex/core-types": "workspace:*",
-    "@orchex/registry": "workspace:*",
+    "@spwnr/core-types": "workspace:*",
+    "@spwnr/registry": "workspace:*",
     "better-sqlite3": "^12.8.0"
   },
   "devDependencies": {

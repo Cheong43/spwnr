@@ -1,6 +1,6 @@
 import type Database from 'better-sqlite3'
 import { randomUUID } from 'crypto'
-import type { CheckpointRecord } from '@orchex/core-types'
+import type { CheckpointRecord } from '@spwnr/core-types'
 
 export interface CheckpointRow {
   id: string

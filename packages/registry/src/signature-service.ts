@@ -1,5 +1,5 @@
 import { createHash } from 'crypto'
-import type { SubagentManifest } from '@orchex/core-types'
+import type { SubagentManifest } from '@spwnr/core-types'
 
 export class SignatureService {
   /**

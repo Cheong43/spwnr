@@ -7,7 +7,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
 export default defineConfig({
   resolve: {
     alias: {
-      '@orchex/core-types': resolve(__dirname, '../core-types/src/index.ts'),
+      '@spwnr/core-types': resolve(__dirname, '../core-types/src/index.ts'),
     },
   },
   test: {

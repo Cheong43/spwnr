@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { SignatureService } from './signature-service.js'
-import type { SubagentManifest } from '@orchex/core-types'
+import type { SubagentManifest } from '@spwnr/core-types'
 
 describe('SignatureService', () => {
   const service = new SignatureService()
@@ -10,6 +10,7 @@ describe('SignatureService', () => {
     kind: 'Subagent' as const,
     metadata: { name: 'test', version: '1.0.0' },
     spec: {
+      instructions: { system: './prompts/system.md' },
       input: { schema: './schemas/input.json' },
       output: { schema: './schemas/output.json' },
       workflow: { entry: 'main' },

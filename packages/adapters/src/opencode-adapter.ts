@@ -1,41 +1,43 @@
-import { spawn, execFileSync } from 'child_process';
-import type { BackendAdapter, BackendAdapterRunOptions, AdapterEvent } from '@orchex/broker';
-import { BackendType, OrchexError, ErrorCodes } from '@orchex/core-types';
+import { HostType } from '@spwnr/core-types';
+import type { HostAdapter, HostAdapterCompileInput, SessionComposition, SessionContext, StaticMaterialization, StaticMaterializationTarget } from './host-adapter.js';
+import { compileHostAgent, materializeTextFiles, renderAgentMarkdown } from './host-adapter.js';
 
-export class OpenCodeAdapter implements BackendAdapter {
-  readonly backendType = BackendType.OPENCODE;
+export class OpenCodeAdapter implements HostAdapter {
+  readonly host = HostType.OPENCODE;
 
-  async isAvailable(): Promise<boolean> {
-    try {
-      execFileSync('which', ['opencode'], { stdio: 'ignore' });
-      return true;
-    } catch {
-      return false;
-    }
+  supports(_mode: 'static' | 'session'): boolean {
+    return true;
   }
 
-  async *run(opts: BackendAdapterRunOptions): AsyncIterableIterator<AdapterEvent> {
-    if (!await this.isAvailable()) {
-      throw new OrchexError(ErrorCodes.BACKEND_UNAVAILABLE, 'opencode CLI not found');
-    }
-    yield { type: 'started', runId: opts.runId };
-    try {
-      await new Promise<void>((resolve, reject) => {
-        const child = spawn('opencode', [
-          'run',
-          '--manifest', JSON.stringify(opts.manifest),
-          '--input', JSON.stringify(opts.input),
-          '--workdir', opts.workDir,
-        ], { stdio: 'inherit' });
-        child.on('error', reject);
-        child.on('close', (code) => {
-          if (code === 0) resolve();
-          else reject(new Error(`opencode exited with status ${code}`));
-        });
-      });
-      yield { type: 'completed', runId: opts.runId };
-    } catch (err) {
-      yield { type: 'failed', runId: opts.runId, data: err instanceof Error ? err.message : String(err) };
-    }
+  compile(input: HostAdapterCompileInput) {
+    return compileHostAgent(this.host, input);
+  }
+
+  materializeStatic(compiled: ReturnType<OpenCodeAdapter['compile']>, target: StaticMaterializationTarget): StaticMaterialization {
+    return materializeTextFiles(this.host, target.directory, [
+      {
+        relativePath: `${compiled.slug}.md`,
+        content: renderAgentMarkdown(compiled),
+      },
+    ]);
+  }
+
+  composeSession(compiled: ReturnType<OpenCodeAdapter['compile']>, _context: SessionContext): SessionComposition {
+    const descriptor = {
+      overlay: {
+        agents: [
+          {
+            key: compiled.slug,
+            prompt: compiled.systemPrompt,
+          },
+        ],
+      },
+    };
+
+    return {
+      host: this.host,
+      descriptor,
+      shellCommand: `opencode --descriptor '${JSON.stringify(descriptor)}'`,
+    };
   }
 }

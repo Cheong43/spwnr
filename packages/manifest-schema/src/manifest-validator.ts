@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { SubagentManifest } from '@orchex/core-types';
+import type { SubagentManifest } from '@spwnr/core-types';
 
 export interface ValidationError {
   path: string;
@@ -10,8 +10,9 @@ export type ValidationResult =
   | { success: true; data: SubagentManifest }
   | { success: false; errors: ValidationError[] };
 
-const BackendTypeSchema = z.enum(['opencode', 'claude_code', 'openclaw', 'codex', 'cline']);
+const HostTypeSchema = z.enum(['claude_code', 'codex', 'copilot', 'opencode']);
 const PolicyDecisionSchema = z.enum(['allow', 'ask', 'deny']);
+const HostScopeSchema = z.enum(['project', 'user']);
 
 const PolicyRuleSchema = z.object({
   pattern: z.string(),
@@ -69,6 +70,16 @@ const ModelBindingSchema = z.object({
   }).optional(),
 });
 
+const InjectionModeConfigSchema = z.object({
+  enabled: z.boolean(),
+  defaultScope: HostScopeSchema.optional(),
+});
+
+const HostInjectionConfigSchema = z.object({
+  static: InjectionModeConfigSchema.optional(),
+  session: InjectionModeConfigSchema.optional(),
+});
+
 const SemverRegex = /^\d+\.\d+\.\d+$/;
 
 export const SubagentManifestSchema = z.object({
@@ -86,12 +97,23 @@ export const SubagentManifestSchema = z.object({
       tone: z.string().optional(),
       style: z.string().optional(),
     }).optional(),
+    instructions: z.object({
+      system: z.string(),
+    }),
     input: z.object({ schema: z.string() }),
     output: z.object({ schema: z.string() }),
     workflow: z.object({
       entry: z.string(),
       steps: z.array(WorkflowStepSchema).optional(),
-    }),
+    }).optional(),
+    injection: z.object({
+      hosts: z.object({
+        claude_code: HostInjectionConfigSchema.optional(),
+        codex: HostInjectionConfigSchema.optional(),
+        copilot: HostInjectionConfigSchema.optional(),
+        opencode: HostInjectionConfigSchema.optional(),
+      }).optional(),
+    }).optional(),
     skills: z.object({
       refs: z.array(SkillRefSchema),
     }).optional(),
@@ -102,7 +124,7 @@ export const SubagentManifestSchema = z.object({
       schema: z.string().optional(),
     }).optional(),
     compatibility: z.object({
-      hosts: z.array(BackendTypeSchema).min(1),
+      hosts: z.array(HostTypeSchema).min(1),
       mode: z.enum(['single_host', 'cross_host']).optional(),
       minVersions: z.record(z.string()).optional(),
       badges: z.array(z.string()).optional(),

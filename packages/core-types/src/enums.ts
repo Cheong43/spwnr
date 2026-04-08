@@ -1,12 +1,33 @@
-export const BackendType = {
-  OPENCODE: 'opencode',
+export const HostType = {
   CLAUDE_CODE: 'claude_code',
-  OPENCLAW: 'openclaw',
   CODEX: 'codex',
+  COPILOT: 'copilot',
+  OPENCODE: 'opencode',
+} as const;
+export type HostType = (typeof HostType)[keyof typeof HostType];
+
+export const LegacyRuntimeType = {
+  OPENCLAW: 'openclaw',
   CLINE: 'cline',
   SIMULATED: 'simulated',
 } as const;
+export type LegacyRuntimeType = (typeof LegacyRuntimeType)[keyof typeof LegacyRuntimeType];
+
+/**
+ * @deprecated Use HostType for all public manifest and injection flows.
+ * BackendType is kept only so deprecated internal runtime packages still compile.
+ */
+export const BackendType = {
+  ...HostType,
+  ...LegacyRuntimeType,
+} as const;
 export type BackendType = (typeof BackendType)[keyof typeof BackendType];
+
+export const HostScope = {
+  PROJECT: 'project',
+  USER: 'user',
+} as const;
+export type HostScope = (typeof HostScope)[keyof typeof HostScope];
 
 export type PolicyDecision = 'allow' | 'ask' | 'deny';
 

@@ -2,7 +2,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { validateManifest } from './manifest-validator.js';
-import type { SubagentManifest } from '@orchex/core-types';
+import type { SubagentManifest } from '@spwnr/core-types';
 
 export interface LoadResult {
   manifest: SubagentManifest;

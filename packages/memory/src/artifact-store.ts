@@ -1,10 +1,10 @@
 import { join } from 'path'
 import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from 'fs'
-import { getOrchexHome } from './db.js'
+import { getSpwnrHome } from './db.js'
 
 export class ArtifactStore {
   public getDir(runId: string): string {
-    return join(getOrchexHome(), 'artifacts', runId)
+    return join(getSpwnrHome(), 'artifacts', runId)
   }
 
   write(runId: string, filename: string, content: string | Buffer): string {

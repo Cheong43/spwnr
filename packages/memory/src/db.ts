@@ -1,7 +1,7 @@
 import type Database from 'better-sqlite3'
-import { openDatabase, getOrchexHome, getDbPath } from '@orchex/registry'
+import { openDatabase, getSpwnrHome, getDbPath } from '@spwnr/registry'
 
-export { getOrchexHome }
+export { getSpwnrHome }
 export { getDbPath as getMemoryDbPath }
 
 export function openRunDatabase(dbPath?: string): Database.Database {

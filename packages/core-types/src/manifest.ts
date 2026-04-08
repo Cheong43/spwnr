@@ -1,4 +1,4 @@
-import type { BackendType, PolicyDecision } from './enums.js';
+import type { HostScope, HostType, PolicyDecision } from './enums.js';
 
 export interface PolicyRule {
   pattern: string;
@@ -49,6 +49,27 @@ export interface ModelBinding {
   };
 }
 
+export interface PromptInstructions {
+  system: string;
+}
+
+export interface InjectionModeConfig {
+  enabled: boolean;
+  defaultScope?: HostScope;
+}
+
+export interface HostInjectionConfig {
+  static?: InjectionModeConfig;
+  session?: InjectionModeConfig;
+}
+
+export interface InjectionHosts {
+  claude_code?: HostInjectionConfig;
+  codex?: HostInjectionConfig;
+  copilot?: HostInjectionConfig;
+  opencode?: HostInjectionConfig;
+}
+
 export interface SubagentManifest {
   apiVersion: string;
   kind: 'Subagent';
@@ -64,11 +85,15 @@ export interface SubagentManifest {
       tone?: string;
       style?: string;
     };
+    instructions: PromptInstructions;
     input: { schema: string };
     output: { schema: string };
-    workflow: {
+    workflow?: {
       entry: string;
       steps?: WorkflowStep[];
+    };
+    injection?: {
+      hosts?: InjectionHosts;
     };
     skills?: {
       refs: SkillRef[];
@@ -80,7 +105,7 @@ export interface SubagentManifest {
       schema?: string;
     };
     compatibility?: {
-      hosts: BackendType[];
+      hosts: HostType[];
       mode?: 'single_host' | 'cross_host';
       minVersions?: Record<string, string>;
       badges?: string[];

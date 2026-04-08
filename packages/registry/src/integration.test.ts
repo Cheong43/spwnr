@@ -19,15 +19,15 @@ describe('Integration: full publish→list→info→install cycle', () => {
   beforeEach(() => {
     tmpBase = join(tmpdir(), randomUUID())
     mkdirSync(tmpBase, { recursive: true })
-    process.env.ORCHEX_HOME = tmpBase
+    process.env.SPWNR_HOME = tmpBase
     dbPath = join(tmpBase, 'test.db')
     svc = new RegistryService(dbPath)
   })
 
   afterEach(() => {
-    svc.close()
+    svc?.close()
     rmSync(tmpBase, { recursive: true, force: true })
-    delete process.env.ORCHEX_HOME
+    delete process.env.SPWNR_HOME
   })
 
   it('publish() succeeds for examples/code-reviewer', async () => {

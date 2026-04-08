@@ -1,80 +1,77 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { EventEmitter } from 'events';
-import { ErrorCodes } from '@orchex/core-types';
-import type { AdapterEvent } from '@orchex/broker';
-
-vi.mock('child_process', () => ({
-  execFileSync: vi.fn(),
-  spawn: vi.fn(),
-}));
-
-import { execFileSync, spawn } from 'child_process';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { afterEach, describe, expect, it } from 'vitest';
 import { ClaudeAdapter } from './claude-adapter.js';
 
-const baseOpts = {
-  runId: 'claude-run-1',
-  manifest: { name: 'test', version: '1.0.0', tools: [] } as any,
-  input: {},
-  policy: { allowedTools: [], deniedTools: [], maxRetries: 0, timeoutMs: 5000, requiresApproval: false, rawDecisions: {} },
-  workDir: '/workspace',
-};
+function createPackageDir(): string {
+  const dir = mkdtempSync(join(tmpdir(), 'spwnr-claude-adapter-'));
+  mkdirSync(join(dir, 'prompts'), { recursive: true });
+  writeFileSync(join(dir, 'prompts', 'system.md'), 'Review with care.');
+  return dir;
+}
 
-function makeChildProcess(exitCode: number, error?: Error) {
-  const child = new EventEmitter();
-  if (error) {
-    setImmediate(() => child.emit('error', error));
-  } else {
-    setImmediate(() => child.emit('close', exitCode));
-  }
-  return child;
+function createManifest() {
+  return {
+    apiVersion: 'subagent.io/v0.1',
+    kind: 'Subagent' as const,
+    metadata: {
+      name: 'Code Reviewer',
+      version: '0.1.0',
+      description: 'Review pull requests.',
+    },
+    spec: {
+      instructions: {
+        system: './prompts/system.md',
+      },
+      input: { schema: './schemas/input.schema.json' },
+      output: { schema: './schemas/output.schema.json' },
+      skills: {
+        refs: [{ name: 'diff-reader', path: './skills/diff-reader' }],
+      },
+    },
+  };
 }
 
 describe('ClaudeAdapter', () => {
-  let adapter: ClaudeAdapter;
+  const createdDirs: string[] = [];
 
-  beforeEach(() => {
-    vi.mocked(execFileSync).mockReset();
-    vi.mocked(spawn).mockReset();
-    adapter = new ClaudeAdapter();
+  afterEach(() => {
+    for (const dir of createdDirs.splice(0)) {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
-  it('isAvailable() returns false when `which claude` fails', async () => {
-    vi.mocked(execFileSync).mockImplementation(() => { throw new Error('not found'); });
-    expect(await adapter.isAvailable()).toBe(false);
+  it('materializes a markdown agent file', () => {
+    const packageDir = createPackageDir();
+    createdDirs.push(packageDir);
+    const targetDir = join(packageDir, 'out');
+    const adapter = new ClaudeAdapter();
+    const compiled = adapter.compile({ manifest: createManifest(), packageDir });
+
+    const result = adapter.materializeStatic(compiled, { directory: targetDir, scope: 'project' });
+
+    expect(result.files).toHaveLength(1);
+    expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('Review with care.');
   });
 
-  it('isAvailable() returns true when `which claude` succeeds', async () => {
-    vi.mocked(execFileSync).mockReturnValue(Buffer.from('/usr/local/bin/claude'));
-    expect(await adapter.isAvailable()).toBe(true);
-  });
+  it('composes a claude session bundle', () => {
+    const packageDir = createPackageDir();
+    createdDirs.push(packageDir);
+    const adapter = new ClaudeAdapter();
+    const compiled = adapter.compile({ manifest: createManifest(), packageDir });
 
-  it('run() throws BACKEND_UNAVAILABLE when not available', async () => {
-    vi.mocked(execFileSync).mockImplementation(() => { throw new Error('not found'); });
-    const iter = adapter.run(baseOpts);
-    await expect(iter.next()).rejects.toMatchObject({ code: ErrorCodes.BACKEND_UNAVAILABLE });
-  });
+    const result = adapter.composeSession(compiled, { scope: 'project' });
 
-  it('run() yields started as first event when available', async () => {
-    vi.mocked(execFileSync).mockReturnValue(Buffer.from('/usr/local/bin/claude'));
-    vi.mocked(spawn).mockReturnValue(makeChildProcess(0) as any);
-    const iter = adapter.run(baseOpts);
-    const first = await iter.next();
-    expect(first.value?.type).toBe('started');
-  });
-
-  it('run() yields completed when spawn exits with code 0', async () => {
-    vi.mocked(execFileSync).mockReturnValue(Buffer.from('/usr/bin/claude'));
-    vi.mocked(spawn).mockReturnValue(makeChildProcess(0) as any);
-    const events: AdapterEvent[] = [];
-    for await (const e of adapter.run(baseOpts)) events.push(e);
-    expect(events.map(e => e.type)).toEqual(['started', 'completed']);
-  });
-
-  it('run() yields failed when spawn exits with non-zero code', async () => {
-    vi.mocked(execFileSync).mockReturnValue(Buffer.from('/usr/bin/claude'));
-    vi.mocked(spawn).mockReturnValue(makeChildProcess(1) as any);
-    const events: AdapterEvent[] = [];
-    for await (const e of adapter.run(baseOpts)) events.push(e);
-    expect(events.map(e => e.type)).toEqual(['started', 'failed']);
+    expect(result.descriptor).toEqual(
+      expect.objectContaining({
+        agents: [
+          expect.objectContaining({
+            name: 'code-reviewer',
+          }),
+        ],
+      }),
+    );
+    expect(result.shellCommand).toContain('claude --agents');
   });
 });

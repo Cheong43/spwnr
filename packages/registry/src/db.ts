@@ -2,12 +2,12 @@ import Database from 'better-sqlite3'
 import { join } from 'path'
 import { mkdirSync } from 'fs'
 
-export function getOrchexHome(): string {
-  return process.env.ORCHEX_HOME ?? join(process.env.HOME ?? '~', '.orchex')
+export function getSpwnrHome(): string {
+  return process.env.SPWNR_HOME ?? join(process.env.HOME ?? '~', '.spwnr')
 }
 
 export function getDbPath(): string {
-  return join(getOrchexHome(), 'sqlite', 'orchex.db')
+  return join(getSpwnrHome(), 'sqlite', 'spwnr.db')
 }
 
 export function openDatabase(dbPath?: string): Database.Database {

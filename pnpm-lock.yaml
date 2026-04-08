@@ -8,37 +8,31 @@ importers:
 
   .:
     devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.17
       '@vitest/coverage-v8':
         specifier: ^2.0.0
-        version: 2.1.9(vitest@2.1.9(@types/node@25.5.2))
+        version: 2.1.9(vitest@2.1.9(@types/node@22.19.17))
       typescript:
         specifier: ^5.4.5
         version: 5.9.3
       vitest:
         specifier: ^2.0.0
-        version: 2.1.9(@types/node@25.5.2)
+        version: 2.1.9(@types/node@22.19.17)
 
-  apps/orchex-cli:
+  apps/spwnr-cli:
     dependencies:
-      '@orchex/adapters':
-        specifier: workspace:*
-        version: link:../../packages/adapters
-      '@orchex/broker':
-        specifier: workspace:*
-        version: link:../../packages/broker
-      '@orchex/core-types':
+      '@spwnr/core-types':
         specifier: workspace:*
         version: link:../../packages/core-types
-      '@orchex/manifest-schema':
+      '@spwnr/injector':
+        specifier: workspace:*
+        version: link:../../packages/injector
+      '@spwnr/manifest-schema':
         specifier: workspace:*
         version: link:../../packages/manifest-schema
-      '@orchex/memory':
-        specifier: workspace:*
-        version: link:../../packages/memory
-      '@orchex/policy':
-        specifier: workspace:*
-        version: link:../../packages/policy
-      '@orchex/registry':
+      '@spwnr/registry':
         specifier: workspace:*
         version: link:../../packages/registry
       commander:
@@ -60,42 +54,39 @@ importers:
 
   packages/adapters:
     dependencies:
-      '@orchex/broker':
-        specifier: workspace:*
-        version: link:../broker
-      '@orchex/core-types':
+      '@spwnr/core-types':
         specifier: workspace:*
         version: link:../core-types
-      '@orchex/policy':
-        specifier: workspace:*
-        version: link:../policy
     devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.17
       typescript:
         specifier: ^5.4.0
         version: 5.9.3
       vitest:
         specifier: ^2.0.0
-        version: 2.1.9(@types/node@25.5.2)
+        version: 2.1.9(@types/node@22.19.17)
 
   packages/broker:
     dependencies:
-      '@orchex/core-types':
+      '@spwnr/core-types':
         specifier: workspace:*
         version: link:../core-types
-      '@orchex/manifest-schema':
+      '@spwnr/manifest-schema':
         specifier: workspace:*
         version: link:../manifest-schema
-      '@orchex/memory':
+      '@spwnr/memory':
         specifier: workspace:*
         version: link:../memory
-      '@orchex/policy':
+      '@spwnr/policy':
         specifier: workspace:*
         version: link:../policy
-      '@orchex/registry':
+      '@spwnr/registry':
         specifier: workspace:*
         version: link:../registry
     devDependencies:
-      '@orchex/adapters':
+      '@spwnr/adapters':
         specifier: workspace:*
         version: link:../adapters
       typescript:
@@ -114,9 +105,31 @@ importers:
         specifier: ^1.6.0
         version: 1.6.1(@types/node@25.5.2)
 
+  packages/injector:
+    dependencies:
+      '@spwnr/adapters':
+        specifier: workspace:*
+        version: link:../adapters
+      '@spwnr/core-types':
+        specifier: workspace:*
+        version: link:../core-types
+      '@spwnr/registry':
+        specifier: workspace:*
+        version: link:../registry
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.17
+      typescript:
+        specifier: ^5.4.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@22.19.17)
+
   packages/manifest-schema:
     dependencies:
-      '@orchex/core-types':
+      '@spwnr/core-types':
         specifier: workspace:*
         version: link:../core-types
       yaml:
@@ -135,10 +148,10 @@ importers:
 
   packages/memory:
     dependencies:
-      '@orchex/core-types':
+      '@spwnr/core-types':
         specifier: workspace:*
         version: link:../core-types
-      '@orchex/registry':
+      '@spwnr/registry':
         specifier: workspace:*
         version: link:../registry
       better-sqlite3:
@@ -157,7 +170,7 @@ importers:
 
   packages/policy:
     dependencies:
-      '@orchex/core-types':
+      '@spwnr/core-types':
         specifier: workspace:*
         version: link:../core-types
       yaml:
@@ -173,10 +186,10 @@ importers:
 
   packages/registry:
     dependencies:
-      '@orchex/core-types':
+      '@spwnr/core-types':
         specifier: workspace:*
         version: link:../core-types
-      '@orchex/manifest-schema':
+      '@spwnr/manifest-schema':
         specifier: workspace:*
         version: link:../manifest-schema
       better-sqlite3:
@@ -1768,7 +1781,7 @@ snapshots:
       '@types/node': 22.19.17
       minipass: 4.2.8
 
-  '@vitest/coverage-v8@2.1.9(vitest@2.1.9(@types/node@25.5.2))':
+  '@vitest/coverage-v8@2.1.9(vitest@2.1.9(@types/node@22.19.17))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 0.2.3
@@ -1782,7 +1795,7 @@ snapshots:
       std-env: 3.10.0
       test-exclude: 7.0.2
       tinyrainbow: 1.2.0
-      vitest: 2.1.9(@types/node@25.5.2)
+      vitest: 2.1.9(@types/node@22.19.17)
     transitivePeerDependencies:
       - supports-color
 
@@ -1799,13 +1812,13 @@ snapshots:
       chai: 5.3.3
       tinyrainbow: 1.2.0
 
-  '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@25.5.2))':
+  '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@22.19.17))':
     dependencies:
       '@vitest/spy': 2.1.9
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 5.4.21(@types/node@25.5.2)
+      vite: 5.4.21(@types/node@22.19.17)
 
   '@vitest/pretty-format@2.1.9':
     dependencies:
@@ -2575,7 +2588,7 @@ snapshots:
   vitest@2.1.9(@types/node@22.19.17):
     dependencies:
       '@vitest/expect': 2.1.9
-      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@25.5.2))
+      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@22.19.17))
       '@vitest/pretty-format': 2.1.9
       '@vitest/runner': 2.1.9
       '@vitest/snapshot': 2.1.9
@@ -2610,7 +2623,7 @@ snapshots:
   vitest@2.1.9(@types/node@25.5.2):
     dependencies:
       '@vitest/expect': 2.1.9
-      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@25.5.2))
+      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@22.19.17))
       '@vitest/pretty-format': 2.1.9
       '@vitest/runner': 2.1.9
       '@vitest/snapshot': 2.1.9

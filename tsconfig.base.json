@@ -3,6 +3,17 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@spwnr/adapters": ["packages/adapters/dist/index.d.ts"],
+      "@spwnr/broker": ["packages/broker/dist/index.d.ts"],
+      "@spwnr/core-types": ["packages/core-types/dist/index.d.ts"],
+      "@spwnr/injector": ["packages/injector/dist/index.d.ts"],
+      "@spwnr/manifest-schema": ["packages/manifest-schema/dist/index.d.ts"],
+      "@spwnr/memory": ["packages/memory/dist/index.d.ts"],
+      "@spwnr/policy": ["packages/policy/dist/index.d.ts"],
+      "@spwnr/registry": ["packages/registry/dist/index.d.ts"]
+    },
     "lib": ["ES2022"],
     "strict": true,
     "declaration": true,

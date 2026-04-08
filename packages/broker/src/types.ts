@@ -1,5 +1,5 @@
-import type { BackendType, RunStatus } from '@orchex/core-types';
-import type { EffectivePolicy } from '@orchex/policy';
+import type { BackendType, RunStatus } from '@spwnr/core-types';
+import type { SubagentManifest } from '@spwnr/core-types';
 
 export interface BrokerRunOptions {
   packageName: string;
@@ -30,8 +30,8 @@ export interface BackendAdapter {
 
 export interface BackendAdapterRunOptions {
   runId: string;
-  manifest: import('@orchex/core-types').SubagentManifest;
+  manifest: SubagentManifest;
   input: Record<string, unknown>;
-  policy: EffectivePolicy;
+  policy?: unknown;
   workDir: string;
 }

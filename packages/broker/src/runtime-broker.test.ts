@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RuntimeBroker } from './runtime-broker.js';
 import { BackendSelector } from './backend-selector.js';
 import { RetryStrategy } from './retry-strategy.js';
-import { PolicyMerger } from '@orchex/policy';
-import { BackendType, ErrorCodes, OrchexError } from '@orchex/core-types';
-import type { RunStore, CheckpointStore, AgentMemoryStore, ArtifactStore } from '@orchex/memory';
-import type { RegistryService } from '@orchex/registry';
+import { PolicyMerger } from '@spwnr/policy';
+import { BackendType, ErrorCodes, SpwnrError } from '@spwnr/core-types';
+import type { RunStore, CheckpointStore, AgentMemoryStore, ArtifactStore } from '@spwnr/memory';
+import type { RegistryService } from '@spwnr/registry';
 import type { BackendAdapter, AdapterEvent, BackendAdapterRunOptions } from './types.js';
-import type { SubagentManifest } from '@orchex/core-types';
+import type { SubagentManifest } from '@spwnr/core-types';
 
 const makeManifest = (name = 'test-pkg'): SubagentManifest => ({
   apiVersion: 'v1',
@@ -186,7 +186,7 @@ describe('RuntimeBroker', () => {
   it('returns FAILED status when package not found', async () => {
     const { broker, mockRunStore, mockRegistry } = makeDeps();
     (mockRegistry.info as ReturnType<typeof vi.fn>).mockImplementation(() => {
-      throw new OrchexError(ErrorCodes.PACKAGE_NOT_FOUND, 'Package not found');
+      throw new SpwnrError(ErrorCodes.PACKAGE_NOT_FOUND, 'Package not found');
     });
 
     await expect(broker.run({ packageName: 'missing-pkg' })).rejects.toMatchObject({

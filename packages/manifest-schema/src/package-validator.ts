@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { SubagentManifest } from '@orchex/core-types';
+import type { SubagentManifest } from '@spwnr/core-types';
 
 export interface LayoutError {
   code: string;
@@ -14,6 +14,15 @@ export function validatePackageLayout(
   options: { strict?: boolean } = {},
 ): LayoutError[] {
   const errors: LayoutError[] = [];
+
+  const systemPromptPath = join(packageDir, manifest.spec.instructions.system);
+  if (!existsSync(systemPromptPath)) {
+    errors.push({
+      code: 'MANIFEST_INVALID',
+      message: `spec.instructions.system file not found: ${manifest.spec.instructions.system}`,
+      path: systemPromptPath,
+    });
+  }
 
   // Check 1: spec.input.schema file exists
   const inputSchemaPath = join(packageDir, manifest.spec.input.schema);
@@ -35,17 +44,18 @@ export function validatePackageLayout(
     });
   }
 
-  // Check 3: workflow entry file exists
-  // Look for workflow/{entry}.yaml or workflow/{entry}.yml
-  const entry = manifest.spec.workflow.entry;
-  const workflowYaml = join(packageDir, 'workflow', `${entry}.yaml`);
-  const workflowYml = join(packageDir, 'workflow', `${entry}.yml`);
-  if (!existsSync(workflowYaml) && !existsSync(workflowYml)) {
-    errors.push({
-      code: 'WORKFLOW_INVALID',
-      message: `Workflow entry file not found: workflow/${entry}.yaml`,
-      path: workflowYaml,
-    });
+  // Check 3: legacy workflow entry file exists when workflow metadata is declared.
+  if (manifest.spec.workflow) {
+    const entry = manifest.spec.workflow.entry;
+    const workflowYaml = join(packageDir, 'workflow', `${entry}.yaml`);
+    const workflowYml = join(packageDir, 'workflow', `${entry}.yml`);
+    if (!existsSync(workflowYaml) && !existsSync(workflowYml)) {
+      errors.push({
+        code: 'WORKFLOW_INVALID',
+        message: `Workflow entry file not found: workflow/${entry}.yaml`,
+        path: workflowYaml,
+      });
+    }
   }
 
   // Check 4: skill paths exist (if skills are declared with a path)

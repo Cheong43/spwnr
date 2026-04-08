@@ -1,33 +1,37 @@
-# Orchex
+# Spwnr
 
-Orchex is a pnpm monorepo for a cross-runtime subagent platform. It now includes the core layers needed for an MVP execution loop:
+Spwnr is a pnpm monorepo for packaging and declaratively injecting agent capabilities into host-native runtimes such as Claude Code, Codex, Copilot, and OpenCode.
 
-- shared subagent protocol and runtime types
-- manifest loading and package layout validation
-- local package registry with tarball publish/install flow
-- runtime broker and backend selection
-- adapter layer for `simulated`, `opencode`, and `claude_code`
-- policy merging and host policy mapping helpers
-- run, checkpoint, artifact, and agent memory stores
-- a CLI for validate, publish, inspect, install, and run workflows
+Spwnr does not run agents for the host. It owns package definition, validation, publishing, installation, static injection, and session descriptor composition. Scheduling and execution stay inside the host itself.
 
-The product and architecture direction live in [Orchex-PRD-AND-TDD.md](./Orchex-PRD-AND-TDD.md). A more task-focused walkthrough is available in [docs/guide/getting-started.md](./docs/guide/getting-started.md).
+The current direction is documented in [Spwnr-PRD-AND-TDD.md](./Spwnr-PRD-AND-TDD.md). A usage walkthrough lives in [docs/guide/getting-started.md](./docs/guide/getting-started.md).
+
+## What Spwnr Includes
+
+- prompt-first subagent manifest types and validation
+- local registry with publish, resolve, install, list, and info flows
+- host adapters that compile a shared package manifest into host-native assets
+- an injector layer for static file materialization and session descriptor composition
+- a CLI for `validate`, `publish`, `install`, `list`, `info`, `inject`, and `session`
+
+Deprecated internal runtime packages still exist in the repo for future experiments, but they are not part of the current product surface.
 
 ## Workspace Layout
 
 ```text
 apps/
-  orchex-cli/           CLI entry point and command handlers
+  spwnr-cli/            CLI entry point and command handlers
 packages/
-  adapters/             backend adapters and adapter registry
-  broker/               runtime broker, retry strategy, backend selection
-  core-types/           shared protocol, enums, and error types
+  adapters/             host adapters for Claude Code, Codex, Copilot, OpenCode
+  broker/               deprecated internal runtime seed
+  core-types/           shared manifest, host, and error types
+  injector/             static injection and session composition
   manifest-schema/      manifest parsing and package validation
-  memory/               run/checkpoint/artifact/memory persistence
-  policy/               policy merge and host-mapping helpers
+  memory/               deprecated internal runtime seed
+  policy/               dormant policy extension interfaces
   registry/             local registry, tarballs, package metadata
 examples/
-  code-reviewer/        example subagent package
+  code-reviewer/        example agent package
 docs/
   guide/                usage walkthroughs
   superpowers/specs/    design notes
@@ -38,87 +42,74 @@ docs/
 - Node.js 22+
 - pnpm 9+
 
-## Install
+## Install And Verify
 
 ```bash
 pnpm install
-```
-
-## Common Commands
-
-```bash
 pnpm build
 pnpm test
 ```
 
-Current test status in this branch: `220` tests across `32` test files are passing with `pnpm test`.
+Current verified status in this branch: `126` tests across `28` test files passed with `pnpm test`.
 
-## What Works Today
+## CLI Surface
 
-Implemented:
-
-- validate a package from `subagent.yaml` or `subagent.json`
-- verify package layout for schemas, workflows, and local skill paths
-- publish package metadata and tarballs into a local SQLite-backed registry
-- inspect published package versions with `list` and `info`
-- install published package contents into the local Orchex home
-- execute published packages through the runtime broker
-- persist run state, checkpoints, artifacts, and agent memory in the memory layer
-- select or simulate backends for local testing
-
-Still early / incomplete:
-
-- remote registry distribution
-- production-grade host integrations
-- rich policy enforcement during execution
-- `--watch` mode on the CLI `run` command
-- polished packaging for all workspace packages outside the monorepo context
-
-## CLI Commands
-
-When working inside this monorepo, prefer invoking the CLI through the workspace script:
+Inside this monorepo, the easiest way to invoke the CLI is:
 
 ```bash
-pnpm --filter @orchex/cli dev -- --help
+pnpm --filter @spwnr/cli dev -- --help
 ```
 
-The CLI currently exposes these commands:
+Commands:
 
 ```text
-validate <dir>          Validate a subagent package directory
-publish <dir>           Publish a subagent package to the local registry
-install <name> [ver]    Install a subagent package from the local registry
-list|ls                 List published subagent packages in the local registry
-info <name> [ver]       Show details about a subagent package
-run <name> [ver]        Run a published subagent package
+validate <dir>          Validate an agent package directory
+publish <dir>           Publish an agent package to the local registry
+install <name> [ver]    Install a package from the local registry into SPWNR_HOME
+list|ls                 List published agent packages in the local registry
+info <name> [ver]       Show package details and host injection support
+inject <name> [ver]     Materialize host-native static assets
+session <name> [ver]    Compose a host session descriptor or shell snippet
+run <name> [ver]        Deprecated; use inject/session instead
 ```
 
-The `run` command supports:
+## Injection Modes
 
-- `--input <json>` to pass structured input
-- `--backend <type>` to request a backend
-- `--watch` is present but not implemented yet
+Spwnr supports two injection paths:
 
-Available backends in the current codebase:
+- Static injection: write host-native assets into project-level or user-level directories.
+- Session composition: emit a descriptor or shell snippet that a host can consume for the current session.
 
-- `simulated`
-- `opencode`
+Current host mapping:
+
 - `claude_code`
+  Static: `.claude/agents/*.md` or `~/.claude/agents/*.md`
+  Session: JSON bundle compatible with `claude --agents`
+- `copilot`
+  Static: `.github/agents/*.agent.md` or `~/.copilot/agents/*.agent.md`
+  Session: temporary profile descriptor or shell snippet
+- `opencode`
+  Static: `.opencode/agents/*.md` or `~/.config/opencode/agents/*.md`
+  Session: overlay or descriptor output
+- `codex`
+  Static: `.codex/skills/<name>/SKILL.md` plus metadata
+  Session: preview-only descriptor output
 
 ## Local Storage
 
-By default Orchex stores data under `~/.orchex`:
+By default Spwnr stores registry data under `~/.spwnr`:
 
-- registry DB: `~/.orchex/sqlite/orchex.db`
-- tarballs: `~/.orchex/tarballs/<name>/<version>.tar.gz`
-- installed packages: `~/.orchex/packages/<name>/<version>`
-- run data: `~/.orchex/runs/` and the run-memory SQLite store
+- registry DB: `~/.spwnr/sqlite/spwnr.db`
+- tarballs: `~/.spwnr/tarballs/<name>/<version>.tar.gz`
+- installed packages: `~/.spwnr/packages/<name>/<version>`
 
-Override the root location with `ORCHEX_HOME`:
+Override the root location with `SPWNR_HOME`:
 
 ```bash
-ORCHEX_HOME=/tmp/orchex-demo pnpm --filter @orchex/cli dev -- list
+SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- list
 ```
+
+Spwnr does not provide compatibility fallbacks for older names or older home directories.
 
 ## Example Package
 
@@ -140,61 +131,59 @@ examples/code-reviewer/
 
 Its manifest demonstrates:
 
-- metadata and semantic versioning
-- workflow entry definition
+- `spec.instructions.system` as the primary prompt entry
+- `spec.injection.hosts` for host-specific static and session support
 - local skill references
 - tool allow/ask/deny hints
 - compatibility targets
 - memory schema declaration
 - artifact declarations
 - model binding metadata
+- legacy `workflow` metadata retained without execution semantics
 
-## Typical Dev Flow
+## Typical Flow
 
-1. Install dependencies:
-
-```bash
-pnpm install
-```
-
-2. Run the test suite:
+1. Validate the example package:
 
 ```bash
-pnpm test
+pnpm --filter @spwnr/cli dev -- validate examples/code-reviewer --strict
 ```
 
-3. Validate the example package:
+2. Publish it into an isolated local registry:
 
 ```bash
-pnpm --filter @orchex/cli dev -- validate examples/code-reviewer --strict
+SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- publish examples/code-reviewer
 ```
 
-4. Publish it into an isolated local registry:
+3. Inspect the published package and host matrix:
 
 ```bash
-ORCHEX_HOME=/tmp/orchex-demo pnpm --filter @orchex/cli dev -- publish examples/code-reviewer
+SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- info code-reviewer
 ```
 
-5. Inspect what was published:
+4. Inject it into a host:
 
 ```bash
-ORCHEX_HOME=/tmp/orchex-demo pnpm --filter @orchex/cli dev -- list
-ORCHEX_HOME=/tmp/orchex-demo pnpm --filter @orchex/cli dev -- info code-reviewer
+SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- inject code-reviewer --host claude_code --scope project
+SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- inject code-reviewer --host codex --scope project
 ```
 
-6. Run it with the simulated backend:
+5. Compose a session descriptor when you want temporary injection:
 
 ```bash
-ORCHEX_HOME=/tmp/orchex-demo pnpm --filter @orchex/cli dev -- run code-reviewer --backend simulated --input '{}'
+SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- session code-reviewer --host claude_code --format json
+SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- session code-reviewer --host copilot --format shell
 ```
 
-## Notes On Current Runtime Packaging
+## Notes
 
-Inside the monorepo, the source and tests are healthy, and `pnpm build` succeeds for the packages that currently emit `dist/`. However, some workspace packages are still exported directly from `src/`, so the repository is best treated as a workspace-first development environment right now rather than a polished packaged release.
+- `install` remains available for extracting package contents into the local Spwnr home, but injection is now the main consumer path.
+- `packages/policy` is intentionally dormant in the current product path and only exposes future-facing extension interfaces.
+- `packages/broker` and `packages/memory` remain in the repo as deprecated internal seeds and are not wired into the main CLI flow.
 
 ## Next Reading
 
 - [Getting Started](./docs/guide/getting-started.md)
-- [PRD and TDD](./Orchex-PRD-AND-TDD.md)
-- [M1/M2 design notes](./docs/superpowers/specs/2026-04-07-orchex-m1-m2-design.md)
-- [M3/M4/M5 design notes](./docs/superpowers/specs/2026-04-07-orchex-m3-m4-m5-design.md)
+- [PRD and TDD](./Spwnr-PRD-AND-TDD.md)
+- [M1/M2 design notes](./docs/superpowers/specs/2026-04-07-spwnr-m1-m2-design.md)
+- [M3/M4/M5 design notes](./docs/superpowers/specs/2026-04-07-spwnr-m3-m4-m5-design.md)

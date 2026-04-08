@@ -1,11 +1,11 @@
 {
-  "name": "@orchex/policy",
+  "name": "@spwnr/policy",
   "version": "0.1.0",
   "type": "module",
   "exports": { ".": { "default": "./src/index.ts" } },
   "scripts": { "build": "tsc", "test": "vitest run" },
   "dependencies": {
-    "@orchex/core-types": "workspace:*",
+    "@spwnr/core-types": "workspace:*",
     "yaml": "^2.4.0"
   },
   "devDependencies": {

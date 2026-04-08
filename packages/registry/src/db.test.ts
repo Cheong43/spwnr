@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto'
 import { tmpdir } from 'os'
 import { existsSync, rmSync } from 'fs'
 import { join } from 'path'
-import { openDatabase, getOrchexHome } from './db.js'
+import { openDatabase, getSpwnrHome } from './db.js'
 import type Database from 'better-sqlite3'
 
 function tempDbPath(): string {
@@ -61,19 +61,19 @@ describe('db', () => {
     db1.close()
   })
 
-  it('getOrchexHome returns ~/.orchex by default', () => {
-    const saved = process.env.ORCHEX_HOME
-    delete process.env.ORCHEX_HOME
+  it('getSpwnrHome returns ~/.spwnr by default', () => {
+    const saved = process.env.SPWNR_HOME
+    delete process.env.SPWNR_HOME
     const home = process.env.HOME ?? '~'
-    expect(getOrchexHome()).toBe(join(home, '.orchex'))
-    if (saved !== undefined) process.env.ORCHEX_HOME = saved
+    expect(getSpwnrHome()).toBe(join(home, '.spwnr'))
+    if (saved !== undefined) process.env.SPWNR_HOME = saved
   })
 
-  it('getOrchexHome respects ORCHEX_HOME env var', () => {
-    const saved = process.env.ORCHEX_HOME
-    process.env.ORCHEX_HOME = '/custom/orchex'
-    expect(getOrchexHome()).toBe('/custom/orchex')
-    if (saved !== undefined) process.env.ORCHEX_HOME = saved
-    else delete process.env.ORCHEX_HOME
+  it('getSpwnrHome respects SPWNR_HOME env var', () => {
+    const saved = process.env.SPWNR_HOME
+    process.env.SPWNR_HOME = '/custom/spwnr'
+    expect(getSpwnrHome()).toBe('/custom/spwnr')
+    if (saved !== undefined) process.env.SPWNR_HOME = saved
+    else delete process.env.SPWNR_HOME
   })
 })

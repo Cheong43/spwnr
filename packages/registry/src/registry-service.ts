@@ -4,9 +4,9 @@ import { PackageStore } from './package-store.js'
 import { SignatureService } from './signature-service.js'
 import { TarballService } from './tarball-service.js'
 import { getTarballPath, getInstalledPackageDir } from './artifact-paths.js'
-import { loadPackage } from '@orchex/manifest-schema'
-import { OrchexError, ErrorCodes } from '@orchex/core-types'
-import type { SubagentManifest } from '@orchex/core-types'
+import { loadPackage } from '@spwnr/manifest-schema'
+import { SpwnrError, ErrorCodes } from '@spwnr/core-types'
+import type { SubagentManifest } from '@spwnr/core-types'
 
 export interface PublishResult {
   name: string
@@ -52,7 +52,7 @@ export class RegistryService {
   async publish(packageDir: string): Promise<PublishResult> {
     const result = loadPackage(packageDir)
     if (!result.success) {
-      throw new OrchexError(ErrorCodes.MANIFEST_INVALID, result.error.message, result.error)
+      throw new SpwnrError(ErrorCodes.MANIFEST_INVALID, result.error.message, result.error)
     }
 
     const manifest = result.result.manifest
@@ -84,7 +84,7 @@ export class RegistryService {
     }
 
     if (!versionRow) {
-      throw new OrchexError(
+      throw new SpwnrError(
         ErrorCodes.PACKAGE_NOT_FOUND,
         `Package ${packageName}@${version === 'latest' ? 'latest' : version} not found`,
       )
@@ -96,7 +96,7 @@ export class RegistryService {
     const manifest = JSON.parse(versionRow.manifest_json) as SubagentManifest
     const isValid = this.signer.verify(manifest, versionRow.signature)
     if (!isValid) {
-      throw new OrchexError(
+      throw new SpwnrError(
         ErrorCodes.SIGNATURE_INVALID,
         `Signature verification failed for ${packageName}@${versionRow.version}`,
       )
@@ -122,7 +122,7 @@ export class RegistryService {
     }
 
     if (!versionRow) {
-      throw new OrchexError(
+      throw new SpwnrError(
         ErrorCodes.PACKAGE_NOT_FOUND,
         `Package ${packageName}@${version === 'latest' ? 'latest' : version} not found`,
       )

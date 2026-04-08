@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { openRunDatabase } from './db.js'
 import { RunStore } from './run-store.js'
-import { OrchexError } from '@orchex/core-types'
+import { SpwnrError } from '@spwnr/core-types'
 import type Database from 'better-sqlite3'
 
 let db: Database.Database
@@ -50,8 +50,8 @@ describe('RunStore', () => {
   it('updateStatus() throws RUN_NOT_FOUND for unknown id', () => {
     let err: unknown
     try { store.updateStatus('no-such-id', 'RUNNING') } catch (e) { err = e }
-    expect(err).toBeInstanceOf(OrchexError)
-    expect((err as OrchexError).code).toBe('RUN_NOT_FOUND')
+    expect(err).toBeInstanceOf(SpwnrError)
+    expect((err as SpwnrError).code).toBe('RUN_NOT_FOUND')
   })
 
   it('updateStatus() throws RUN_ALREADY_COMPLETED when run is in terminal state', () => {
@@ -59,8 +59,8 @@ describe('RunStore', () => {
     store.updateStatus(run.runId, 'COMPLETED')
     let err: unknown
     try { store.updateStatus(run.runId, 'RUNNING') } catch (e) { err = e }
-    expect(err).toBeInstanceOf(OrchexError)
-    expect((err as OrchexError).code).toBe('RUN_ALREADY_COMPLETED')
+    expect(err).toBeInstanceOf(SpwnrError)
+    expect((err as SpwnrError).code).toBe('RUN_ALREADY_COMPLETED')
   })
 
   it('get() returns null for unknown id', () => {

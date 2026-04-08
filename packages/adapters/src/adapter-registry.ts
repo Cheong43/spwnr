@@ -1,22 +1,26 @@
-import type { BackendAdapter } from '@orchex/broker';
-import type { BackendType } from '@orchex/core-types';
+import type { HostType } from '@spwnr/core-types';
+import type { HostAdapter } from './host-adapter.js';
 
 export class AdapterRegistry {
-  private adapters = new Map<BackendType, BackendAdapter>();
+  private readonly adapters = new Map<HostType, HostAdapter>();
 
-  register(adapter: BackendAdapter): void {
-    this.adapters.set(adapter.backendType, adapter);
+  register(adapter: HostAdapter): void {
+    this.adapters.set(adapter.host, adapter);
   }
 
-  get(type: BackendType): BackendAdapter | undefined {
-    return this.adapters.get(type);
+  get(host: HostType): HostAdapter | undefined {
+    return this.adapters.get(host);
   }
 
-  getAll(): BackendAdapter[] {
+  require(host: HostType): HostAdapter {
+    const adapter = this.adapters.get(host);
+    if (!adapter) {
+      throw new Error(`No host adapter registered for ${host}`);
+    }
+    return adapter;
+  }
+
+  getAll(): HostAdapter[] {
     return [...this.adapters.values()];
-  }
-
-  has(type: BackendType): boolean {
-    return this.adapters.has(type);
   }
 }

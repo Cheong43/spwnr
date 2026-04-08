@@ -1,5 +1,5 @@
 {
-  "name": "@orchex/registry",
+  "name": "@spwnr/registry",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -15,8 +15,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@orchex/core-types": "workspace:*",
-    "@orchex/manifest-schema": "workspace:*",
+    "@spwnr/core-types": "workspace:*",
+    "@spwnr/manifest-schema": "workspace:*",
     "better-sqlite3": "^12.8.0",
     "tar": "^7.4.0",
     "yaml": "^2.4.0"

@@ -12,10 +12,42 @@ spec:
     role: senior-code-reviewer
     style: systematic
     tone: concise
+  instructions:
+    system: ./prompts/system.md
   input:
     schema: ./schemas/input.schema.json
   output:
     schema: ./schemas/output.schema.json
+  injection:
+    hosts:
+      claude_code:
+        static:
+          enabled: true
+          defaultScope: project
+        session:
+          enabled: true
+          defaultScope: user
+      codex:
+        static:
+          enabled: true
+          defaultScope: project
+        session:
+          enabled: true
+          defaultScope: project
+      copilot:
+        static:
+          enabled: true
+          defaultScope: project
+        session:
+          enabled: true
+          defaultScope: user
+      opencode:
+        static:
+          enabled: true
+          defaultScope: project
+        session:
+          enabled: true
+          defaultScope: project
   workflow:
     entry: main
   skills:
@@ -38,12 +70,16 @@ spec:
     schema: ./schemas/memory.schema.json
   compatibility:
     hosts:
-      - opencode
       - claude_code
+      - codex
+      - copilot
+      - opencode
     mode: cross_host
     badges:
-      - opencode
       - claude_code
+      - codex
+      - copilot
+      - opencode
   artifacts:
     - report
     - patch

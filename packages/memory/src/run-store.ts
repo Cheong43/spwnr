@@ -1,7 +1,7 @@
 import type Database from 'better-sqlite3'
 import { randomUUID } from 'crypto'
-import { OrchexError, ErrorCodes } from '@orchex/core-types'
-import type { RunRecord, RunStatus, BackendType } from '@orchex/core-types'
+import { SpwnrError, ErrorCodes } from '@spwnr/core-types'
+import type { RunRecord, RunStatus, BackendType } from '@spwnr/core-types'
 
 export interface RunRow {
   id: string
@@ -61,10 +61,10 @@ export class RunStore {
 
   updateStatus(runId: string, status: RunStatus, extra?: Partial<RunRecord>): RunRecord {
     const existing = this.db.prepare<[string], RunRow>('SELECT * FROM runs WHERE id = ?').get(runId) ?? null
-    if (!existing) throw new OrchexError(ErrorCodes.RUN_NOT_FOUND, `Run ${runId} not found`)
+    if (!existing) throw new SpwnrError(ErrorCodes.RUN_NOT_FOUND, `Run ${runId} not found`)
 
     if (TERMINAL_STATUSES.includes(existing.status as RunStatus)) {
-      throw new OrchexError(
+      throw new SpwnrError(
         ErrorCodes.RUN_ALREADY_COMPLETED,
         `Run ${runId} is already in terminal state ${existing.status}`
       )

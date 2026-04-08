@@ -1,73 +1,66 @@
-# Getting Started with Orchex
+# Getting Started with Spwnr
 
-Welcome to Orchex, a cross-runtime subagent platform. This guide walks you through installing, validating, publishing, and running subagent packages.
+This guide walks through the current Spwnr product path: define an agent package, validate it, publish it to the local registry, then inject it into a host or compose a session descriptor.
+
+Spwnr does not execute the agent for the host. Claude Code, Codex, Copilot, and OpenCode keep their own scheduling and runtime behavior.
 
 ## Prerequisites
 
-Before you begin, ensure you have:
+- Node.js 22+
+- pnpm 9+
+- Optional host CLIs only if you want to consume the generated assets immediately in those hosts
 
-- **Node.js 22+** — required for the CLI and development
-- **pnpm 9+** — workspace package manager
-- **(Optional) OpenCode CLI** — if you plan to run packages with the OpenCode backend
-- **(Optional) Claude CLI** — if you plan to run packages with the Claude Code backend
-- **Simulated backend** — always available for testing (no CLI installation needed)
+## Install
 
-## Installation
-
-### From the Monorepo
-
-If you're working with the Orchex codebase locally:
+From the monorepo root:
 
 ```bash
-# Install dependencies
 pnpm install
-
-# Build the workspace
 pnpm build
 ```
 
-Then use the CLI:
+Use the CLI through the workspace script:
 
 ```bash
-node apps/orchex-cli/dist/cli.js --help
+pnpm --filter @spwnr/cli dev -- --help
 ```
 
-### Available Commands
+## Available Commands
 
-The Orchex CLI provides the following commands:
+- `validate <dir>`: validate a package directory
+- `publish <dir>`: publish a package to the local registry
+- `install <name> [version]`: install a package from the local registry into `SPWNR_HOME`
+- `list|ls`: list published packages
+- `info <name> [version]`: show package metadata and host support
+- `inject <name> [version]`: write host-native static assets
+- `session <name> [version]`: compose a temporary session descriptor or shell snippet
+- `run <name> [version]`: deprecated; use `inject` or `session`
 
-- `validate <dir>` — Validate a subagent package directory
-- `publish <dir>` — Publish a package to the local registry
-- `install <name> [version]` — Install a package from the local registry
-- `list|ls` — List all published packages
-- `info <name> [version]` — Show package details
-- `run <name> [version]` — Run a subagent package
+## Package Structure
 
-## Your First Subagent Package
+The included example package lives at `examples/code-reviewer`:
 
-Let's explore the included `code-reviewer` example to understand the package structure.
-
-### Package Layout
-
-```
+```text
 examples/code-reviewer/
-├── subagent.yaml           # Package manifest
-├── prompts/
-│   └── system.md           # System prompt for the subagent
-├── workflow/
-│   └── main.yaml           # Workflow definition
-├── schemas/
-│   ├── input.schema.json   # Input validation schema
-│   ├── output.schema.json  # Output schema
-│   └── memory.schema.json  # Memory state schema
-└── skills/
-    ├── diff-reader/        # Skill for reading diffs
-    └── repo-navigator/     # Skill for navigating repos
+  subagent.yaml
+  prompts/
+    system.md
+  workflow/
+    main.yaml
+  schemas/
+    input.schema.json
+    output.schema.json
+    memory.schema.json
+  skills/
+    diff-reader/
+      SKILL.md
+    repo-navigator/
+      SKILL.md
 ```
 
-### Manifest Structure
+## Manifest Shape
 
-The `subagent.yaml` manifest declares the package metadata, capabilities, and compatibility:
+The mainline manifest is prompt-first and injection-first:
 
 ```yaml
 apiVersion: subagent.io/v0.1
@@ -76,309 +69,235 @@ metadata:
   name: code-reviewer
   version: 0.1.0
   description: Review git diff and produce actionable feedback
-  tags:
-    - code-review
-    - git
 spec:
   persona:
     role: senior-code-reviewer
     style: systematic
     tone: concise
+  instructions:
+    system: ./prompts/system.md
   input:
     schema: ./schemas/input.schema.json
   output:
     schema: ./schemas/output.schema.json
+  injection:
+    hosts:
+      claude_code:
+        static:
+          enabled: true
+          defaultScope: project
+        session:
+          enabled: true
+          defaultScope: user
+      codex:
+        static:
+          enabled: true
+          defaultScope: project
+        session:
+          enabled: true
+          defaultScope: project
   workflow:
     entry: main
   skills:
     refs:
       - name: diff-reader
         path: ./skills/diff-reader
-      - name: repo-navigator
-        path: ./skills/repo-navigator
-  tools:
-    allow:
-      - git.diff
-      - fs.read
-      - fs.glob
-    ask:
-      - bash.exec
-    deny:
-      - network.*
-  memory:
-    scope: repo
-    schema: ./schemas/memory.schema.json
   compatibility:
     hosts:
-      - opencode
       - claude_code
-    mode: cross_host
-  artifacts:
-    - report
-    - patch
-  modelBinding:
-    mode: injectable
-    defaultProvider: local_host
-    defaultModel: null
-    allowOverride: true
+      - codex
+      - copilot
+      - opencode
 ```
 
-## Validate a Package
+Notes:
 
-Before publishing or running a package, validate its structure and manifest:
+- `spec.instructions.system` is required and is the main prompt entry.
+- `spec.injection.hosts` declares which hosts support static and session injection.
+- `workflow` is allowed as legacy metadata, but Spwnr does not execute it.
+- `compatibility.hosts` uses host names, not runtime names.
+
+## Validate
+
+Validate the example package:
 
 ```bash
-node apps/orchex-cli/dist/cli.js validate examples/code-reviewer
+pnpm --filter @spwnr/cli dev -- validate examples/code-reviewer
 ```
 
-For strict validation (including JSON schema parsing):
+Strict validation also parses the referenced JSON schema files:
 
 ```bash
-node apps/orchex-cli/dist/cli.js validate examples/code-reviewer --strict
+pnpm --filter @spwnr/cli dev -- validate examples/code-reviewer --strict
 ```
 
-**Expected output:**
-```
+Expected output:
+
+```text
 ✓ code-reviewer@0.1.0 is valid
 ```
 
-## Publish a Package
+## Publish
 
-Publish a validated package to your local registry:
+Publish the package to the local registry:
 
 ```bash
-node apps/orchex-cli/dist/cli.js publish examples/code-reviewer
+SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- publish examples/code-reviewer
 ```
 
-**Expected output:**
-```
+Expected output:
+
+```text
 ✓ Published code-reviewer@0.1.0
   Signature: <hash>
-  Tarball: ~/.orchex/tarballs/code-reviewer/0.1.0.tar.gz
+  Tarball: /tmp/spwnr-demo/tarballs/code-reviewer/0.1.0.tar.gz
 ```
 
-## List Packages
+## Inspect Published Packages
 
-View all published packages in your local registry:
+List packages:
 
 ```bash
-node apps/orchex-cli/dist/cli.js list
+SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- list
 ```
 
-**Expected output:**
-```
-code-reviewer (latest: 0.1.0)
-  - 0.1.0
-```
-
-## Get Package Info
-
-View detailed information about a published package:
+Inspect package metadata and host support:
 
 ```bash
-node apps/orchex-cli/dist/cli.js info code-reviewer
+SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- info code-reviewer
 ```
 
-Or for a specific version:
+Typical `info` output includes the host matrix:
 
-```bash
-node apps/orchex-cli/dist/cli.js info code-reviewer 0.1.0
-```
-
-**Expected output:**
-```
+```text
 Name:      code-reviewer
 Version:   0.1.0
-Published: 2024-04-07T15:53:00Z
-Signature: <hash>
-Tarball:   ~/.orchex/tarballs/code-reviewer/0.1.0.tar.gz
+Tarball:   /tmp/spwnr-demo/tarballs/code-reviewer/0.1.0.tar.gz
+Hosts:
+  claude_code: static(project), session(user)
+  codex: static(project), session(project)
+  copilot: static(project), session(user)
+  opencode: static(project), session(project)
 ```
 
-## Run a Subagent
+## Install Into Spwnr Home
 
-Execute a published package with different backends. The `run` command accepts input JSON and a backend type.
-
-### Simulated Backend (For Testing)
-
-The simulated backend is always available and emulates package execution without requiring external CLI tools. Great for testing and CI pipelines:
+`install` extracts the published package into `SPWNR_HOME`:
 
 ```bash
-node apps/orchex-cli/dist/cli.js run code-reviewer --backend simulated
+SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- install code-reviewer
 ```
 
-With input:
+This is useful when you want a local package copy under `~/.spwnr/packages/...`, but it is not the same thing as host injection.
+
+## Static Injection
+
+Use `inject` when you want Spwnr to write host-native files into a project or user scope.
+
+Claude Code example:
 
 ```bash
-node apps/orchex-cli/dist/cli.js run code-reviewer \
-  --backend simulated \
-  --input '{"filePath":"./src/main.ts"}'
+SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- inject code-reviewer --host claude_code --scope project
 ```
 
-**Expected output:**
-```
-Running code-reviewer...
-Run <run-id>
-Status: COMPLETED
-Artifacts: report, patch
-```
+This writes a markdown agent file under `.claude/agents/`.
 
-### OpenCode Backend
-
-To run with the OpenCode backend, first install the OpenCode CLI (see [OpenCode documentation](https://github.com/open-code-dev/opencode)):
+Codex example:
 
 ```bash
-node apps/orchex-cli/dist/cli.js run code-reviewer --backend opencode
+SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- inject code-reviewer --host codex --scope project
 ```
 
-### Claude Code Backend
+This writes a skill directory under `.codex/skills/code-reviewer/` containing `SKILL.md` and metadata.
 
-To run with the Claude Code backend, first install the Claude CLI:
+Host targets:
+
+- `claude_code`: `.claude/agents` or `~/.claude/agents`
+- `copilot`: `.github/agents` or `~/.copilot/agents`
+- `opencode`: `.opencode/agents` or `~/.config/opencode/agents`
+- `codex`: `.codex/skills` or `~/.codex/skills`
+
+You can override the output location with `--target <dir>`.
+
+## Session Composition
+
+Use `session` when you want temporary injection data for a single host session.
+
+Claude Code JSON bundle:
 
 ```bash
-node apps/orchex-cli/dist/cli.js run code-reviewer --backend claude_code
+SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- session code-reviewer --host claude_code --format json
 ```
 
-### Run Status and Artifacts
-
-The run command returns:
-
-- **Run ID** — Unique identifier for tracking the run
-- **Status** — Current execution state (CREATED, RUNNING, COMPLETED, FAILED, etc.)
-- **Artifacts** — Generated outputs (reports, patches, etc.)
-
-## Backend Setup
-
-### OpenCode
-
-If you want to use the OpenCode backend for your runs:
-
-1. Install the OpenCode CLI following the [official documentation](https://github.com/open-code-dev/opencode)
-2. Run packages with `--backend opencode`
-
-The Orchex CLI will automatically delegate execution to the OpenCode runtime.
-
-### Claude Code
-
-If you want to use the Claude Code backend:
-
-1. Install the Claude CLI following the [official documentation](https://claude.ai)
-2. Run packages with `--backend claude_code`
-
-### Simulated Backend (Development)
-
-The **Simulated Backend** is built into Orchex and always available. It:
-
-- Emulates package execution without external dependencies
-- Emits `run.started` and `run.completed` events
-- Returns mock artifacts
-- Is ideal for testing, CI pipelines, and development
-
-No additional setup is required. Use `--backend simulated` to test packages locally.
-
-## Registry Storage
-
-By default, Orchex stores packages in `~/.orchex`:
-
-- **SQLite DB:** `~/.orchex/sqlite/orchex.db`
-- **Tarballs:** `~/.orchex/tarballs/<name>/<version>.tar.gz`
-- **Installed packages:** `~/.orchex/packages/<name>/<version>`
-
-Override the registry location with the `ORCHEX_HOME` environment variable:
+Copilot shell snippet:
 
 ```bash
-ORCHEX_HOME=/custom/path node apps/orchex-cli/dist/cli.js list
+SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- session code-reviewer --host copilot --format shell
 ```
 
-## Manifest Reference
+Current session outputs by host:
 
-Quick reference for key fields in `subagent.yaml`:
+- `claude_code`: JSON bundle compatible with `claude --agents`
+- `copilot`: temporary profile descriptor or shell snippet
+- `opencode`: overlay or descriptor JSON
+- `codex`: preview-only descriptor, not runtime execution
 
-### Metadata
-- `name` — Package name (must be unique in the registry)
-- `version` — Semantic version (e.g., `0.1.0`)
-- `description` — Human-readable description
-- `tags` — List of tags for categorization
+## Storage
 
-### Spec
-- `persona` — Agent role, style, and tone
-- `input` — Path to input schema JSON
-- `output` — Path to output schema JSON
-- `workflow.entry` — Name of the entry workflow (e.g., `main`)
+By default, Spwnr stores local data in `~/.spwnr`:
 
-### Skills
-- `skills.refs` — References to local skills with `name` and `path`
+- SQLite DB: `~/.spwnr/sqlite/spwnr.db`
+- Tarballs: `~/.spwnr/tarballs/<name>/<version>.tar.gz`
+- Installed packages: `~/.spwnr/packages/<name>/<version>`
 
-### Tools and Permissions
-- `tools.allow` — Tools the package can use freely (e.g., `git.diff`, `fs.read`)
-- `tools.ask` — Tools that require user approval (e.g., `bash.exec`)
-- `tools.deny` — Tools that are forbidden (e.g., `network.*`)
+Override the storage root with `SPWNR_HOME`:
 
-### Compatibility
-- `compatibility.hosts` — List of supported hosts (e.g., `opencode`, `claude_code`)
-- `compatibility.mode` — `cross_host` or host-specific mode
-- `compatibility.badges` — Explicit host compatibility labels
+```bash
+SPWNR_HOME=/custom/path pnpm --filter @spwnr/cli dev -- list
+```
 
-### Memory
-- `memory.scope` — Scope for memory state (e.g., `repo`, `session`)
-- `memory.schema` — Path to memory schema JSON
-
-### Artifacts
-- `artifacts` — List of expected artifact types (e.g., `report`, `patch`)
-
-### Model Binding
-- `modelBinding.mode` — `injectable` or `fixed`
-- `modelBinding.allowOverride` — Whether the host can override the default model
-- `modelBinding.defaultProvider` — Default model provider (e.g., `local_host`)
-
-## Next Steps
-
-- **Explore the example:** Review `examples/code-reviewer` to understand a complete working package
-- **Use `info` command:** Run `orchex info code-reviewer` to see package metadata
-- **Install packages:** Use `orchex install code-reviewer` to set up packages for running
-- **Create your own package:** Follow the manifest structure and place your workflows, schemas, and skills in the appropriate directories
-- **Read the full PRD:** See [Orchex-PRD-AND-TDD.md](../../Orchex-PRD-AND-TDD.md) for detailed architecture and design notes
+This rename is a hard cut. Spwnr does not read older names or older home directories.
 
 ## Common Tasks
 
-### Validate with Strict Mode
+Publish and inject in one isolated sandbox:
+
 ```bash
-node apps/orchex-cli/dist/cli.js validate examples/code-reviewer --strict
+SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- publish examples/code-reviewer
+SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- inject code-reviewer --host opencode --scope project
 ```
 
-### Publish to a Custom Registry Location
+Preview a Claude session payload:
+
 ```bash
-ORCHEX_HOME=/tmp/test-registry \
-  node apps/orchex-cli/dist/cli.js publish examples/code-reviewer
+SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- session code-reviewer --host claude_code --format json
 ```
 
-### Run with Custom Input
-```bash
-node apps/orchex-cli/dist/cli.js run code-reviewer \
-  --backend simulated \
-  --input '{"path":"./src","maxFiles":10}'
-```
+Generate a Copilot shell snippet:
 
-### List Packages in Custom Registry
 ```bash
-ORCHEX_HOME=/tmp/test-registry \
-  node apps/orchex-cli/dist/cli.js list
+SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- session code-reviewer --host copilot --format shell
 ```
 
 ## Troubleshooting
 
-**"Cannot find module @orchex/..." error**
-- Run `pnpm install` and `pnpm build` in the workspace root
+`Cannot find module @spwnr/...`
+- Run `pnpm install` and `pnpm build` at the workspace root.
 
-**"Package not found" when running**
-- Ensure you've published the package: `orchex publish <dir>`
-- Check your registry location: `ORCHEX_HOME` or `~/.orchex`
+`Package not found`
+- Publish it first with `publish <dir>`.
+- Confirm you are reading the expected registry by checking `SPWNR_HOME`.
 
-**Validation fails with missing files**
-- Verify all paths in the manifest are relative to the package directory
-- Ensure schema files are valid JSON and workflow files are valid YAML
+`Injection failed`
+- Check that the package declares the target host under `spec.compatibility.hosts`.
+- Check that `spec.injection.hosts.<host>` is enabled for the requested mode.
 
-## Resources
+`run` command no longer works
+- This is expected. `spwnr run` is deprecated and only remains as a pointer to `inject` and `session`.
 
-- [Orchex Repository](https://github.com/your-org/orchex)
-- [PRD and Design Docs](../../Orchex-PRD-AND-TDD.md)
-- [Code Reviewer Example](../../examples/code-reviewer)
+## Next Reading
+
+- [Spwnr PRD and TDD](../../Spwnr-PRD-AND-TDD.md)
+- [M1/M2 design notes](../superpowers/specs/2026-04-07-spwnr-m1-m2-design.md)
+- [M3/M4/M5 design notes](../superpowers/specs/2026-04-07-spwnr-m3-m4-m5-design.md)
+- [Code reviewer example](../../examples/code-reviewer)

@@ -6,7 +6,7 @@ export class TarballService {
   /**
    * Create a .tar.gz from a directory.
    * @param sourceDir - absolute path to the package directory (e.g. /path/to/code-reviewer)
-   * @param destPath - absolute path where .tar.gz should be written (e.g. ~/.orchex/tarballs/code-reviewer/0.1.0.tar.gz)
+   * @param destPath - absolute path where .tar.gz should be written (e.g. ~/.spwnr/tarballs/code-reviewer/0.1.0.tar.gz)
    */
   async pack(sourceDir: string, destPath: string): Promise<void> {
     mkdirSync(dirname(destPath), { recursive: true })

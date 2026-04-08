@@ -1,7 +1,7 @@
 import type Database from 'better-sqlite3'
 import { randomUUID } from 'crypto'
-import { OrchexError, ErrorCodes } from '@orchex/core-types'
-import type { SubagentManifest } from '@orchex/core-types'
+import { SpwnrError, ErrorCodes } from '@spwnr/core-types'
+import type { SubagentManifest } from '@spwnr/core-types'
 
 export interface PackageRow {
   id: string
@@ -61,7 +61,7 @@ export class PackageStore {
       .get(packageId, opts.version)
 
     if (existing) {
-      throw new OrchexError(
+      throw new SpwnrError(
         ErrorCodes.VERSION_CONFLICT,
         `Version ${opts.version} already exists for ${opts.packageName}`,
       )

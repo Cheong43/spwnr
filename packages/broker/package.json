@@ -1,19 +1,19 @@
 {
-  "name": "@orchex/broker",
+  "name": "@spwnr/broker",
   "version": "0.1.0",
   "type": "module",
   "main": "src/index.ts",
   "exports": { ".": "./src/index.ts" },
   "scripts": { "test": "vitest run" },
   "dependencies": {
-    "@orchex/core-types": "workspace:*",
-    "@orchex/manifest-schema": "workspace:*",
-    "@orchex/registry": "workspace:*",
-    "@orchex/policy": "workspace:*",
-    "@orchex/memory": "workspace:*"
+    "@spwnr/core-types": "workspace:*",
+    "@spwnr/manifest-schema": "workspace:*",
+    "@spwnr/registry": "workspace:*",
+    "@spwnr/policy": "workspace:*",
+    "@spwnr/memory": "workspace:*"
   },
   "devDependencies": {
-    "@orchex/adapters": "workspace:*",
+    "@spwnr/adapters": "workspace:*",
     "typescript": "^5.4.0",
     "vitest": "^2.0.0"
   }
