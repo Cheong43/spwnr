@@ -116,7 +116,7 @@ describe('injector service', () => {
     }
   });
 
-  it('writes codex static files into a skill directory', async () => {
+  it('writes codex static files as a custom agent TOML file', async () => {
     const pkgDir = join(baseDir, 'codex-pkg');
     mkdirSync(pkgDir, { recursive: true });
     createPackage(pkgDir);
@@ -130,12 +130,15 @@ describe('injector service', () => {
       targetDir,
     });
 
-    expect(result.files).toHaveLength(2);
-    expect(readFileSync(join(targetDir, 'review-agent', 'SKILL.md'), 'utf-8')).toContain('Review carefully.');
-    expect(readFileSync(join(targetDir, 'review-agent', 'SKILL.md'), 'utf-8')).toContain('Use Codex diff bindings.');
-    expect(readFileSync(join(targetDir, 'review-agent', 'SKILL.md'), 'utf-8')).toContain('Inspect nearby files.');
-    expect(readFileSync(join(targetDir, 'review-agent', 'SKILL.md'), 'utf-8')).not.toContain('Use the universal diff reader.');
-    expect(readFileSync(join(targetDir, 'review-agent', 'agent.json'), 'utf-8')).toContain('"name": "review-agent"');
+    expect(result.files).toHaveLength(1);
+    const content = readFileSync(join(targetDir, 'review-agent.toml'), 'utf-8');
+    expect(content).toContain('name = "review-agent"');
+    expect(content).toContain('description = "Review code changes carefully."');
+    expect(content).toContain('developer_instructions = """');
+    expect(content).toContain('Review carefully.');
+    expect(content).toContain('Use Codex diff bindings.');
+    expect(content).toContain('Inspect nearby files.');
+    expect(content).not.toContain('Use the universal diff reader.');
   });
 
   it.each([
@@ -162,6 +165,9 @@ describe('injector service', () => {
     } else {
       expect(JSON.stringify(result.descriptor)).toContain(expectedSkillText);
       expect(JSON.stringify(result.descriptor)).toContain('Inspect nearby files.');
+      if (host === 'codex') {
+        expect(JSON.stringify(result.descriptor)).toContain('.codex/agents/review-agent.toml');
+      }
     }
     if (format === 'json') {
       expect(() => JSON.parse(result.content)).not.toThrow();

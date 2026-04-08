@@ -130,7 +130,7 @@ export function resolveDefaultStaticTarget(host: HostType, scope: HostScope): st
       case 'opencode':
         return join(home, '.config', 'opencode', 'agents');
       case 'codex':
-        return join(home, '.codex', 'skills');
+        return join(home, '.codex', 'agents');
     }
   }
 
@@ -142,7 +142,7 @@ export function resolveDefaultStaticTarget(host: HostType, scope: HostScope): st
     case 'opencode':
       return join(process.cwd(), '.opencode', 'agents');
     case 'codex':
-      return join(process.cwd(), '.codex', 'skills');
+      return join(process.cwd(), '.codex', 'agents');
   }
 }
 

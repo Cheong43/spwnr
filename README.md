@@ -109,7 +109,7 @@ Current host mapping:
   Static: `.opencode/agents/*.md` or `~/.config/opencode/agents/*.md`
   Session: overlay or descriptor output
 - `codex`
-  Static: `.codex/skills/<name>/SKILL.md` plus metadata
+  Static: `.codex/agents/*.toml`
   Session: preview-only descriptor output
 
 ## Local Storage

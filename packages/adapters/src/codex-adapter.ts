@@ -2,6 +2,25 @@ import { HostType } from '@spwnr/core-types';
 import type { HostAdapter, HostAdapterCompileInput, SessionComposition, SessionContext, StaticMaterialization, StaticMaterializationTarget } from './host-adapter.js';
 import { appendCompiledSkills, compileHostAgent, materializeTextFiles } from './host-adapter.js';
 
+function renderTomlString(value: string): string {
+  return JSON.stringify(value);
+}
+
+function renderTomlMultilineString(value: string): string {
+  return `"""\n${value.replace(/\\/g, '\\\\').replace(/"""/g, '\\"""')}\n"""`;
+}
+
+function renderCodexAgentFile(compiled: ReturnType<CodexAdapter['compile']>): string {
+  const prompt = appendCompiledSkills(compiled.agentMarkdown, compiled.skills);
+
+  return [
+    `name = ${renderTomlString(compiled.slug)}`,
+    `description = ${renderTomlString(compiled.instruction)}`,
+    `developer_instructions = ${renderTomlMultilineString(prompt)}`,
+    '',
+  ].join('\n');
+}
+
 export class CodexAdapter implements HostAdapter {
   readonly host = HostType.CODEX;
 
@@ -14,38 +33,29 @@ export class CodexAdapter implements HostAdapter {
   }
 
   materializeStatic(compiled: ReturnType<CodexAdapter['compile']>, target: StaticMaterializationTarget): StaticMaterialization {
-    const prompt = appendCompiledSkills(compiled.agentMarkdown, compiled.skills);
-    const metadata = JSON.stringify({
-      name: compiled.slug,
-      description: compiled.instruction,
-      details: compiled.description,
-      source: compiled.manifest.metadata.name,
-      host: this.host,
-      skills: compiled.skills.map((skill) => skill.name),
-    }, null, 2);
+    const agentFile = renderCodexAgentFile(compiled);
 
     return materializeTextFiles(this.host, target.directory, [
       {
-        relativePath: `${compiled.slug}/SKILL.md`,
-        content: `${prompt}\n`,
-      },
-      {
-        relativePath: `${compiled.slug}/agent.json`,
-        content: `${metadata}\n`,
+        relativePath: `${compiled.slug}.toml`,
+        content: agentFile,
       },
     ]);
   }
 
   composeSession(compiled: ReturnType<CodexAdapter['compile']>, _context: SessionContext): SessionComposition {
     const prompt = appendCompiledSkills(compiled.agentMarkdown, compiled.skills);
+    const path = `.codex/agents/${compiled.slug}.toml`;
+    const toml = renderCodexAgentFile(compiled);
     const descriptor = {
       preview: true,
       host: this.host,
-      skill: {
+      custom_agent: {
+        path,
         name: compiled.slug,
         description: compiled.instruction,
-        prompt,
-        skills: compiled.skills.map((skill) => skill.name),
+        developer_instructions: prompt,
+        toml,
       },
     };
 

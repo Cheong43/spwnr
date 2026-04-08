@@ -238,14 +238,14 @@ Codex example:
 SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- inject code-reviewer --host codex --scope project
 ```
 
-This writes a skill directory under `.codex/skills/code-reviewer/` containing `SKILL.md` and metadata.
+This writes a Codex custom agent file under `.codex/agents/code-reviewer.toml`.
 
 Host targets:
 
 - `claude_code`: `.claude/agents` or `~/.claude/agents`
 - `copilot`: `.github/agents` or `~/.copilot/agents`
 - `opencode`: `.opencode/agents` or `~/.config/opencode/agents`
-- `codex`: `.codex/skills` or `~/.codex/skills`
+- `codex`: `.codex/agents` or `~/.codex/agents`
 
 You can override the output location with `--target <dir>`.
 

@@ -92,7 +92,7 @@ Key decision:
 - Claude Code: `.claude/agents/*.md`
 - Copilot: `.github/agents/*.agent.md`
 - OpenCode: `.opencode/agents/*.md`
-- Codex: `.codex/skills/<name>/SKILL.md` plus metadata
+- Codex: `.codex/agents/*.toml`
 
 ### Session
 

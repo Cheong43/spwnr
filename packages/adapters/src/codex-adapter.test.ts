@@ -49,7 +49,7 @@ describe('CodexAdapter', () => {
     }
   });
 
-  it('writes SKILL.md and metadata for static injection', () => {
+  it('writes a Codex custom agent TOML file for static injection', () => {
     const packageDir = createPackageDir();
     createdDirs.push(packageDir);
     const targetDir = join(packageDir, 'out');
@@ -58,15 +58,16 @@ describe('CodexAdapter', () => {
 
     const result = adapter.materializeStatic(compiled, { directory: targetDir, scope: 'project' });
 
-    expect(result.files).toHaveLength(2);
-    expect(readFileSync(join(targetDir, 'skill-builder', 'SKILL.md'), 'utf-8')).toContain('Use local skills.');
-    expect(readFileSync(join(targetDir, 'skill-builder', 'SKILL.md'), 'utf-8')).toContain('Use Codex diff bindings.');
-    expect(readFileSync(join(targetDir, 'skill-builder', 'SKILL.md'), 'utf-8')).toContain('Read nearby files.');
-    expect(readFileSync(join(targetDir, 'skill-builder', 'SKILL.md'), 'utf-8')).not.toContain('Universal diff parsing.');
-    expect(readFileSync(join(targetDir, 'skill-builder', 'SKILL.md'), 'utf-8')).not.toContain('## System Prompt');
-    expect(readFileSync(join(targetDir, 'skill-builder', 'agent.json'), 'utf-8')).toContain('"name": "skill-builder"');
-    expect(readFileSync(join(targetDir, 'skill-builder', 'agent.json'), 'utf-8')).toContain('"description": "Build local skills for Codex."');
-    expect(readFileSync(join(targetDir, 'skill-builder', 'agent.json'), 'utf-8')).toContain('"skills": [');
+    expect(result.files).toHaveLength(1);
+    const content = readFileSync(join(targetDir, 'skill-builder.toml'), 'utf-8');
+    expect(content).toContain('name = "skill-builder"');
+    expect(content).toContain('description = "Build local skills for Codex."');
+    expect(content).toContain('developer_instructions = """');
+    expect(content).toContain('Use local skills.');
+    expect(content).toContain('Use Codex diff bindings.');
+    expect(content).toContain('Read nearby files.');
+    expect(content).not.toContain('Universal diff parsing.');
+    expect(content).not.toContain('## System Prompt');
   });
 
   it('marks session descriptors as preview only', () => {
@@ -79,6 +80,8 @@ describe('CodexAdapter', () => {
 
     expect(result.previewOnly).toBe(true);
     expect(result.warnings).toContain('Codex session injection is preview-only in this release.');
+    expect(JSON.stringify(result.descriptor)).toContain('.codex/agents/skill-builder.toml');
     expect(JSON.stringify(result.descriptor)).toContain('Use Codex diff bindings.');
+    expect(JSON.stringify(result.descriptor)).toContain('developer_instructions');
   });
 });
