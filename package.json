@@ -5,6 +5,7 @@
   "description": "Agent package registry and declarative host injection platform",
   "scripts": {
     "build": "pnpm -r --workspace-concurrency=1 build",
+    "build:registry-portal": "node ./scripts/build-registry-portal.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

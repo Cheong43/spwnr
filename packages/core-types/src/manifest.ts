@@ -36,6 +36,32 @@ export interface SkillRef {
   version?: string;
 }
 
+export interface ManifestAuthor {
+  name: string;
+  github?: string;
+  url?: string;
+  email?: string;
+}
+
+export type DependencyEcosystem =
+  | 'npm'
+  | 'pnpm'
+  | 'pip'
+  | 'brew'
+  | 'apt'
+  | 'cargo'
+  | 'go'
+  | 'binary';
+
+export interface PackageDependency {
+  ecosystem: DependencyEcosystem;
+  name: string;
+  versionRange?: string;
+  optional?: boolean;
+  reason?: string;
+  installHint?: string;
+}
+
 export interface ModelBinding {
   mode: 'injectable' | 'fixed' | 'platform_managed';
   defaultProvider?: string | null;
@@ -78,6 +104,10 @@ export interface SubagentManifest {
     version: string;
     description?: string;
     tags?: string[];
+    authors?: ManifestAuthor[];
+    license?: string;
+    homepage?: string;
+    repository?: string;
   };
   spec: {
     persona?: {
@@ -112,5 +142,8 @@ export interface SubagentManifest {
     };
     artifacts?: string[];
     modelBinding?: ModelBinding;
+    dependencies?: {
+      packages: PackageDependency[];
+    };
   };
 }

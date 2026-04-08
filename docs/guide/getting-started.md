@@ -69,6 +69,10 @@ metadata:
   name: code-reviewer
   version: 0.1.0
   description: Review git diff and produce actionable feedback
+  authors:
+    - name: Spwnr Team
+      github: Cheong43
+  license: MIT
 spec:
   persona:
     role: senior-code-reviewer
@@ -108,12 +112,21 @@ spec:
       - codex
       - copilot
       - opencode
+  dependencies:
+    packages:
+      - ecosystem: binary
+        name: git
+      - ecosystem: npm
+        name: gh
+        versionRange: ^2.0.0
 ```
 
 Notes:
 
 - `spec.instructions.system` is required and is the main prompt entry.
 - `spec.injection.hosts` declares which hosts support static and session injection.
+- `metadata.authors` captures maintainers for registry presentation and review handoff.
+- `spec.dependencies.packages` captures structured dependency metadata for package consumers.
 - `workflow` is allowed as legacy metadata, but Spwnr does not execute it.
 - `compatibility.hosts` uses host names, not runtime names.
 

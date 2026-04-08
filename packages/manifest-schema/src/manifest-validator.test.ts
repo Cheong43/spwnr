@@ -21,6 +21,19 @@ describe('ManifestValidator', () => {
   it('validates a full manifest with injection metadata', () => {
     const fullManifest = {
       ...minimalManifest,
+      metadata: {
+        ...minimalManifest.metadata,
+        authors: [
+          {
+            name: 'Spwnr Team',
+            github: 'spwnr',
+            url: 'https://github.com/spwnr',
+          },
+        ],
+        license: 'MIT',
+        homepage: 'https://example.com/templates/code-reviewer',
+        repository: 'https://github.com/example/code-reviewer',
+      },
       spec: {
         ...minimalManifest.spec,
         workflow: {
@@ -48,6 +61,20 @@ describe('ManifestValidator', () => {
           defaultProvider: 'openai',
           defaultModel: 'gpt-5.4',
           allowOverride: true,
+        },
+        dependencies: {
+          packages: [
+            {
+              ecosystem: 'npm',
+              name: 'gh',
+              versionRange: '^2.0.0',
+              reason: 'Used for PR review workflows',
+            },
+            {
+              ecosystem: 'binary',
+              name: 'git',
+            },
+          ],
         },
       },
     };
@@ -109,6 +136,43 @@ describe('ManifestValidator', () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.errors.some((error) => error.path.includes('defaultScope'))).toBe(true);
+    }
+  });
+
+  it('fails when a dependency ecosystem is unsupported', () => {
+    const result = validateManifest({
+      ...minimalManifest,
+      spec: {
+        ...minimalManifest.spec,
+        dependencies: {
+          packages: [
+            {
+              ecosystem: 'rubygems',
+              name: 'octokit',
+            },
+          ],
+        },
+      },
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.some((error) => error.path.includes('dependencies'))).toBe(true);
+    }
+  });
+
+  it('fails when metadata authors contains an invalid homepage URL', () => {
+    const result = validateManifest({
+      ...minimalManifest,
+      metadata: {
+        ...minimalManifest.metadata,
+        homepage: 'not-a-url',
+      },
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.some((error) => error.path.includes('homepage'))).toBe(true);
     }
   });
 });

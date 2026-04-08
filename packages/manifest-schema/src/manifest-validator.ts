@@ -57,6 +57,22 @@ const SkillRefSchema = z.object({
   version: z.string().optional(),
 });
 
+const AuthorSchema = z.object({
+  name: z.string().min(1),
+  github: z.string().min(1).optional(),
+  url: z.string().url().optional(),
+  email: z.string().email().optional(),
+});
+
+const PackageDependencySchema = z.object({
+  ecosystem: z.enum(['npm', 'pnpm', 'pip', 'brew', 'apt', 'cargo', 'go', 'binary']),
+  name: z.string().min(1),
+  versionRange: z.string().optional(),
+  optional: z.boolean().optional(),
+  reason: z.string().optional(),
+  installHint: z.string().optional(),
+});
+
 const ModelBindingSchema = z.object({
   mode: z.enum(['injectable', 'fixed', 'platform_managed']),
   defaultProvider: z.string().nullable().optional(),
@@ -90,6 +106,10 @@ export const SubagentManifestSchema = z.object({
     version: z.string().regex(SemverRegex, 'Version must be in semver format (x.y.z)'),
     description: z.string().optional(),
     tags: z.array(z.string()).optional(),
+    authors: z.array(AuthorSchema).optional(),
+    license: z.string().optional(),
+    homepage: z.string().url().optional(),
+    repository: z.string().url().optional(),
   }),
   spec: z.object({
     persona: z.object({
@@ -131,6 +151,9 @@ export const SubagentManifestSchema = z.object({
     }).optional(),
     artifacts: z.array(z.string()).optional(),
     modelBinding: ModelBindingSchema.optional(),
+    dependencies: z.object({
+      packages: z.array(PackageDependencySchema),
+    }).optional(),
   }),
 });
 

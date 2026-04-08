@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Spwnr Registry Portal</title>
+    <meta
+      name="description"
+      content="Browse the mirrored Spwnr community template registry and jump to the official GitHub Pages marketplace."
+    >
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <header class="hero">
+      <div class="hero__backdrop" aria-hidden="true"></div>
+      <div class="hero__content">
+        <p class="eyebrow">Spwnr Portal</p>
+        <h1>Spwnr community templates, mirrored from the GitHub registry.</h1>
+        <p class="hero__lede">
+          Discover subagent templates, inspect compatibility metadata, and continue to the official
+          registry site for contribution workflows and release details.
+        </p>
+        <div class="hero__actions">
+          <a id="official-site-link" class="button button--primary" href="#">Open Official Registry</a>
+          <a class="button button--secondary" href="https://github.com/Cheong43/spwnr-registry">View Source Repo</a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <section class="panel controls" aria-labelledby="browse-title">
+        <div>
+          <p class="eyebrow">Browse</p>
+          <h2 id="browse-title">Registry snapshot</h2>
+        </div>
+        <form class="controls__form" id="filters-form">
+          <label class="field">
+            <span>Search</span>
+            <input id="search-input" name="search" type="search" placeholder="code reviewer, codex, git">
+          </label>
+          <label class="field">
+            <span>Host</span>
+            <select id="host-filter" name="host">
+              <option value="">All hosts</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Tag</span>
+            <select id="tag-filter" name="tag">
+              <option value="">All tags</option>
+            </select>
+          </label>
+        </form>
+        <p class="meta" id="summary-copy">Loading registry snapshot...</p>
+      </section>
+
+      <section class="panel" aria-labelledby="template-list-title">
+        <div class="section-heading">
+          <h2 id="template-list-title">Templates</h2>
+          <p class="meta">This portal reflects the checked-in submodule snapshot in Spwnr.</p>
+        </div>
+        <div class="card-grid" id="template-grid" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <script src="./portal-config.js"></script>
+    <script src="./portal.js" type="module"></script>
+  </body>
+</html>

@@ -6,6 +6,23 @@ Spwnr does not run agents for the host. It owns package definition, validation, 
 
 The current direction is documented in [Spwnr-PRD-AND-TDD.md](./Spwnr-PRD-AND-TDD.md). A usage walkthrough lives in [docs/guide/getting-started.md](./docs/guide/getting-started.md).
 
+## Community Registry
+
+Spwnr now treats [`vendor/spwnr-registry`](./vendor/spwnr-registry) as the community template registry source. The nested repository is the canonical place for:
+
+- template source packages under `templates/<name>/<version>/`
+- pull-request based contribution review
+- registry index generation via `registry-index.json`
+- GitHub Pages publishing for the official template marketplace
+
+This repository keeps a lightweight portal that mirrors the submodule snapshot and links users to the official registry site.
+
+Initialize the nested repository after cloning:
+
+```bash
+git submodule update --init --recursive
+```
+
 ## What Spwnr Includes
 
 - prompt-first subagent manifest types and validation
@@ -136,6 +153,8 @@ Its manifest demonstrates:
 - local skill references
 - tool allow/ask/deny hints
 - compatibility targets
+- metadata authors and project links
+- structured package dependency declarations
 - memory schema declaration
 - artifact declarations
 - model binding metadata

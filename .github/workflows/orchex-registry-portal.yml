@@ -1,0 +1,45 @@
+name: Publish Orchex Registry Portal
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/orchex-registry-portal.yml'
+      - 'scripts/build-registry-portal.mjs'
+      - 'site/registry-portal/**'
+      - 'vendor/spwnr-registry'
+      - '.gitmodules'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: orchex-registry-portal
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build portal
+        run: node ./scripts/build-registry-portal.mjs
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site-dist/registry-portal
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

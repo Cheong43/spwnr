@@ -4,9 +4,16 @@ metadata:
   name: code-reviewer
   version: 0.1.0
   description: Review git diff and produce actionable feedback
+  authors:
+    - name: Spwnr Team
+      github: Cheong43
+      url: https://github.com/Cheong43
   tags:
     - code-review
     - git
+  license: MIT
+  homepage: https://cheong43.github.io/spwnr-registry/template.html?name=code-reviewer
+  repository: https://github.com/Cheong43/spwnr-registry
 spec:
   persona:
     role: senior-code-reviewer
@@ -90,3 +97,14 @@ spec:
     allowOverride: true
     billing:
       mode: passthrough
+  dependencies:
+    packages:
+      - ecosystem: binary
+        name: git
+        reason: Reads diffs and repository history
+      - ecosystem: npm
+        name: gh
+        versionRange: ^2.0.0
+        optional: true
+        reason: Optional GitHub review workflow automation
+        installHint: brew install gh

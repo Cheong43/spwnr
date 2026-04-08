@@ -1,0 +1,270 @@
+:root {
+  --bg: #f6efe5;
+  --surface: rgba(255, 252, 248, 0.88);
+  --surface-strong: #fffaf5;
+  --text: #1d140f;
+  --muted: #6e5d54;
+  --accent: #9c3d12;
+  --accent-deep: #66220c;
+  --line: rgba(36, 19, 11, 0.14);
+  --shadow: 0 24px 60px rgba(71, 34, 13, 0.12);
+  --radius: 24px;
+  --font-display: "Avenir Next", "Segoe UI", sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-body);
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(240, 137, 77, 0.22), transparent 30%),
+    radial-gradient(circle at top right, rgba(212, 175, 55, 0.18), transparent 22%),
+    linear-gradient(180deg, #f7efe5 0%, #f3e6d8 100%);
+}
+
+a {
+  color: inherit;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  z-index: 20;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+.hero,
+main {
+  width: min(1120px, calc(100vw - 2rem));
+  margin: 0 auto;
+}
+
+.hero {
+  position: relative;
+  padding: 3rem 0 1.5rem;
+}
+
+.hero__backdrop {
+  position: absolute;
+  inset: 1rem 0 0;
+  border-radius: 36px;
+  background:
+    linear-gradient(135deg, rgba(156, 61, 18, 0.92), rgba(47, 18, 10, 0.92)),
+    linear-gradient(135deg, rgba(255, 209, 173, 0.3), transparent);
+  box-shadow: var(--shadow);
+}
+
+.hero__content {
+  position: relative;
+  padding: 3.25rem;
+  color: #fffaf4;
+}
+
+.eyebrow {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: inherit;
+  opacity: 0.8;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  line-height: 1.05;
+}
+
+h1 {
+  max-width: 12ch;
+  font-size: clamp(2.4rem, 5vw, 4.8rem);
+}
+
+.hero__lede,
+.meta,
+.card p,
+.field span,
+.pill,
+.dependency-list,
+.authors {
+  line-height: 1.55;
+}
+
+.hero__lede {
+  max-width: 60ch;
+  margin: 1.25rem 0 0;
+  font-size: 1.05rem;
+  color: rgba(255, 247, 240, 0.88);
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin-top: 1.6rem;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.9rem;
+  padding: 0.8rem 1.15rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.button--primary {
+  background: #fff6ec;
+  color: var(--accent-deep);
+}
+
+.button--secondary {
+  border: 1px solid rgba(255, 243, 234, 0.35);
+  color: #fff7f1;
+}
+
+main {
+  padding-bottom: 3rem;
+}
+
+.panel {
+  margin-top: 1rem;
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow);
+}
+
+.controls {
+  display: grid;
+  gap: 1rem;
+}
+
+.controls__form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.field span {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.field input,
+.field select {
+  width: 100%;
+  min-height: 2.85rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(65, 35, 20, 0.16);
+  border-radius: 14px;
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
+.field input:focus-visible,
+.field select:focus-visible,
+.button:focus-visible {
+  outline: 3px solid #f2a25d;
+  outline-offset: 3px;
+}
+
+.section-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  padding: 1.2rem;
+  border: 1px solid rgba(57, 31, 20, 0.12);
+  border-radius: 22px;
+  background: rgba(255, 250, 245, 0.92);
+}
+
+.card h3 {
+  font-size: 1.35rem;
+}
+
+.card p {
+  color: var(--muted);
+}
+
+.pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.85rem 0;
+}
+
+.pill {
+  display: inline-flex;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(156, 61, 18, 0.1);
+  color: var(--accent-deep);
+  font-size: 0.88rem;
+}
+
+.dependency-list,
+.authors {
+  margin: 0.8rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+}
+
+.empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed rgba(57, 31, 20, 0.18);
+  border-radius: 22px;
+}
+
+@media (max-width: 720px) {
+  .hero__content {
+    padding: 2rem 1.4rem;
+  }
+
+  .panel {
+    padding: 1.2rem;
+  }
+}
