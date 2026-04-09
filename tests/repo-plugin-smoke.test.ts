@@ -166,4 +166,46 @@ describe('workflow docs', () => {
     expect(workflowSkill).not.toContain('compare plausible approaches');
     expect(workflowSkill).not.toContain('recommended default');
   });
+
+  it('encode request normalization and deep analysis standards in controller and worker prompts', () => {
+    const foundationSkill = readFileSync(resolve(repoRoot, 'skills/workflow-foundation/SKILL.md'), 'utf-8');
+    const taskSkill = readFileSync(resolve(repoRoot, 'skills/workflow-task-orchestration/SKILL.md'), 'utf-8');
+    const researcherAgent = readFileSync(resolve(repoRoot, 'examples/general-researcher/agent.md'), 'utf-8');
+    const researchSkill = readFileSync(resolve(repoRoot, 'examples/general-researcher/skills/universal/evidence-gathering/SKILL.md'), 'utf-8');
+    const executorAgent = readFileSync(resolve(repoRoot, 'examples/general-executor/agent.md'), 'utf-8');
+    const executorSkill = readFileSync(resolve(repoRoot, 'examples/general-executor/skills/universal/structured-delivery/SKILL.md'), 'utf-8');
+    const reviewerAgent = readFileSync(resolve(repoRoot, 'examples/general-reviewer/agent.md'), 'utf-8');
+    const reviewerSkill = readFileSync(resolve(repoRoot, 'examples/general-reviewer/skills/universal/quality-gate/SKILL.md'), 'utf-8');
+
+    expect(foundationSkill).toContain("Translate the user's raw wording into a structured task brief");
+    expect(foundationSkill).toContain('Do not require the user to rewrite the prompt');
+    expect(foundationSkill).toContain('decision-support materials');
+
+    expect(taskSkill).toContain('Produce a short plan and a normalized worker brief');
+    expect(taskSkill).toContain('evaluation dimensions, evidence gaps, and key uncertainties');
+    expect(taskSkill).toContain('decision-support materials rather than a final directive');
+    expect(taskSkill).toContain('keep the execution output concrete and implementation-oriented');
+
+    expect(researcherAgent).toContain('decision goal, evaluation criteria, time horizon, constraints, comparable options, and risk surface');
+    expect(researcherAgent).toContain('create the framework first, then fill it with evidence');
+    expect(researcherAgent).toContain('Default to comparing multiple viable options');
+
+    expect(researchSkill).toContain('normalized task framing');
+    expect(researchSkill).toContain('evidence tiers: confirmed facts, reasoned inference, and open gaps');
+
+    expect(executorAgent).toContain('professional decision-support artifact');
+    expect(executorAgent).toContain('options or candidates, key evidence, major risks, and next-step diligence');
+    expect(executorAgent).toContain('support the decision without pretending to make the final choice');
+
+    expect(executorSkill).toContain('conclusion summary');
+    expect(executorSkill).toContain('candidate options or scenario comparison');
+    expect(executorSkill).toContain('decision-support materials instead of a final directive');
+
+    expect(reviewerAgent).toContain('shallow analysis');
+    expect(reviewerAgent).toContain('broken evidence chains');
+    expect(reviewerAgent).toContain('material risks or boundaries');
+
+    expect(reviewerSkill).toContain('unsupported claims or a missing evidence chain');
+    expect(reviewerSkill).toContain('missing risk or boundary statements');
+  });
 });
