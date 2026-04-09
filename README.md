@@ -81,6 +81,12 @@ This repository now also carries a repo-root Claude Code plugin for dogfooding a
 
 The plugin is not a published Spwnr package. It is a repository-local workflow asset that coordinates worker subagents already injected into Claude Code.
 
+When installed in Claude Code, the slash commands are:
+
+- `/spwnr:plan`
+- `/spwnr:task`
+- `/spwnr:workers`
+
 ## CLI Surface
 
 Inside this monorepo, the easiest way to invoke the CLI is:

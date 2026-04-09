@@ -1,13 +1,13 @@
 {
   "name": "spwnr-dev",
-  "description": "Development marketplace for the Spwnr workflow plugin",
+  "description": "Development marketplace for the Spwnr Claude Code plugin",
   "owner": {
     "name": "Spwnr Team"
   },
   "plugins": [
     {
-      "name": "spwnr-workflow",
-      "description": "Repo-level workflow plugin that coordinates Spwnr worker subagents inside Claude Code.",
+      "name": "spwnr",
+      "description": "Repo-level Claude Code plugin that coordinates Spwnr worker subagents.",
       "version": "0.1.0",
       "source": "./",
       "author": {

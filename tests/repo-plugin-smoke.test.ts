@@ -19,7 +19,7 @@ describe('repo-root Claude plugin', () => {
     const hooks = readJson('hooks/hooks.json');
 
     expect(plugin).toMatchObject({
-      name: 'spwnr-workflow',
+      name: 'spwnr',
       version: '0.1.0',
       hooks: './hooks/hooks.json',
     });
@@ -27,7 +27,7 @@ describe('repo-root Claude plugin', () => {
       name: 'spwnr-dev',
       plugins: [
         expect.objectContaining({
-          name: 'spwnr-workflow',
+          name: 'spwnr',
           source: './',
           version: '0.1.0',
         }),
@@ -71,14 +71,23 @@ describe('repo-root Claude plugin', () => {
       'commands/workers.md',
       'hooks/hooks.json',
       'hooks/session-start',
+      'skills/workflow-foundation/SKILL.md',
+      'skills/workflow-planning/SKILL.md',
+      'skills/workflow-task-orchestration/SKILL.md',
+      'skills/worker-audit/SKILL.md',
       'skills/using-spwnr-workflow/SKILL.md',
-      'skills/worker-selection/SKILL.md',
-      'skills/task-decomposition/SKILL.md',
-      'skills/handoff-review/SKILL.md',
     ];
 
     for (const requiredPath of requiredPaths) {
       expect(existsSync(resolve(repoRoot, requiredPath)), requiredPath).toBe(true);
+    }
+
+    for (const removedPath of [
+      'skills/worker-selection/SKILL.md',
+      'skills/task-decomposition/SKILL.md',
+      'skills/handoff-review/SKILL.md',
+    ]) {
+      expect(existsSync(resolve(repoRoot, removedPath)), removedPath).toBe(false);
     }
   });
 });
@@ -112,18 +121,49 @@ describe('workflow docs', () => {
     ].join('\n');
 
     for (const expectedSnippet of [
-      'spwnr-workflow',
+      'spwnr',
       'spwnr-dev',
-      '/spwnr-workflow:plan',
-      '/spwnr-workflow:task',
-      '/spwnr-workflow:workers',
+      '/spwnr:plan',
+      '/spwnr:task',
+      '/spwnr:workers',
       'general-researcher',
       'general-executor',
       'general-reviewer',
-      '/plugin install spwnr-workflow@spwnr-dev',
+      '/plugin install spwnr@spwnr-dev',
       'claude --plugin-dir /absolute/path/to/spwnr',
     ]) {
       expect(combinedDocs).toContain(expectedSnippet);
     }
+  });
+
+  it('require option-based clarification in planning and task prompts', () => {
+    const planCommand = readFileSync(resolve(repoRoot, 'commands/plan.md'), 'utf-8');
+    const taskCommand = readFileSync(resolve(repoRoot, 'commands/task.md'), 'utf-8');
+    const workersCommand = readFileSync(resolve(repoRoot, 'commands/workers.md'), 'utf-8');
+    const foundationSkill = readFileSync(resolve(repoRoot, 'skills/workflow-foundation/SKILL.md'), 'utf-8');
+    const planningSkill = readFileSync(resolve(repoRoot, 'skills/workflow-planning/SKILL.md'), 'utf-8');
+    const taskSkill = readFileSync(resolve(repoRoot, 'skills/workflow-task-orchestration/SKILL.md'), 'utf-8');
+    const workerAuditSkill = readFileSync(resolve(repoRoot, 'skills/worker-audit/SKILL.md'), 'utf-8');
+    const workflowSkill = readFileSync(resolve(repoRoot, 'skills/using-spwnr-workflow/SKILL.md'), 'utf-8');
+
+    expect(planCommand).toContain('workflow-planning');
+    expect(taskCommand).toContain('workflow-task-orchestration');
+    expect(workersCommand).toContain('worker-audit');
+    expect(planCommand).not.toContain('task-decomposition');
+    expect(taskCommand).not.toContain('handoff-review');
+    expect(workersCommand).not.toContain('worker-selection');
+    expect(foundationSkill).toContain('2 to 4 concrete options');
+    expect(foundationSkill).toContain('Compare at least 2 plausible approaches');
+    expect(foundationSkill).toContain('provisional default');
+    expect(planningSkill).toContain('Approach Analysis');
+    expect(planningSkill).toContain('Do not leave the plan blank');
+    expect(taskSkill).toContain('Handoff Contracts');
+    expect(taskSkill).toContain('Route blocking review feedback back through the execute step once');
+    expect(workerAuditSkill).toContain('Worker Mapping');
+    expect(workerAuditSkill).toContain('preferredAgents');
+    expect(workerAuditSkill).toContain('Do not silently replace a missing required worker');
+    expect(workflowSkill).toContain('Use `workflow-planning` as the primary skill');
+    expect(workflowSkill).not.toContain('compare plausible approaches');
+    expect(workflowSkill).not.toContain('recommended default');
   });
 });

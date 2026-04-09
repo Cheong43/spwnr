@@ -1,6 +1,6 @@
 {
-  "name": "spwnr-workflow",
-  "description": "Repo-level Claude Code workflow plugin for planning work and orchestrating Spwnr worker subagents.",
+  "name": "spwnr",
+  "description": "Repo-level Claude Code plugin for structured planning and Spwnr worker orchestration.",
   "version": "0.1.0",
   "author": {
     "name": "Spwnr Team"

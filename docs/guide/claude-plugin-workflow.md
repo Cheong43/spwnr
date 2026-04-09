@@ -1,6 +1,6 @@
 # Claude Plugin Workflow
 
-This repository now includes a repo-root Claude Code plugin that acts as a workflow controller for Spwnr worker subagents.
+This repository now includes a repo-root Claude Code plugin named `spwnr` that acts as a workflow controller for Spwnr worker subagents.
 
 The plugin is a dogfood asset for this repository. It is not a published Spwnr package and it does not change the current `spwnr` registry or CLI surface.
 
@@ -38,7 +38,7 @@ The review role can also fall back to `code-reviewer` for clearly code-focused w
 
 ```text
 /plugin marketplace add /absolute/path/to/spwnr
-/plugin install spwnr-workflow@spwnr-dev
+/plugin install spwnr@spwnr-dev
 ```
 
 or for local development:
@@ -57,19 +57,19 @@ pnpm --filter @spwnr/cli dev -- inject general-reviewer --host claude_code --sco
 
 3. Use the workflow commands inside Claude:
 
-- `/spwnr-workflow:plan`
-- `/spwnr-workflow:task`
-- `/spwnr-workflow:workers`
+- `/spwnr:plan`
+- `/spwnr:task`
+- `/spwnr:workers`
 
 ## Command Intent
 
-`/spwnr-workflow:plan`
+`/spwnr:plan`
 - clarify the task and return a short plan only
 
-`/spwnr-workflow:task`
+`/spwnr:task`
 - run the full `research -> execute -> review -> finalize` loop
 
-`/spwnr-workflow:workers`
+`/spwnr:workers`
 - inspect the configured worker map and show missing agents plus inject commands
 
 ## What This Does Not Do
