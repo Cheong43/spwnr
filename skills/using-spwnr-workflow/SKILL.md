@@ -16,8 +16,9 @@ Use it when:
 ## Command Routing
 
 - Use `/spwnr:workers` when worker availability is unclear.
-- Prefer `/spwnr:plan` when the user wants strategy or sequencing.
-- Prefer `/spwnr:task` when the user wants the full workflow.
+- Prefer `/spwnr:plan` when the user wants to align and lock the plan before any execution.
+- Prefer `/spwnr:task` when the user wants the same planning gate plus approval-gated execution.
+- Even inside `/spwnr:task`, start by planning rather than delegating immediately.
 - Use `workflow-planning` as the primary skill behind `/spwnr:plan`.
 - Use `workflow-task-orchestration` as the primary skill behind `/spwnr:task`.
 - Use `worker-audit` as the primary skill behind `/spwnr:workers`.

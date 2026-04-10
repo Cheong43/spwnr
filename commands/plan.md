@@ -1,5 +1,5 @@
 ---
-description: Create a deep, option-driven plan by using the workflow-planning skill.
+description: Align and lock a plan before execution by using the workflow-planning skill.
 ---
 
 # Spwnr Workflow Plan Command
@@ -12,3 +12,4 @@ Guardrails:
 
 - do not delegate to worker subagents from this command
 - do not implement changes from this command
+- stop in planning mode when approval is still missing

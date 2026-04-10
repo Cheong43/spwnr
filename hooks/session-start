@@ -4,7 +4,7 @@ cat <<'EOF'
 {
   "hookSpecificOutput": {
     "hookEventName": "SessionStart",
-    "additionalContext": "The Spwnr plugin is available. For non-trivial work, prefer /spwnr:plan when you want strategy first and /spwnr:task when you want the full research -> execute -> review loop. Use /spwnr:workers to inspect required worker subagents: general-researcher, general-executor, general-reviewer. Use code-reviewer only when the request is explicitly code-focused."
+    "additionalContext": "The Spwnr plugin is available. For non-trivial work, start with /spwnr:plan to align and lock the plan first. /spwnr:task uses the same planning gate and only executes after explicit approval, then adapts between single-lane, parallel, or swarm orchestration plus review. Use /spwnr:workers to inspect required worker subagents: general-researcher, general-executor, general-reviewer. Use code-reviewer only when the request is explicitly code-focused."
   }
 }
 EOF

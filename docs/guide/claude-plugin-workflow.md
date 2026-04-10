@@ -6,14 +6,16 @@ The plugin is a dogfood asset for this repository. It is not a published Spwnr p
 
 ## What The Plugin Does
 
-The plugin coordinates a fixed workflow:
+The plugin coordinates a plan-first workflow:
 
 1. clarify the request
-2. write a short plan
-3. delegate research
-4. delegate execution
-5. delegate review
-6. integrate the final answer
+2. draft and refine the plan until the important details are aligned
+3. stop for explicit approval if the plan is not yet confirmed
+4. verify workers and build an orchestration spec
+5. run one shared research pass if needed
+6. execute in `single-lane`, `parallel`, or `swarm` mode
+7. delegate review
+8. integrate the final answer
 
 The controller lives in the repo root under:
 
@@ -64,13 +66,21 @@ pnpm --filter @spwnr/cli dev -- inject general-reviewer --host claude_code --sco
 ## Command Intent
 
 `/spwnr:plan`
-- clarify the task and return a short plan only
+- align the task, surface material decisions, and stop in `needs-confirmation` or `approved-plan-ready`
 
 `/spwnr:task`
-- run the full `research -> execute -> review -> finalize` loop
+- run the same planning gate first, then execute only after explicit approval
 
 `/spwnr:workers`
 - inspect the configured worker map and show missing agents plus inject commands
+
+## Execution Modes
+
+After approval, `/spwnr:task` chooses an execution mode based on the plan:
+
+- `single-lane` for mostly sequential work
+- `parallel` for independent work packages with low coupling
+- `swarm` for multiple coordinated executor passes on one shared output
 
 ## What This Does Not Do
 
@@ -83,4 +93,5 @@ pnpm --filter @spwnr/cli dev -- inject general-reviewer --host claude_code --sco
 
 - The marketplace config is committed as static JSON in `.claude-plugin/marketplace.json`.
 - The plugin expects worker subagents to exist in project or user `.claude/agents/` directories.
+- Plan approval is conversational and thread-local; clear confirmations such as `continue`, `execute`, or `按这个 plan 做` unlock delegation.
 - Missing required workers are treated as a stop condition, not as a reason to improvise the missing role.

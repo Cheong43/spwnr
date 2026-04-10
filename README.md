@@ -72,7 +72,7 @@ Run `pnpm test` after changes to verify the workspace and repo-level workflow sm
 
 ## Repo Claude Plugin
 
-This repository now also carries a repo-root Claude Code plugin for dogfooding a controller-plus-worker workflow:
+This repository now also carries a repo-root Claude Code plugin for dogfooding a plan-first controller-plus-worker workflow:
 
 - plugin root: [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json)
 - commands: [`commands/`](./commands)
@@ -86,6 +86,12 @@ When installed in Claude Code, the slash commands are:
 - `/spwnr:plan`
 - `/spwnr:task`
 - `/spwnr:workers`
+
+For non-trivial work, start with planning:
+
+- `/spwnr:plan` aligns the goal, success criteria, boundaries, risks, and approval condition, then stops in `needs-confirmation` or `approved-plan-ready`.
+- `/spwnr:task` reuses the same planning gate and only delegates after explicit approval, then chooses adaptive `single-lane`, `parallel`, or `swarm` orchestration plus review.
+- `/spwnr:workers` checks whether the required worker agents are installed before you rely on execution.
 
 ## CLI Surface
 

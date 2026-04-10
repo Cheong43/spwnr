@@ -129,6 +129,11 @@ describe('workflow docs', () => {
       'general-researcher',
       'general-executor',
       'general-reviewer',
+      'needs-confirmation',
+      'approved-plan-ready',
+      'explicit approval',
+      'parallel',
+      'swarm',
       '/plugin install spwnr@spwnr-dev',
       'claude --plugin-dir /absolute/path/to/spwnr',
     ]) {
@@ -136,10 +141,11 @@ describe('workflow docs', () => {
     }
   });
 
-  it('require option-based clarification in planning and task prompts', () => {
+  it('require a plan-first approval gate in planning and task prompts', () => {
     const planCommand = readFileSync(resolve(repoRoot, 'commands/plan.md'), 'utf-8');
     const taskCommand = readFileSync(resolve(repoRoot, 'commands/task.md'), 'utf-8');
     const workersCommand = readFileSync(resolve(repoRoot, 'commands/workers.md'), 'utf-8');
+    const sessionStartHook = readFileSync(resolve(repoRoot, 'hooks/session-start'), 'utf-8');
     const foundationSkill = readFileSync(resolve(repoRoot, 'skills/workflow-foundation/SKILL.md'), 'utf-8');
     const planningSkill = readFileSync(resolve(repoRoot, 'skills/workflow-planning/SKILL.md'), 'utf-8');
     const taskSkill = readFileSync(resolve(repoRoot, 'skills/workflow-task-orchestration/SKILL.md'), 'utf-8');
@@ -152,19 +158,38 @@ describe('workflow docs', () => {
     expect(planCommand).not.toContain('task-decomposition');
     expect(taskCommand).not.toContain('handoff-review');
     expect(workersCommand).not.toContain('worker-selection');
+    expect(planCommand).toContain('stop in planning mode when approval is still missing');
+    expect(taskCommand).toContain('stop at plan confirmation when approval is not explicit');
+    expect(taskCommand).toContain('parallel');
+    expect(taskCommand).toContain('swarm');
     expect(foundationSkill).toContain('2 to 4 concrete options');
     expect(foundationSkill).toContain('Compare at least 2 plausible approaches');
     expect(foundationSkill).toContain('provisional default');
-    expect(planningSkill).toContain('Approach Analysis');
-    expect(planningSkill).toContain('Do not leave the plan blank');
-    expect(taskSkill).toContain('Handoff Contracts');
-    expect(taskSkill).toContain('Route blocking review feedback back through the execute step once');
+    expect(foundationSkill).toContain('For non-trivial work, enter a planning gate before delegation or implementation.');
+    expect(foundationSkill).toContain('Keep asking structured follow-up questions while unresolved details would materially change decomposition, sequencing, or acceptance criteria.');
+    expect(foundationSkill).toContain('Treat plan approval as thread-local and conversational.');
+    expect(planningSkill).toContain('Plan Status');
+    expect(planningSkill).toContain('needs-confirmation');
+    expect(planningSkill).toContain('approved-plan-ready');
+    expect(planningSkill).toContain('goal, success criteria, scope boundaries, constraints, open risks, and approval condition');
+    expect(planningSkill).toContain('Do not mark the plan `approved-plan-ready` without clear in-thread confirmation from the user.');
+    expect(taskSkill).toContain('## Planning Gate');
+    expect(taskSkill).toContain('If the user has not clearly approved the plan in the current thread, present the proposed plan, ask for confirmation, and stop.');
+    expect(taskSkill).toContain('## Orchestration Spec');
+    expect(taskSkill).toContain('dependencies and merge points');
+    expect(taskSkill).toContain('Choose the execution mode: `single-lane`, `parallel`, or `swarm`.');
+    expect(taskSkill).toContain('reuse the configured `execute` role, which typically resolves to `general-executor`');
+    expect(taskSkill).toContain('If `/spwnr:task` stops before approval, use:');
+    expect(taskSkill).toContain('Do not delegate before the plan is explicitly approved.');
     expect(workerAuditSkill).toContain('Worker Mapping');
     expect(workerAuditSkill).toContain('preferredAgents');
     expect(workerAuditSkill).toContain('Do not silently replace a missing required worker');
     expect(workflowSkill).toContain('Use `workflow-planning` as the primary skill');
-    expect(workflowSkill).not.toContain('compare plausible approaches');
-    expect(workflowSkill).not.toContain('recommended default');
+    expect(workflowSkill).toContain('align and lock the plan before any execution');
+    expect(workflowSkill).toContain('approval-gated execution');
+    expect(sessionStartHook).toContain('start with /spwnr:plan to align and lock the plan first');
+    expect(sessionStartHook).toContain('only executes after explicit approval');
+    expect(sessionStartHook).toContain('single-lane, parallel, or swarm');
   });
 
   it('encode request normalization and deep analysis standards in controller and worker prompts', () => {
@@ -185,6 +210,11 @@ describe('workflow docs', () => {
     expect(taskSkill).toContain('evaluation dimensions, evidence gaps, and key uncertainties');
     expect(taskSkill).toContain('decision-support materials rather than a final directive');
     expect(taskSkill).toContain('keep the execution output concrete and implementation-oriented');
+    expect(taskSkill).toContain('Keep controller-issued briefs mode-aware');
+    expect(taskSkill).toContain('run one shared research pass if needed');
+    expect(taskSkill).toContain('single-lane');
+    expect(taskSkill).toContain('parallel');
+    expect(taskSkill).toContain('swarm');
 
     expect(researcherAgent).toContain('decision goal, evaluation criteria, time horizon, constraints, comparable options, and risk surface');
     expect(researcherAgent).toContain('create the framework first, then fill it with evidence');
