@@ -24,6 +24,25 @@ export interface PackageWithVersions extends PackageRow {
   versions: PackageVersionRow[]
 }
 
+export interface PackageSearchRow {
+  package_id: string
+  version_id: string
+  agent_name: string
+  version: string
+  summary: string
+  instruction: string
+  description: string
+  domains: string
+  tags: string
+  persona_role: string
+  compatibility_hosts: string
+}
+
+interface LatestPackageVersionRecord {
+  packageName: string
+  versionRow: PackageVersionRow
+}
+
 export class PackageStore {
   constructor(private readonly db: Database.Database) {}
 
@@ -75,6 +94,16 @@ export class PackageStore {
          VALUES (?, ?, ?, ?, ?, ?)`,
       )
       .run(id, packageId, opts.version, manifestJson, opts.signature, opts.tarballPath)
+
+    this.replaceSearchDocument(packageId, {
+      id,
+      package_id: packageId,
+      version: opts.version,
+      manifest_json: manifestJson,
+      signature: opts.signature,
+      tarball_path: opts.tarballPath,
+      published_at: new Date().toISOString(),
+    })
 
     return this.db
       .prepare<[string], PackageVersionRow>('SELECT * FROM package_versions WHERE id = ?')
@@ -139,6 +168,158 @@ export class PackageStore {
           'SELECT * FROM package_versions WHERE package_id = ? ORDER BY published_at DESC, rowid DESC LIMIT 1',
         )
         .get(pkg.id) ?? null
+    )
+  }
+
+  syncSearchIndex(): void {
+    const latestRecords = this.listLatestPackageVersions()
+
+    this.db.prepare('DELETE FROM package_search').run()
+    for (const record of latestRecords) {
+      this.replaceSearchDocument(record.versionRow.package_id, record.versionRow, record.packageName)
+    }
+  }
+
+  listSearchRows(options: {
+    query?: string
+    limit: number
+    host?: string
+  }): Array<PackageSearchRow & { raw_score: number }> {
+    const hostLike = options.host ? `%${options.host}%` : null
+    const effectiveLimit = Math.max(options.limit * 5, options.limit)
+
+    if (!options.query) {
+      return this.db.prepare<[string | null, number], PackageSearchRow & { raw_score: number }>(`
+        SELECT
+          package_id,
+          version_id,
+          agent_name,
+          version,
+          summary,
+          instruction,
+          description,
+          domains,
+          tags,
+          persona_role,
+          compatibility_hosts,
+          0 AS raw_score
+        FROM package_search
+        WHERE (? IS NULL OR compatibility_hosts LIKE ?)
+        ORDER BY agent_name ASC
+        LIMIT ?
+      `).all(hostLike, hostLike, options.limit)
+    }
+
+    return this.db.prepare<[string, string | null, string | null, number], PackageSearchRow & { raw_score: number }>(`
+      SELECT
+        package_id,
+        version_id,
+        agent_name,
+        version,
+        summary,
+        instruction,
+        description,
+        domains,
+        tags,
+        persona_role,
+        compatibility_hosts,
+        bm25(package_search, 5.0, 1.0, 0.8, 0.8, 0.5, 0.4, 0.4) AS raw_score
+      FROM package_search
+      WHERE package_search MATCH ?
+        AND (? IS NULL OR compatibility_hosts LIKE ?)
+      ORDER BY bm25(package_search, 5.0, 1.0, 0.8, 0.8, 0.5, 0.4, 0.4) ASC
+      LIMIT ?
+    `).all(options.query, hostLike, hostLike, effectiveLimit)
+  }
+
+  private listLatestPackageVersions(): LatestPackageVersionRecord[] {
+    const rows = this.db.prepare<[], {
+      package_name: string
+      package_id: string
+      id: string
+      version: string
+      manifest_json: string
+      signature: string
+      tarball_path: string
+      published_at: string
+    }>(`
+      SELECT
+        packages.name AS package_name,
+        package_versions.package_id,
+        package_versions.id,
+        package_versions.version,
+        package_versions.manifest_json,
+        package_versions.signature,
+        package_versions.tarball_path,
+        package_versions.published_at
+      FROM packages
+      JOIN package_versions ON package_versions.package_id = packages.id
+      WHERE package_versions.id = (
+        SELECT pv.id
+        FROM package_versions pv
+        WHERE pv.package_id = packages.id
+        ORDER BY pv.published_at DESC, pv.rowid DESC
+        LIMIT 1
+      )
+      ORDER BY packages.name ASC
+    `).all()
+
+    return rows.map((row) => ({
+      packageName: row.package_name,
+      versionRow: {
+        id: row.id,
+        package_id: row.package_id,
+        version: row.version,
+        manifest_json: row.manifest_json,
+        signature: row.signature,
+        tarball_path: row.tarball_path,
+        published_at: row.published_at,
+      },
+    }))
+  }
+
+  private replaceSearchDocument(
+    packageId: string,
+    versionRow: PackageVersionRow,
+    packageName?: string,
+  ): void {
+    const manifest = JSON.parse(versionRow.manifest_json) as SubagentManifest
+    const agentName = packageName ?? manifest.metadata.name
+    const instruction = manifest.metadata.instruction
+    const description = manifest.metadata.description ?? ''
+    const summary = description || instruction
+    const domains = (manifest.metadata.domains ?? []).join(' ')
+    const tags = (manifest.metadata.tags ?? []).join(' ')
+    const personaRole = manifest.spec.persona?.role ?? ''
+    const compatibilityHosts = (manifest.spec.compatibility?.hosts ?? []).join(' ')
+
+    this.db.prepare('DELETE FROM package_search WHERE package_id = ?').run(packageId)
+    this.db.prepare(`
+      INSERT INTO package_search (
+        package_id,
+        version_id,
+        agent_name,
+        version,
+        summary,
+        instruction,
+        description,
+        domains,
+        tags,
+        persona_role,
+        compatibility_hosts
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      packageId,
+      versionRow.id,
+      agentName,
+      versionRow.version,
+      summary,
+      instruction,
+      description,
+      domains,
+      tags,
+      personaRole,
+      compatibilityHosts,
     )
   }
 }

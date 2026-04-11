@@ -6,13 +6,14 @@ const templateGrid = document.getElementById('template-grid');
 const summaryCopy = document.getElementById('summary-copy');
 const searchInput = document.getElementById('search-input');
 const hostFilter = document.getElementById('host-filter');
+const domainFilter = document.getElementById('domain-filter');
 const tagFilter = document.getElementById('tag-filter');
 
 officialSiteLink.href = registrySiteUrl;
 
 const state = {
   registry: { templates: [] },
-  filters: { search: '', host: '', tag: '' },
+  filters: { search: '', host: '', domain: '', tag: '' },
 };
 
 function unique(values) {
@@ -34,6 +35,7 @@ function matchesFilters(template) {
   const haystack = [
     template.name,
     template.description,
+    ...(template.domains ?? []),
     ...(template.tags ?? []),
     ...(template.compatibilityHosts ?? []),
     ...((template.authors ?? []).map((author) => author.name)),
@@ -47,6 +49,10 @@ function matchesFilters(template) {
   }
 
   if (state.filters.host && !(template.compatibilityHosts ?? []).includes(state.filters.host)) {
+    return false;
+  }
+
+  if (state.filters.domain && !(template.domains ?? []).includes(state.filters.domain)) {
     return false;
   }
 
@@ -76,6 +82,9 @@ function renderTemplates() {
     const hosts = (template.compatibilityHosts ?? [])
       .map((host) => `<span class="pill">${host}</span>`)
       .join('');
+    const domains = (template.domains ?? [])
+      .map((domain) => `<span class="pill">${domain}</span>`)
+      .join('');
     const tags = (template.tags ?? [])
       .map((tag) => `<span class="pill">${tag}</span>`)
       .join('');
@@ -90,7 +99,7 @@ function renderTemplates() {
       <p class="eyebrow">Latest ${template.latestVersion}</p>
       <h3>${template.name}</h3>
       <p>${template.description ?? 'No description provided.'}</p>
-      <div class="pill-row">${hosts}${tags}</div>
+      <div class="pill-row">${domains}${hosts}${tags}</div>
       <p class="meta">Available versions: ${(template.versions ?? []).join(', ')}</p>
       ${authors ? `<ul class="authors">${authors}</ul>` : ''}
       ${dependencies ? `<ul class="dependency-list">${dependencies}</ul>` : ''}
@@ -115,6 +124,11 @@ function wireFilters() {
     renderTemplates();
   });
 
+  domainFilter.addEventListener('change', (event) => {
+    state.filters.domain = event.target.value;
+    renderTemplates();
+  });
+
   tagFilter.addEventListener('change', (event) => {
     state.filters.tag = event.target.value;
     renderTemplates();
@@ -125,6 +139,7 @@ async function boot() {
   const response = await fetch('./registry-index.json');
   state.registry = await response.json();
   renderOptions(hostFilter, unique((state.registry.templates ?? []).flatMap((template) => template.compatibilityHosts ?? [])), 'hosts');
+  renderOptions(domainFilter, unique((state.registry.templates ?? []).flatMap((template) => template.domains ?? [])), 'domains');
   renderOptions(tagFilter, unique((state.registry.templates ?? []).flatMap((template) => template.tags ?? [])), 'tags');
   renderTemplates();
 }

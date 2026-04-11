@@ -5,28 +5,97 @@ import { join } from 'path'
 import { tmpdir } from 'os'
 import { randomUUID } from 'crypto'
 
-function createTestPackage(dir: string, name = 'test-agent', version = '0.1.0') {
+interface TestPackageOptions {
+  name?: string
+  version?: string
+  instruction?: string
+  description?: string
+  domains?: string[]
+  tags?: string[]
+  personaRole?: string
+  compatibilityHosts?: string[]
+}
+
+function createTestPackage(dir: string, options: TestPackageOptions = {}) {
+  const {
+    name = 'test-agent',
+    version = '0.1.0',
+    instruction = 'Review changes carefully.',
+    description,
+    domains = [],
+    tags = [],
+    personaRole,
+    compatibilityHosts = ['claude_code'],
+  } = options
+
   mkdirSync(join(dir, 'schemas'), { recursive: true })
 
-  writeFileSync(
-    join(dir, 'subagent.yaml'),
-    `apiVersion: subagent.io/v0.3
-kind: Subagent
-metadata:
-  name: ${name}
-  version: ${version}
-  instruction: Review changes carefully.
-spec:
-  agent:
-    path: ./agent.md
-  schemas:
-    input: ./schemas/input.json
-    output: ./schemas/output.json
-`,
+  const lines = [
+    'apiVersion: spwnr/v0.3',
+    'kind: Subagent',
+    'metadata:',
+    `  name: ${name}`,
+    `  version: ${version}`,
+    `  instruction: ${JSON.stringify(instruction)}`,
+  ]
+
+  if (description) {
+    lines.push(`  description: ${JSON.stringify(description)}`)
+  }
+
+  if (domains.length > 0) {
+    lines.push('  domains:')
+    for (const domain of domains) {
+      lines.push(`    - ${domain}`)
+    }
+  }
+
+  if (tags.length > 0) {
+    lines.push('  tags:')
+    for (const tag of tags) {
+      lines.push(`    - ${tag}`)
+    }
+  }
+
+  lines.push(
+    'spec:',
+    '  agent:',
+    '    path: ./agent.md',
   )
+
+  if (personaRole) {
+    lines.push(
+      '  persona:',
+      `    role: ${personaRole}`,
+    )
+  }
+
+  lines.push(
+    '  compatibility:',
+    '    hosts:',
+  )
+  for (const host of compatibilityHosts) {
+    lines.push(`      - ${host}`)
+  }
+
+  lines.push(
+    '  schemas:',
+    '    input: ./schemas/input.json',
+    '    output: ./schemas/output.json',
+    '',
+  )
+
+  writeFileSync(join(dir, 'subagent.yaml'), lines.join('\n'))
   writeFileSync(join(dir, 'agent.md'), '# Test Agent\n\nReview changes carefully.')
   writeFileSync(join(dir, 'schemas', 'input.json'), '{"type":"object"}')
   writeFileSync(join(dir, 'schemas', 'output.json'), '{"type":"object"}')
+}
+
+async function createPublishedPackage(baseDir: string, svc: RegistryService, options: TestPackageOptions) {
+  const packageDir = join(baseDir, options.name ?? 'test-agent')
+  mkdirSync(packageDir)
+  createTestPackage(packageDir, options)
+  await svc.publish(packageDir)
 }
 
 describe('RegistryService', () => {
@@ -145,5 +214,100 @@ describe('RegistryService', () => {
 
   it('install() throws PACKAGE_NOT_FOUND for unknown package', async () => {
     await expect(svc.install('no-such-pkg')).rejects.toMatchObject({ code: 'PACKAGE_NOT_FOUND' })
+  })
+
+  it('searchPackages() respects host filtering and returns metadata fields', async () => {
+    await createPublishedPackage(tmpBase, svc, {
+      name: 'backend-developer',
+      instruction: 'Build backend services and APIs.',
+      description: 'Backend execution specialist.',
+      domains: ['Develop'],
+      tags: ['backend', 'api'],
+      personaRole: 'developer',
+      compatibilityHosts: ['claude_code'],
+    })
+    await createPublishedPackage(tmpBase, svc, {
+      name: 'codex-only-agent',
+      instruction: 'Codex only package.',
+      compatibilityHosts: ['codex'],
+    })
+
+    const results = svc.searchPackages({
+      host: 'claude_code',
+      query: 'backend api',
+      limit: 10,
+    })
+
+    expect(results).toHaveLength(1)
+    expect(results[0]).toMatchObject({
+      name: 'backend-developer',
+      version: '0.1.0',
+      instruction: 'Build backend services and APIs.',
+      description: 'Backend execution specialist.',
+      domains: ['Develop'],
+      tags: ['backend', 'api'],
+      compatibilityHosts: ['claude_code'],
+      personaRole: 'developer',
+    })
+  })
+
+  it('searchPackages() prefers but does not require the requested domain', async () => {
+    await createPublishedPackage(tmpBase, svc, {
+      name: 'platform-engineer',
+      instruction: 'Engineer platform tooling and delivery systems.',
+      domains: ['Develop'],
+      compatibilityHosts: ['claude_code'],
+    })
+    await createPublishedPackage(tmpBase, svc, {
+      name: 'tooling-expert',
+      instruction: 'Engineer platform tooling and delivery systems.',
+      domains: ['Operate'],
+      compatibilityHosts: ['claude_code'],
+    })
+
+    const results = svc.searchPackages({
+      host: 'claude_code',
+      query: 'platform tooling',
+      domain: 'Develop',
+      limit: 10,
+    })
+
+    expect(results.map((result) => result.name)).toEqual([
+      'platform-engineer',
+      'tooling-expert',
+    ])
+  })
+
+  it('shortlistWorkers() returns task-focused candidates without role scoring', async () => {
+    await createPublishedPackage(tmpBase, svc, {
+      name: 'fastapi-developer',
+      instruction: 'Build FastAPI services and backend endpoints.',
+      domains: ['Develop'],
+      tags: ['fastapi', 'python'],
+      compatibilityHosts: ['claude_code'],
+    })
+    await createPublishedPackage(tmpBase, svc, {
+      name: 'react-specialist',
+      instruction: 'Build React interfaces and frontend flows.',
+      domains: ['Develop'],
+      tags: ['react', 'frontend'],
+      compatibilityHosts: ['claude_code'],
+    })
+
+    const shortlist = svc.shortlistWorkers({
+      role: 'execute',
+      host: 'claude_code',
+      preferredDomain: 'Develop',
+      taskBrief: 'Implement a FastAPI backend service',
+      limit: 4,
+    })
+
+    expect(shortlist).toMatchObject({
+      role: 'execute',
+      preferredDomain: 'Develop',
+    })
+    expect(shortlist.candidates.map((candidate) => candidate.name)).toEqual([
+      'fastapi-developer',
+    ])
   })
 })

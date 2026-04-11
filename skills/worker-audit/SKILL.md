@@ -1,49 +1,68 @@
 ---
 name: worker-audit
-description: Use for /spwnr:workers. Inspect the worker map, Claude subagent availability, and exact install guidance.
+description: Use for /spwnr:workers. Inspect dynamic registry policy, local registry readiness, and current Claude agent availability.
 ---
 
 # Worker Audit
 
-Use this skill to audit which worker subagents are available to the workflow controller.
+Use this skill to audit whether the Spwnr registry can dynamically resolve a usable agent lineup from the local registry.
 
-This skill is the single source of truth for worker resolution and install guidance.
+This skill is the shared source of truth for dynamic registry readiness plus install or inject guidance.
+
+It is a health-check and recovery surface, not a prerequisite step for `/spwnr:task`, which performs its own registry resolution during normal execution.
 
 ## Required Checks
 
-1. Read `.claude-plugin/workers.json`.
-2. Check project-scoped agents under `.claude/agents/`.
-3. Check user-scoped agents under `~/.claude/agents/`.
-4. Determine whether `spwnr` is available directly.
-5. If `spwnr` is not available directly, determine whether the workspace command `pnpm --filter @spwnr/cli dev --` is available.
+1. Read `.claude-plugin/workers.json` with `Read`.
+2. Confirm the worker policy is in dynamic mode.
+3. Check project-scoped agents under `.claude/agents/`.
+4. Check user-scoped agents under `~/.claude/agents/`.
+5. Determine whether `spwnr` is available directly.
+6. If `spwnr` is not available directly, determine whether the workspace command `pnpm --filter @spwnr/cli dev --` is available.
+7. Check whether `vendor/spwnr-registry` exists in the current repository.
+8. Inspect the local Spwnr registry and determine whether published packages exist at all, and whether dynamic resolution is likely usable.
 
-## Worker Resolution
+## Dynamic Readiness Rules
 
-- For each role, try `preferredAgents` in order.
-- Only use `fallbackAgents` when the preferred list is unavailable and the task still matches the fallback's specialty.
+- Treat the local Spwnr registry as the runtime source of truth.
+- Do not assume vendored templates are usable until they have been synced into the local registry.
+- Report already-injected project and user agents as current availability, not as the selection source of truth.
+- If the vendored registry exists but the local registry looks sparse or empty, call out that `sync-registry` is likely needed.
+- If `/spwnr:task` reported a registry gap, frame this command as the required recovery step before the task should continue.
+- Do not silently invent a fallback agent lineup.
 
 ## Reporting Format
 
 Use these sections:
 
-1. `Worker Mapping`
-2. `Available Agents`
-3. `Missing Roles`
-4. `Install Suggestions`
-5. `Recommended Next Step`
+1. `Worker Policy`
+2. `Local Registry`
+3. `Injected Agents`
+4. `Readiness Gaps`
+5. `Install Suggestions`
+6. `Recommended Next Step`
 
 ## Install Suggestions
 
-When a role is missing, prefer these exact commands:
+When the local registry is missing usable packages, prefer these exact commands:
+
+- sync vendored community templates into the local registry
+  - `pnpm --filter @spwnr/cli dev -- sync-registry`
+- preview registry candidates for a task
+  - `pnpm --filter @spwnr/cli dev -- resolve-workers --search "<search query>" --host claude_code --format json`
+
+When a specific agent must be present immediately in Claude Code, prefer:
 
 - user scope
-  - `spwnr inject <name> --host claude_code --scope user`
-- repo scope from this repository
+  - `pnpm --filter @spwnr/cli dev -- inject <name> --host claude_code --scope user`
+- repo scope
   - `pnpm --filter @spwnr/cli dev -- inject <name> --host claude_code --scope project`
 
 ## Rules
 
-- Report both preferred and fallback workers for the `review` role.
-- Mention whether each worker was found in project scope, user scope, or both.
-- Do not silently replace a missing required worker.
-- If all required workers are present, say that the workflow is ready and suggest `/spwnr:task`.
+- Report whether dynamic selection is enabled and quote the key policy fields.
+- Report whether the local registry has enough published packages to support a useful candidate pool.
+- Report whether vendored registry content exists but still needs syncing.
+- If all readiness conditions are satisfied, say that the registry audit path is healthy and remind the user that `/spwnr:task` can resolve its lineup directly.
+- If `/spwnr:task` is blocked, explicitly say that the user should install or inject the missing agents first, then return to the same plan file and rerun `/spwnr:task`.
+- If a task brief is explicitly provided, you may suggest using `resolve-workers` to preview likely candidates, but do not mutate state from this skill.

@@ -7,6 +7,8 @@ import { makeInfoCommand } from './info.js'
 import { makeInjectCommand } from './inject.js'
 import { makeSessionCommand } from './session.js'
 import { makeRunCommand } from './run.js'
+import { makeResolveWorkersCommand } from './resolve-workers.js'
+import { makeSyncRegistryCommand } from './sync-registry.js'
 
 export function registerCommands(program: Command): void {
   program.addCommand(makeValidateCommand())
@@ -16,5 +18,7 @@ export function registerCommands(program: Command): void {
   program.addCommand(makeInfoCommand())
   program.addCommand(makeInjectCommand())
   program.addCommand(makeSessionCommand())
+  program.addCommand(makeResolveWorkersCommand())
+  program.addCommand(makeSyncRegistryCommand())
   program.addCommand(makeRunCommand())
 }

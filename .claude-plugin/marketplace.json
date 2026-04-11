@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "spwnr",
-      "description": "Repo-level Claude Code plugin that coordinates Spwnr worker subagents.",
+      "description": "Repo-level Claude Code plugin that coordinates registry-guided agent, task, and team orchestration.",
       "version": "0.1.0",
       "source": "./",
       "author": {

@@ -72,14 +72,14 @@ Run `pnpm test` after changes to verify the workspace and repo-level workflow sm
 
 ## Repo Claude Plugin
 
-This repository now also carries a repo-root Claude Code plugin for dogfooding a plan-first controller-plus-worker workflow:
+This repository now also carries a repo-root Claude Code plugin for dogfooding a plan-first Claude-native orchestration workflow:
 
 - plugin root: [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json)
 - commands: [`commands/`](./commands)
 - hooks: [`hooks/`](./hooks)
 - skills: [`skills/`](./skills)
 
-The plugin is not a published Spwnr package. It is a repository-local workflow asset that coordinates worker subagents already injected into Claude Code.
+The plugin is not a published Spwnr package. It is a repository-local workflow asset that plans first with `Skill`, `AskUserQuestion`, `TodoWrite`, `Read`, `Write`, and `Edit`, persists an executable plan artifact at `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md`, then after explicit approval reads that file, resolves a best-fit agent lineup from the local Spwnr registry with `resolve-workers`, and orchestrates the selected agents through `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `Agent`, `TeamCreate`, `SendMessage`, `EnterWorktree`, `ExitWorktree`, and `TeamDelete`. `/spwnr:workers` remains the deeper audit entrypoint for registry health, vendored sync gaps, installation or injection recovery, and injected agents.
 
 When installed in Claude Code, the slash commands are:
 
@@ -89,9 +89,9 @@ When installed in Claude Code, the slash commands are:
 
 For non-trivial work, start with planning:
 
-- `/spwnr:plan` aligns the goal, success criteria, boundaries, risks, and approval condition, then stops in `needs-confirmation` or `approved-plan-ready`.
-- `/spwnr:task` reuses the same planning gate and only delegates after explicit approval, then chooses adaptive `single-lane`, `parallel`, or `swarm` orchestration plus review.
-- `/spwnr:workers` checks whether the required worker agents are installed before you rely on execution.
+- `/spwnr:plan` aligns the goal, success criteria, boundaries, risks, and approval condition, writes the detailed plan to `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md`, upgrades `Detailed Plan` into orchestration-ready `Execution Units`, and then stops in `needs-confirmation` or `approved-plan-ready`.
+- `/spwnr:task` reuses the same planning gate, reads the persisted plan file, validates that executable `Execution Units` exist, resolves registry candidates, appends the approved execution spec, creates precise execution tasks from those units, and only delegates after explicit approval. It keeps `single-lane` as the default, uses `team` for queue-driven multi-agent execution, and requires `EnterWorktree` / `ExitWorktree` for `swarm` writes.
+- `/spwnr:workers` checks whether the dynamic worker policy, local registry, vendored template sync, and current Claude agent state are healthy enough to support registry-backed selection, and acts as the required recovery entrypoint when `/spwnr:task` cannot form a usable lineup.
 
 ## CLI Surface
 
@@ -111,6 +111,8 @@ list|ls                 List published agent packages in the local registry
 info <name> [ver]       Show package details and host injection support
 inject <name> [ver]     Materialize host-native static assets
 session <name> [ver]    Compose a host session descriptor or shell snippet
+resolve-workers         Build a dynamic agent candidate pool from the local registry
+sync-registry [dir]     Publish vendored/community templates into the local registry
 run <name> [ver]        Deprecated; use inject/session instead
 ```
 
@@ -189,7 +191,7 @@ Its manifest demonstrates:
 - artifact declarations
 - model binding metadata
 
-Additional workflow-oriented worker examples now live under:
+Additional workflow-oriented agent examples now live under:
 
 - `examples/general-researcher`
 - `examples/general-executor`

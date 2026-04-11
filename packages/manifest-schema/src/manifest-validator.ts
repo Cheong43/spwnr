@@ -143,6 +143,7 @@ export const SubagentManifestSchema = z.object({
     version: z.string().regex(SemverRegex, 'Version must be in semver format (x.y.z)'),
     instruction: InstructionSummarySchema,
     description: z.string().optional(),
+    domains: z.array(z.string()).optional(),
     tags: z.array(z.string()).optional(),
     authors: z.array(AuthorSchema).optional(),
     license: z.string().optional(),
@@ -199,7 +200,7 @@ export const SubagentManifestSchema = z.object({
     });
   }
 
-  const compatibleHosts = new Set(manifest.spec.compatibility?.hosts ?? []);
+  const compatibleHosts = new Set<string>(manifest.spec.compatibility?.hosts ?? []);
   for (const [host, skills] of Object.entries(manifest.spec.skills?.hosts ?? {})) {
     if (!skills) {
       continue;

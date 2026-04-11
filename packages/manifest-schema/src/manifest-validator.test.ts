@@ -29,6 +29,7 @@ describe('ManifestValidator', () => {
       ...minimalManifest,
       metadata: {
         ...minimalManifest.metadata,
+        domains: ['Develop'],
         authors: [
           {
             name: 'Spwnr Team',

@@ -1,6 +1,6 @@
 ---
 name: workflow-planning
-description: Use for /spwnr:plan. Run a plan-first alignment loop, surface only material decisions, and stop at plan confirmation without executing.
+description: Use for /spwnr:plan. Produce an orchestration-ready plan artifact, surface only material decisions, and stop at plan confirmation without executing.
 ---
 
 # Workflow Planning
@@ -11,47 +11,37 @@ This skill owns the full planning behavior for `/spwnr:plan`.
 
 Use `workflow-foundation` as the shared source of truth for context inspection, option-based clarification, sensible defaults, and approach comparison. Keep planning-specific behavior here; do not duplicate shared controller rules.
 
+## Planning Tool Protocol
+
+- load `workflow-foundation` and `workflow-planning` with `Skill` before specialized planning behavior
+- use `AskUserQuestion` only for structured follow-up questions that materially change the plan
+- use `TodoWrite` to maintain the draft plan, blockers, readiness fields, and approval condition
+- read supporting repository context with `Read`
+- write the detailed plan to `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` with `Write` or `Edit`
+- keep one plan file per project per day and update that file instead of creating a second draft
+- always surface the plan file path in the response
+- do not call `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `Agent`, `TeamCreate`, `TeamDelete`, `SendMessage`, `EnterWorktree`, or `ExitWorktree` from `/spwnr:plan`
+
 <HARD-GATE>
-Do NOT delegate to worker subagents.
+Do NOT create any task.
+Do NOT create any team.
+Do NOT derive any agent.
+Do NOT enter any worktree.
 Do NOT carry out the task itself.
 Do NOT produce the final deliverable, perform execution work, or switch into implementation mode from this skill.
-Your job is to produce the best possible plan for the current scope, not to start doing the work.
+Your job is to produce the best possible executable plan artifact for the current scope, not to start doing the work.
 </HARD-GATE>
 
 ## Core Intent
 
-Turn an ambiguous or partially-specified request into a practical plan that is:
+Turn an ambiguous or partially specified request into a practical plan that is:
 
-- concrete enough to act on
+- concrete enough to orchestrate without guessing
 - scoped enough to avoid vague or bloated planning
 - honest about uncertainty
 - explicit about which open decisions actually matter
 
-A good output should help someone begin the work confidently, even if a few decisions are still open.
-
-## Planning Principles
-
-- **Plan first, don’t stall** — produce a best-effort plan even when some details are still undecided.
-- **Ask only high-leverage questions** — surface only the choices that materially affect scope, sequence, quality, effort, or output.
-- **Prefer structured choices** — when clarification is needed, present options with a recommendation.
-- **Keep clarifying until the plan is executable** — if open details still change decomposition, sequencing, or acceptance criteria, ask the next structured follow-up instead of pretending the plan is settled.
-- **Decompose oversized requests** — if the request actually contains multiple independent workstreams, say so and plan the first sensible slice.
-- **Follow the context** — inspect the available materials, constraints, and current situation before deciding the plan.
-- **Default intelligently** — when the user has not specified something minor, make a sensible assumption and state it briefly.
-- **Do not imply approval** — the plan is not ready for execution until the user has clearly confirmed it in-thread.
-
-## Anti-Pattern: “There Isn’t Enough Info To Plan Yet”
-
-Do not block planning just because some details are missing.
-
-Unless the request is fundamentally incoherent, you should still produce:
-
-- a recommended direction
-- a phased or stepwise draft plan
-- explicit assumptions
-- a short list of only the decisions that could change the plan in a meaningful way
-
-Do not return an empty shell full of placeholders.
+The output should help a later `/spwnr:task` run create precise tasks and choose the right execution topology without reconstructing intent from chat history.
 
 ## Plan Readiness Gate
 
@@ -63,266 +53,113 @@ Before a plan can be treated as ready, it must capture:
 - constraints
 - open risks
 - approval condition
+- plan artifact path
+- executable `Execution Units`
+- environment and preconditions
+- execution strategy recommendation
+- agent capability requirements
+- failure and escalation rules
 
-If any of these are still too vague to support decomposition, sequencing, or acceptance criteria, keep asking structured follow-up questions and keep the latest draft visible.
+If any of these are still too vague to support decomposition, sequencing, acceptance criteria, or future orchestration, keep asking structured follow-up questions and keep the latest draft visible.
 
 ## Checklist
 
 You MUST complete these in order:
 
-1. **Restate the task** — summarize the goal in 1–2 sentences.
-2. **Inspect context** — check relevant materials, documents, background, constraints, or current state.
-3. **Assess scope** — determine whether this is one coherent plan or multiple independent efforts.
-4. **Compare approaches** — identify 2–3 plausible ways to proceed and recommend one.
-5. **Capture readiness fields** — lock the goal, success criteria, scope boundaries, constraints, open risks, and approval condition.
-6. **Run the clarification loop** — keep asking structured follow-up questions when unresolved details still change decomposition, sequencing, or acceptance criteria.
-7. **Draft the plan now** — produce a best-effort plan without waiting for every open decision.
-8. **Set the plan status** — end in either `needs-confirmation` or `approved-plan-ready`.
-9. **Assign role ownership** — map each phase to the role or type of contributor best suited for it.
-10. **Self-review the plan** — remove placeholders, contradictions, and vague sequencing before finalizing.
+1. Restate the task in 1 to 2 sentences.
+2. Inspect the relevant context with `Read`.
+3. Assess whether the request is one coherent plan or multiple independent efforts.
+4. Compare 2 to 3 plausible approaches and recommend one.
+5. Capture the readiness fields.
+6. Activate planning tools with `Skill` and initialize `TodoWrite`.
+7. Open or create the plan artifact with `Write` or `Edit`.
+8. Run the clarification loop with `AskUserQuestion` when unresolved details still change decomposition, sequencing, acceptance criteria, or execution topology.
+9. Draft the plan now instead of waiting for every open decision.
+10. Set the plan status to either `needs-confirmation` or `approved-plan-ready`.
+11. Self-review the plan for contradictions, placeholders, and vague sequencing.
 
-## Scope Handling
+## Plan Artifact Protocol
 
-Before writing the plan, assess whether the request is too broad for a single coherent plan.
+The markdown plan artifact is the durable handoff for later orchestration.
 
-Signs it needs decomposition:
+- path: `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD-HHMMSS>.md`
+- update the same file throughout the day for the same project
+- use local date for the filename
+- do not rely on `TodoWrite` alone as the long-term plan record
+- later `/spwnr:task` runs and derived agents must read this file instead of inferring the plan from thread context
 
-- multiple loosely-coupled goals
-- distinct outputs with different success criteria
-- separate workstreams that should be planned independently
-- a plan that becomes generic because the scope is too broad
+The plan artifact must contain these sections in order:
 
-When this happens:
+1. `Metadata`
+2. `User Request`
+3. `Locked Readiness Fields`
+4. `Approach Analysis`
+5. `Detailed Plan`
+6. `Decisions Needed`
+7. `Approval Status`
+8. `Pending Handoff Notes`
 
-1. State that the request should be decomposed.
-2. Name the main workstreams, sub-projects, or tracks.
-3. Recommend an order.
-4. Produce the full plan for the **first** sub-project or first meaningful slice, not for everything at once.
+Inside `Detailed Plan`, add these subsections in order:
 
-## Workflow
+1. `Environment And Preconditions`
+2. `Execution Strategy Recommendation`
+3. `Agent Capability Requirements`
+4. `Execution Units`
+5. `Failure And Escalation Rules`
 
-### 1. Restate the task
-Reframe the request in plain language.
+Each `Execution Unit` must include:
 
-Include:
-- target outcome
-- what “done” likely means
-- the likely form of the output or result
+- `unit_id`
+- `objective`
+- `preconditions`
+- `inputs`
+- `implementation steps`
+- `expected output`
+- `acceptance check`
+- `dependencies`
+- `preferred capability tags`
 
-### 2. Inspect context
-Look at the most relevant context before deciding the plan.
+## Clarification Loop
 
-Examples:
-- source materials
-- current documents
-- prior work
-- stated preferences
-- deadlines
-- stakeholders
-- tools, channels, or format constraints
-
-Keep this short and evidence-based.
-
-### 3. Compare plausible approaches
-Always consider 2–3 viable approaches when meaningful.
-
-For each approach, evaluate:
-- effort required
-- time to first useful result
-- coordination overhead
-- risk
-- flexibility
-- fit with the user’s context and goals
-
-Recommend one approach clearly.
-
-### 4. Capture readiness fields
-Before treating the plan as execution-ready, make the critical frame explicit:
-
-- goal
-- success criteria
-- scope boundaries
-- constraints
-- open risks
-- approval condition
-
-Keep these visible in the draft so the user can confirm or correct them directly.
-
-### 5. Run the clarification loop
-When unresolved details still change decomposition, sequencing, or acceptance criteria:
+When unresolved details still change decomposition, sequencing, acceptance criteria, or later orchestration:
 
 - ask the next best structured follow-up
 - keep the latest plan draft visible
 - prefer 2 to 4 concrete options with a recommendation
 - stop after the current clarification round rather than pretending the plan is settled
 
-### 6. Draft a best-effort plan immediately
-Do not wait for every open question to be resolved.
+## Plan Status
 
-The plan should:
-- be phase-based or step-based
-- include concrete outputs for each phase
-- reflect dependencies and sequencing
-- identify major risks or uncertainties
-- remain usable under stated assumptions
-
-### 7. Surface only material decisions
-Do not ask for preferences that do not meaningfully affect the plan.
-
-Good decisions to surface:
-- target audience
-- scope boundary
-- priority order
-- depth vs speed tradeoff
-- output format when it changes the work
-- review or approval path
-
-Bad decisions to surface:
-- cosmetic wording choices
-- low-impact stylistic preferences
-- details that can safely be deferred
-
-When listing a decision, always include:
-- what the decision is
-- the recommended option
-- 2–4 concrete options
-- how the plan changes if a different option is chosen
-
-### 8. Set the plan status explicitly
 Every `/spwnr:plan` response must end in one of these states:
 
-- `needs-confirmation` — use this when material decisions remain, approval has not been given, or the user still needs to react to the proposed plan.
-- `approved-plan-ready` — use this only when the plan is concrete enough to execute and the user has clearly approved it in the current thread.
+- `needs-confirmation` when material decisions remain, approval has not been given, or the user still needs to react to the proposed plan
+- `approved-plan-ready` only when the plan is concrete enough to execute and the user has clearly approved it in the current thread
+
+Do not mark the plan `approved-plan-ready` without clear in-thread confirmation from the user.
 
 If the status is `needs-confirmation`, keep the current draft visible and ask the next best structured follow-up questions.
 If the status is `approved-plan-ready`, state clearly that the plan is ready to hand off into execution, but do not perform that execution here.
 
-### 9. Assign recommended roles
-Recommend roles by phase, not as a disconnected list.
+## Capability Guidance
 
-For each phase, specify:
-- primary role
-- optional supporting role(s)
-- why that role is the best fit
+Recommend capability requirements by execution unit, not as a disconnected list.
 
-Use broad, task-neutral roles where possible, such as:
-- researcher
-- writer
-- analyst
-- coordinator
-- reviewer
-- operator
-- subject matter expert
+For each execution unit, specify:
 
-### 10. Self-review before finalizing
-Review the plan and fix issues inline.
+- primary capability
+- optional supporting capability or package trait
+- why that capability is the best fit
 
-Check for:
-1. **Placeholder scan** — remove `TBD`, `TODO`, blanks, or filler.
-2. **Plan integrity** — steps should have clear sequence and dependencies.
-3. **Scope sanity** — make sure the plan matches the actual size of the request.
-4. **Decision quality** — keep only decisions that materially affect the plan.
-5. **Role fit** — ensure recommended roles match the work described.
+Keep capability recommendations generic in `/spwnr:plan`; concrete runtime agent selection belongs to approved `/spwnr:task` execution through the registry candidate pool.
 
-## Output Format
+## Response Shape
 
-Use short sections in this order:
+Use these sections in order:
 
-1. `Plan Status`
-2. `Goal`
-3. `Situation Assessment`
+1. `Plan Artifact`
+2. `Plan Status`
+3. `Locked Readiness Fields`
 4. `Approach Analysis`
-5. `Constraints`
-6. `Draft Plan`
-7. `Decisions Needed`
-8. `Recommended Roles`
-
-### Section Requirements
-
-#### Plan Status
-State:
-- `Status`: either `needs-confirmation` or `approved-plan-ready`
-- `Why`: why this status is the correct one right now
-- `Approval Condition`: the exact approval still needed, or `Already approved in-thread`
-
-#### Goal
-State:
-- what is being planned
-- what success looks like
-- what output or result this plan is preparing for
-- the success criteria that execution will be judged against
-
-#### Situation Assessment
-Summarize:
-- relevant context inspected
-- current state
-- notable unknowns
-- whether the request is properly scoped or should be decomposed
-
-#### Approach Analysis
-Must contain exactly these subsections:
-
-- `Alternatives Considered`
-- `Recommended Approach`
-- `Why This Wins`
-
-`Alternatives Considered` should compare 2–3 options briefly but concretely.
-
-#### Constraints
-List only constraints that meaningfully affect the plan, such as:
-- scope boundaries
-- time limits
-- resource limits
-- dependency constraints
-- required approvals
-- audience expectations
-- channel, format, or tool restrictions
-- open risks that should stay visible during execution
-
-#### Draft Plan
-Write a compact phase-based or step-based plan.
-
-For each phase include:
-- objective
-- key actions
-- expected output
-- major dependency or risk if relevant
-
-Prefer 3–7 phases.
-
-#### Decisions Needed
-Only include unresolved choices that materially change the plan.
-
-Format each decision exactly like this:
-
-- `Decision`: <what must be decided>
-- `Recommended`: <best option>
-- `Options`: <2–4 concrete options with brief tradeoffs>
-
-If no material decisions remain, say:
-`No blocking decisions right now. Proceed with the recommended approach and adjust only if constraints change.`
-
-If the only missing step is explicit user approval, include that as a decision and make the recommended option the cleanest approval path.
-
-#### Recommended Roles
-Map roles to phases.
-
-Use this structure:
-
-- `Phase`: <phase name>
-- `Primary Role`: <role>
-- `Support`: <optional role(s)>
-- `Why`: <brief reason>
-
-## Behavior Rules
-
-- Do not delegate to subagents from this skill.
-- Do not perform the planned work from this skill.
-- If the request is simple, still produce a real plan.
-- If the request is too broad, decompose it and plan the first meaningful slice.
-- Do not leave sections blank or use placeholder filler.
-- Do not turn minor preferences into blocking questions.
-- Keep asking structured, high-leverage follow-up questions when the plan is not yet ready.
-- Do not mark the plan `approved-plan-ready` without clear in-thread confirmation from the user.
-- Prefer a strong recommendation over vague neutrality.
-- Keep the output compact, but specific enough that someone could confidently begin work from it.
+5. `Detailed Plan`
+6. `Decisions Needed`
+7. `Next Step`

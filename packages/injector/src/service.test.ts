@@ -26,7 +26,7 @@ function createPackage(dir: string): void {
   writeFileSync(join(dir, 'skills', 'opencode', 'diff-reader', 'SKILL.md'), '# diff-reader\n\nUse OpenCode diff bindings.');
   writeFileSync(
     join(dir, 'subagent.yaml'),
-    `apiVersion: subagent.io/v0.3
+    `apiVersion: spwnr/v0.3
 kind: Subagent
 metadata:
   name: review-agent

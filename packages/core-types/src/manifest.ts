@@ -105,6 +105,7 @@ export interface SubagentManifest {
     version: string;
     instruction: string;
     description?: string;
+    domains?: string[];
     tags?: string[];
     authors?: ManifestAuthor[];
     license?: string;

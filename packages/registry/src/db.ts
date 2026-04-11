@@ -42,5 +42,20 @@ function runMigrations(db: Database.Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_pkg_versions_package_id
       ON package_versions(package_id);
+
+    CREATE VIRTUAL TABLE IF NOT EXISTS package_search USING fts5(
+      package_id UNINDEXED,
+      version_id UNINDEXED,
+      agent_name,
+      version UNINDEXED,
+      summary,
+      instruction,
+      description,
+      domains,
+      tags,
+      persona_role,
+      compatibility_hosts,
+      tokenize = 'unicode61'
+    );
   `)
 }

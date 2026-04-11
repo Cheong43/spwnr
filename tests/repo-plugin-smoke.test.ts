@@ -12,7 +12,7 @@ function readJson(relativePath: string) {
 }
 
 describe('repo-root Claude plugin', () => {
-  it('ships valid plugin, marketplace, and worker JSON files', () => {
+  it('ships valid plugin, marketplace, worker, and hook JSON files', () => {
     const plugin = readJson('.claude-plugin/plugin.json');
     const marketplace = readJson('.claude-plugin/marketplace.json');
     const workers = readJson('.claude-plugin/workers.json');
@@ -34,20 +34,13 @@ describe('repo-root Claude plugin', () => {
       ],
     });
     expect(workers).toMatchObject({
-      roles: {
-        research: {
-          required: true,
-          preferredAgents: ['general-researcher'],
-        },
-        execute: {
-          required: true,
-          preferredAgents: ['general-executor'],
-        },
-        review: {
-          required: true,
-          preferredAgents: ['general-reviewer'],
-          fallbackAgents: ['code-reviewer'],
-        },
+      selectionMode: 'dynamic',
+      registrySource: 'local',
+      selectionMethod: 'llm_choose',
+      missingPolicy: 'auto_install_local',
+      lineup: {
+        minAgents: 1,
+        maxAgents: 4,
       },
     });
     expect(hooks).toMatchObject({
@@ -57,6 +50,11 @@ describe('repo-root Claude plugin', () => {
             matcher: 'startup|clear|compact',
           }),
         ],
+        TaskCreated: [expect.any(Object)],
+        TaskCompleted: [expect.any(Object)],
+        TeammateIdle: [expect.any(Object)],
+        PermissionDenied: [expect.any(Object)],
+        Stop: [expect.any(Object)],
       },
     });
   });
@@ -71,6 +69,8 @@ describe('repo-root Claude plugin', () => {
       'commands/workers.md',
       'hooks/hooks.json',
       'hooks/session-start',
+      'hooks/runtime-guard.mjs',
+      'hooks/lib/runtime-guard.mjs',
       'skills/workflow-foundation/SKILL.md',
       'skills/workflow-planning/SKILL.md',
       'skills/workflow-task-orchestration/SKILL.md',
@@ -114,7 +114,7 @@ describe('workflow worker examples', () => {
 });
 
 describe('workflow docs', () => {
-  it('reference the plugin commands, marketplace, and worker packages', () => {
+  it('reference the plugin commands, marketplace, and exact Claude tool names', () => {
     const combinedDocs = [
       readFileSync(resolve(repoRoot, 'README.md'), 'utf-8'),
       readFileSync(resolve(repoRoot, 'docs/guide/claude-plugin-workflow.md'), 'utf-8'),
@@ -126,116 +126,213 @@ describe('workflow docs', () => {
       '/spwnr:plan',
       '/spwnr:task',
       '/spwnr:workers',
-      'general-researcher',
-      'general-executor',
-      'general-reviewer',
+      '.claude/plans/spwnr-',
+      'registry-guided',
+      'Skill',
+      'AskUserQuestion',
+      'TodoWrite',
+      'Read',
+      'Write',
+      'Edit',
+      'Agent',
+      'TaskCreate',
+      'TaskGet',
+      'TaskList',
+      'TaskUpdate',
+      'TeamCreate',
+      'SendMessage',
+      'TeamDelete',
+      'EnterWorktree',
+      'ExitWorktree',
+      'resolve-workers',
+      'sync-registry',
       'needs-confirmation',
       'approved-plan-ready',
       'explicit approval',
-      'parallel',
+      'single-lane',
+      'team',
       'swarm',
+      'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1',
       '/plugin install spwnr@spwnr-dev',
       'claude --plugin-dir /absolute/path/to/spwnr',
     ]) {
       expect(combinedDocs).toContain(expectedSnippet);
     }
+
+    for (const removedSnippet of [
+      'SkillTool',
+      'AskUserQuestionTool',
+      'TodoWriteTool',
+      'FileReadTool',
+      'FileWriteTool',
+      'FileEditTool',
+      'AgentTool',
+      'TaskCreateTool',
+      'TaskGetTool',
+      'TaskListTool',
+      'TaskUpdateTool',
+      'TeamCreateTool',
+      'TeamDeleteTool',
+      'EnterWorktreeTool',
+      'ExitWorktreeTool',
+      '`parallel`',
+    ]) {
+      expect(combinedDocs).not.toContain(removedSnippet);
+    }
   });
 
-  it('require a plan-first approval gate in planning and task prompts', () => {
+  it('encode plan-first execution guards, worker recovery, and team or swarm contracts', () => {
+    const gitignore = readFileSync(resolve(repoRoot, '.gitignore'), 'utf-8');
     const planCommand = readFileSync(resolve(repoRoot, 'commands/plan.md'), 'utf-8');
     const taskCommand = readFileSync(resolve(repoRoot, 'commands/task.md'), 'utf-8');
     const workersCommand = readFileSync(resolve(repoRoot, 'commands/workers.md'), 'utf-8');
     const sessionStartHook = readFileSync(resolve(repoRoot, 'hooks/session-start'), 'utf-8');
+    const hooksJson = readFileSync(resolve(repoRoot, 'hooks/hooks.json'), 'utf-8');
     const foundationSkill = readFileSync(resolve(repoRoot, 'skills/workflow-foundation/SKILL.md'), 'utf-8');
     const planningSkill = readFileSync(resolve(repoRoot, 'skills/workflow-planning/SKILL.md'), 'utf-8');
     const taskSkill = readFileSync(resolve(repoRoot, 'skills/workflow-task-orchestration/SKILL.md'), 'utf-8');
     const workerAuditSkill = readFileSync(resolve(repoRoot, 'skills/worker-audit/SKILL.md'), 'utf-8');
     const workflowSkill = readFileSync(resolve(repoRoot, 'skills/using-spwnr-workflow/SKILL.md'), 'utf-8');
 
-    expect(planCommand).toContain('workflow-planning');
-    expect(taskCommand).toContain('workflow-task-orchestration');
-    expect(workersCommand).toContain('worker-audit');
-    expect(planCommand).not.toContain('task-decomposition');
-    expect(taskCommand).not.toContain('handoff-review');
-    expect(workersCommand).not.toContain('worker-selection');
-    expect(planCommand).toContain('stop in planning mode when approval is still missing');
-    expect(taskCommand).toContain('stop at plan confirmation when approval is not explicit');
-    expect(taskCommand).toContain('parallel');
+    expect(gitignore).toContain('.claude/plans/');
+
+    expect(planCommand).toContain('Skill');
+    expect(planCommand).toContain('AskUserQuestion');
+    expect(planCommand).toContain('TodoWrite');
+    expect(planCommand).toContain('Read');
+    expect(planCommand).toContain('Write');
+    expect(planCommand).toContain('Edit');
+    expect(planCommand).toContain('Execution Units');
+    expect(planCommand).toContain('never call `TaskCreate`');
+    expect(planCommand).toContain('never call `SendMessage`');
+    expect(planCommand).toContain('never create tasks, teams, or agents');
+    expect(planCommand).not.toContain('TaskCreateTool');
+
+    expect(taskCommand).toContain('Read');
+    expect(taskCommand).toContain('Edit');
+    expect(taskCommand).toContain('TaskCreate');
+    expect(taskCommand).toContain('TaskGet');
+    expect(taskCommand).toContain('TaskList');
+    expect(taskCommand).toContain('TaskUpdate');
+    expect(taskCommand).toContain('TeamCreate');
+    expect(taskCommand).toContain('SendMessage');
+    expect(taskCommand).toContain('Agent');
+    expect(taskCommand).toContain('TeamDelete');
+    expect(taskCommand).toContain('EnterWorktree');
+    expect(taskCommand).toContain('ExitWorktree');
+    expect(taskCommand).toContain('single-lane');
+    expect(taskCommand).toContain('team');
     expect(taskCommand).toContain('swarm');
-    expect(foundationSkill).toContain('2 to 4 concrete options');
-    expect(foundationSkill).toContain('Compare at least 2 plausible approaches');
-    expect(foundationSkill).toContain('provisional default');
-    expect(foundationSkill).toContain('For non-trivial work, enter a planning gate before delegation or implementation.');
-    expect(foundationSkill).toContain('Keep asking structured follow-up questions while unresolved details would materially change decomposition, sequencing, or acceptance criteria.');
-    expect(foundationSkill).toContain('Treat plan approval as thread-local and conversational.');
-    expect(planningSkill).toContain('Plan Status');
-    expect(planningSkill).toContain('needs-confirmation');
-    expect(planningSkill).toContain('approved-plan-ready');
-    expect(planningSkill).toContain('goal, success criteria, scope boundaries, constraints, open risks, and approval condition');
+    expect(taskCommand).toContain('/spwnr:workers');
+    expect(taskCommand).toContain('install or inject');
+    expect(taskCommand).toContain('same plan file');
+    expect(taskCommand).not.toContain('parallel');
+
+    expect(workersCommand).toContain('registry health and readiness audit');
+    expect(workersCommand).toContain('install or inject recovery surface');
+    expect(workersCommand).toContain('/spwnr:task');
+
+    expect(foundationSkill).toContain('Load the primary workflow skill with `Skill`');
+    expect(foundationSkill).toContain('Use `AskUserQuestion`');
+    expect(foundationSkill).toContain('Use `TodoWrite`');
+    expect(foundationSkill).toContain('Persist the shared plan artifact');
+    expect(foundationSkill).toContain('Do not call `Agent`, `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `TeamDelete`, `SendMessage`, `EnterWorktree`, or `ExitWorktree`');
+
+    expect(planningSkill).toContain('## Planning Tool Protocol');
+    expect(planningSkill).toContain('<HARD-GATE>');
+    expect(planningSkill).toContain('Do NOT create any task.');
+    expect(planningSkill).toContain('Do NOT create any team.');
+    expect(planningSkill).toContain('Do NOT derive any agent.');
+    expect(planningSkill).toContain('Do NOT enter any worktree.');
+    expect(planningSkill).toContain('Execution Units');
+    expect(planningSkill).toContain('Environment And Preconditions');
+    expect(planningSkill).toContain('Execution Strategy Recommendation');
+    expect(planningSkill).toContain('Agent Capability Requirements');
+    expect(planningSkill).toContain('Failure And Escalation Rules');
     expect(planningSkill).toContain('Do not mark the plan `approved-plan-ready` without clear in-thread confirmation from the user.');
+
     expect(taskSkill).toContain('## Planning Gate');
-    expect(taskSkill).toContain('If the user has not clearly approved the plan in the current thread, present the proposed plan, ask for confirmation, and stop.');
-    expect(taskSkill).toContain('## Orchestration Spec');
-    expect(taskSkill).toContain('dependencies and merge points');
-    expect(taskSkill).toContain('Choose the execution mode: `single-lane`, `parallel`, or `swarm`.');
-    expect(taskSkill).toContain('reuse the configured `execute` role, which typically resolves to `general-executor`');
-    expect(taskSkill).toContain('If `/spwnr:task` stops before approval, use:');
-    expect(taskSkill).toContain('Do not delegate before the plan is explicitly approved.');
-    expect(workerAuditSkill).toContain('Worker Mapping');
-    expect(workerAuditSkill).toContain('preferredAgents');
-    expect(workerAuditSkill).toContain('Do not silently replace a missing required worker');
+    expect(taskSkill).toContain('## Execution Task Contract');
+    expect(taskSkill).toContain('## Worker Readiness Required');
+    expect(taskSkill).toContain('## Failure Recovery Contract');
+    expect(taskSkill).toContain('TaskCreate');
+    expect(taskSkill).toContain('TaskGet');
+    expect(taskSkill).toContain('TaskList');
+    expect(taskSkill).toContain('TaskUpdate');
+    expect(taskSkill).toContain('TeamCreate');
+    expect(taskSkill).toContain('SendMessage');
+    expect(taskSkill).toContain('TeamDelete');
+    expect(taskSkill).toContain('EnterWorktree');
+    expect(taskSkill).toContain('ExitWorktree');
+    expect(taskSkill).toContain('single-lane');
+    expect(taskSkill).toContain('team');
+    expect(taskSkill).toContain('swarm');
+    expect(taskSkill).toContain('execution tasks');
+    expect(taskSkill).toContain('same plan file');
+    expect(taskSkill).toContain('install or inject the missing agents');
+    expect(taskSkill).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
+    expect(taskSkill).not.toContain('parallel');
+
+    expect(workerAuditSkill).toContain('health-check and recovery surface');
+    expect(workerAuditSkill).toContain('install or inject');
+    expect(workerAuditSkill).toContain('return to the same plan file');
+    expect(workerAuditSkill).toContain('Do not silently invent a fallback agent lineup');
+
     expect(workflowSkill).toContain('Use `workflow-planning` as the primary skill');
     expect(workflowSkill).toContain('align and lock the plan before any execution');
-    expect(workflowSkill).toContain('approval-gated execution');
-    expect(sessionStartHook).toContain('start with /spwnr:plan to align and lock the plan first');
-    expect(sessionStartHook).toContain('only executes after explicit approval');
-    expect(sessionStartHook).toContain('single-lane, parallel, or swarm');
+    expect(workflowSkill).toContain('Read');
+    expect(workflowSkill).toContain('Edit');
+    expect(workflowSkill).toContain('TaskCreate');
+    expect(workflowSkill).toContain('TeamCreate');
+    expect(workflowSkill).toContain('SendMessage');
+    expect(workflowSkill).toContain('EnterWorktree');
+    expect(workflowSkill).toContain('ExitWorktree');
+    expect(workflowSkill).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
+    expect(workflowSkill).not.toContain('parallel');
+
+    expect(sessionStartHook).toContain('/spwnr:plan');
+    expect(sessionStartHook).toContain('Skill');
+    expect(sessionStartHook).toContain('AskUserQuestion');
+    expect(sessionStartHook).toContain('TodoWrite');
+    expect(sessionStartHook).toContain('Read');
+    expect(sessionStartHook).toContain('Write');
+    expect(sessionStartHook).toContain('Edit');
+    expect(sessionStartHook).toContain('TaskCreate');
+    expect(sessionStartHook).toContain('TaskGet');
+    expect(sessionStartHook).toContain('TaskList');
+    expect(sessionStartHook).toContain('TaskUpdate');
+    expect(sessionStartHook).toContain('TeamCreate');
+    expect(sessionStartHook).toContain('SendMessage');
+    expect(sessionStartHook).toContain('TeamDelete');
+    expect(sessionStartHook).toContain('EnterWorktree');
+    expect(sessionStartHook).toContain('ExitWorktree');
+    expect(sessionStartHook).toContain('single-lane, team, or swarm');
+    expect(sessionStartHook).toContain('worker-readiness recovery message');
+    expect(sessionStartHook).not.toContain('parallel');
+
+    expect(hooksJson).toContain('TaskCreated');
+    expect(hooksJson).toContain('TaskCompleted');
+    expect(hooksJson).toContain('TeammateIdle');
+    expect(hooksJson).toContain('PermissionDenied');
+    expect(hooksJson).toContain('Stop');
+    expect(hooksJson).toContain('runtime-guard.mjs');
   });
 
-  it('encode request normalization and deep analysis standards in controller and worker prompts', () => {
+  it('encode request normalization and implementation-oriented execution standards in controller prompts', () => {
     const foundationSkill = readFileSync(resolve(repoRoot, 'skills/workflow-foundation/SKILL.md'), 'utf-8');
     const taskSkill = readFileSync(resolve(repoRoot, 'skills/workflow-task-orchestration/SKILL.md'), 'utf-8');
-    const researcherAgent = readFileSync(resolve(repoRoot, 'examples/general-researcher/agent.md'), 'utf-8');
-    const researchSkill = readFileSync(resolve(repoRoot, 'examples/general-researcher/skills/universal/evidence-gathering/SKILL.md'), 'utf-8');
-    const executorAgent = readFileSync(resolve(repoRoot, 'examples/general-executor/agent.md'), 'utf-8');
-    const executorSkill = readFileSync(resolve(repoRoot, 'examples/general-executor/skills/universal/structured-delivery/SKILL.md'), 'utf-8');
-    const reviewerAgent = readFileSync(resolve(repoRoot, 'examples/general-reviewer/agent.md'), 'utf-8');
-    const reviewerSkill = readFileSync(resolve(repoRoot, 'examples/general-reviewer/skills/universal/quality-gate/SKILL.md'), 'utf-8');
 
     expect(foundationSkill).toContain("Translate the user's raw wording into a structured task brief");
     expect(foundationSkill).toContain('Do not require the user to rewrite the prompt');
     expect(foundationSkill).toContain('decision-support materials');
+    expect(foundationSkill).toContain('2 to 4 concrete options');
 
-    expect(taskSkill).toContain('Produce a short plan and a normalized worker brief');
-    expect(taskSkill).toContain('evaluation dimensions, evidence gaps, and key uncertainties');
-    expect(taskSkill).toContain('decision-support materials rather than a final directive');
-    expect(taskSkill).toContain('keep the execution output concrete and implementation-oriented');
-    expect(taskSkill).toContain('Keep controller-issued briefs mode-aware');
-    expect(taskSkill).toContain('run one shared research pass if needed');
+    expect(taskSkill).toContain('normalized registry lookup brief');
+    expect(taskSkill).toContain('evaluation dimensions');
+    expect(taskSkill).toContain('risk boundaries');
+    expect(taskSkill).toContain('Tailor the output contract to the selected package\'s job');
     expect(taskSkill).toContain('single-lane');
-    expect(taskSkill).toContain('parallel');
+    expect(taskSkill).toContain('team');
     expect(taskSkill).toContain('swarm');
-
-    expect(researcherAgent).toContain('decision goal, evaluation criteria, time horizon, constraints, comparable options, and risk surface');
-    expect(researcherAgent).toContain('create the framework first, then fill it with evidence');
-    expect(researcherAgent).toContain('Default to comparing multiple viable options');
-
-    expect(researchSkill).toContain('normalized task framing');
-    expect(researchSkill).toContain('evidence tiers: confirmed facts, reasoned inference, and open gaps');
-
-    expect(executorAgent).toContain('professional decision-support artifact');
-    expect(executorAgent).toContain('options or candidates, key evidence, major risks, and next-step diligence');
-    expect(executorAgent).toContain('support the decision without pretending to make the final choice');
-
-    expect(executorSkill).toContain('conclusion summary');
-    expect(executorSkill).toContain('candidate options or scenario comparison');
-    expect(executorSkill).toContain('decision-support materials instead of a final directive');
-
-    expect(reviewerAgent).toContain('shallow analysis');
-    expect(reviewerAgent).toContain('broken evidence chains');
-    expect(reviewerAgent).toContain('material risks or boundaries');
-
-    expect(reviewerSkill).toContain('unsupported claims or a missing evidence chain');
-    expect(reviewerSkill).toContain('missing risk or boundary statements');
   });
 });

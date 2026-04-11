@@ -1,25 +1,10 @@
 {
-  "roles": {
-    "research": {
-      "required": true,
-      "preferredAgents": [
-        "general-researcher"
-      ]
-    },
-    "execute": {
-      "required": true,
-      "preferredAgents": [
-        "general-executor"
-      ]
-    },
-    "review": {
-      "required": true,
-      "preferredAgents": [
-        "general-reviewer"
-      ],
-      "fallbackAgents": [
-        "code-reviewer"
-      ]
-    }
+  "selectionMode": "dynamic",
+  "registrySource": "local",
+  "selectionMethod": "llm_choose",
+  "missingPolicy": "auto_install_local",
+  "lineup": {
+    "minAgents": 1,
+    "maxAgents": 4
   }
 }
