@@ -2,8 +2,6 @@
   <img src="./docs/assets/spwnr.png" alt="Spwnr logo" width="720" />
 </p>
 
-# Spwnr
-
 Spwnr is a multi-agent plugin for general tasks, currently supporting Claude Code.
 
 ## Claude Code Quick Start
