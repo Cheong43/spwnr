@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "description": "Agent package registry and declarative host injection platform",
+  "license": "MIT",
   "scripts": {
     "build": "pnpm -r --workspace-concurrency=1 build",
     "build:registry-portal": "node ./scripts/build-registry-portal.mjs",

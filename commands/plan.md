@@ -21,10 +21,10 @@ Guardrails:
 - include `Environment And Preconditions`, `Execution Strategy Recommendation`, `Agent Capability Requirements`, and `Failure And Escalation Rules` in the plan artifact
 - include `Plan Review Loop` in the plan artifact and always echo the plan file path in the response so later agents can read the same artifact
 - after each write or revision, immediately run the execution review loop with `AskUserQuestion`
-- when the user chooses `执行当前计划`, hand off to `workflow-task-orchestration` instead of asking for a separate `/spwnr:task`
+- when the user chooses `Execute current plan`, hand off to `workflow-task-orchestration` instead of asking for a separate `/spwnr:task`
 - never call `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `Agent`, `TeamCreate`, `TeamDelete`, `EnterWorktree`, or `ExitWorktree` from this command
 - never call `SendMessage` from this command
 - never create tasks, teams, or agents from this command
 - never implement changes from this command
-- if the user chooses `继续改进计划`, collect free-form feedback, revise the same active revision when the execution shape is still the same, or create the next revision file when the request becomes a material re-plan
-- if the user chooses `结束本轮`, preserve the plan artifact and stop without execution
+- if the user chooses `Continue improving plan`, collect free-form feedback, revise the same active revision when the execution shape is still the same, or create the next revision file when the request becomes a material re-plan
+- if the user chooses `End this round`, preserve the plan artifact and stop without execution

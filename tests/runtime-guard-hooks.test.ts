@@ -74,6 +74,12 @@ const validTaskDescription = [
   'Worktree: not-required',
   'Approved Execution Spec: present',
   'Blocked: no',
+  'Owner: builder',
+  'Files: src/app.tsx, src/app.test.tsx',
+  'Claim-Policy: assigned',
+  'Heartbeat: 5m',
+  'Risk: medium',
+  'Plan-Approval: not-required',
 ].join('\n');
 
 describe('runtime guard helpers', () => {
@@ -86,6 +92,12 @@ describe('runtime guard helpers', () => {
       'Worktree:',
       'Approved Execution Spec:',
       'Blocked:',
+      'Owner:',
+      'Files:',
+      'Claim-Policy:',
+      'Heartbeat:',
+      'Risk:',
+      'Plan-Approval:',
     ]);
   });
 });
@@ -115,6 +127,79 @@ describe('TaskCreated guard', () => {
         cwd: dir,
       }),
     ).toEqual({ exitCode: 0 });
+  });
+
+  it('blocks task creation when a high-risk unit skips worker plan approval', () => {
+    const dir = makeTempDir();
+    writePlanArtifact(dir, buildPlanArtifactContents({}));
+
+    const result = evaluateTaskCreated({
+      hook_event_name: 'TaskCreated',
+      task_subject: 'Execute unit-01',
+      task_description: validTaskDescription
+        .replace('Risk: medium', 'Risk: high')
+        .replace('Plan-Approval: not-required', 'Plan-Approval: not-required'),
+      cwd: dir,
+    });
+
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('High-risk tasks');
+    expect(result.stderr).toContain('plan approval');
+  });
+
+  it('blocks task creation when multi-agent no-worktree tasks omit explicit file ownership', () => {
+    const dir = makeTempDir();
+    writePlanArtifact(dir, buildPlanArtifactContents({}));
+
+    const result = evaluateTaskCreated({
+      hook_event_name: 'TaskCreated',
+      task_subject: 'Execute unit-01',
+      task_description: validTaskDescription.replace(
+        'Files: src/app.tsx, src/app.test.tsx',
+        'Files: none',
+      ),
+      cwd: dir,
+    });
+
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('Files');
+    expect(result.stderr).toContain('ownership boundaries');
+  });
+
+  it('blocks task creation when no-worktree file ownership overlaps across teammates', () => {
+    const claudeHome = makeTempDir();
+    const taskDir = join(claudeHome, 'tasks', 'session-1');
+    const workspace = makeTempDir();
+    mkdirSync(taskDir, { recursive: true });
+    writePlanArtifact(workspace, buildPlanArtifactContents({}));
+    writeFileSync(
+      join(taskDir, '1.json'),
+      JSON.stringify({
+        id: '1',
+        subject: 'Execute existing-unit',
+        description: validTaskDescription
+          .replace('Unit: unit-01', 'Unit: existing-unit')
+          .replace('Owner: builder', 'Owner: reviewer'),
+        status: 'in_progress',
+      }),
+    );
+
+    const result = evaluateTaskCreated(
+      {
+        hook_event_name: 'TaskCreated',
+        task_subject: 'Execute unit-01',
+        task_description: validTaskDescription,
+        session_id: 'session-1',
+        cwd: workspace,
+      },
+      {
+        CLAUDE_HOME: claudeHome,
+      },
+    );
+
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('overlaps');
+    expect(result.stderr).toContain('src/app.tsx');
   });
 
   it('accepts backtick-wrapped relative plan paths in task metadata', () => {
@@ -256,6 +341,24 @@ describe('TaskCompleted guard', () => {
         cwd: dir,
       }),
     ).toEqual({ exitCode: 0 });
+  });
+
+  it('blocks completion when worker plan approval is still pending', () => {
+    const dir = makeTempDir();
+    writePlanArtifact(dir, buildPlanArtifactContents({}));
+
+    const result = evaluateTaskCompleted({
+      hook_event_name: 'TaskCompleted',
+      task_subject: 'Execute unit-01',
+      task_description: validTaskDescription
+        .replace('Risk: medium', 'Risk: high')
+        .replace('Plan-Approval: not-required', 'Plan-Approval: required'),
+      cwd: dir,
+    });
+
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('Plan-Approval');
+    expect(result.stderr).toContain('approved');
   });
 
   it('blocks completion when the referenced plan revision is superseded', () => {

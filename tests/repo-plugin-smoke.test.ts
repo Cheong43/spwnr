@@ -153,9 +153,9 @@ describe('workflow docs', () => {
       'Superseded By',
       'active revision',
       'material re-plan',
-      '执行当前计划',
-      '继续改进计划',
-      '结束本轮',
+      'Execute current plan',
+      'Continue improving plan',
+      'End this round',
       'current run',
       'single-lane',
       'team',
@@ -258,6 +258,9 @@ describe('workflow docs', () => {
     expect(planningSkill).toContain('Execution Strategy Recommendation');
     expect(planningSkill).toContain('Agent Capability Requirements');
     expect(planningSkill).toContain('Failure And Escalation Rules');
+    expect(planningSkill).toContain('risk level');
+    expect(planningSkill).toContain('file ownership hints');
+    expect(planningSkill).toContain('worker plan approval');
     expect(planningSkill).toContain('## Execution Review Loop');
     expect(planningSkill).toContain('Plan Review Loop');
     expect(planningSkill).toContain('Revision Status');
@@ -265,7 +268,7 @@ describe('workflow docs', () => {
     expect(planningSkill).toContain('material re-plan');
     expect(planningSkill).toContain('latest active revision');
     expect(planningSkill).toContain('Do not recreate the old `needs-confirmation` or `approved-plan-ready` state machine in the plan file.');
-    expect(planningSkill).toContain('`执行当前计划`');
+    expect(planningSkill).toContain('`Execute current plan`');
 
     expect(taskSkill).toContain('## Planning Gate');
     expect(taskSkill).toContain('## Execution Task Contract');
@@ -291,6 +294,14 @@ describe('workflow docs', () => {
     expect(taskSkill).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
     expect(taskSkill).toContain('current run');
     expect(taskSkill).toContain('Approved Execution Spec');
+    expect(taskSkill).toContain('Owner: <agent-name|controller|unassigned>');
+    expect(taskSkill).toContain('Files: <csv scope or none>');
+    expect(taskSkill).toContain('Claim-Policy: <assigned|self-claim>');
+    expect(taskSkill).toContain('Heartbeat: <interval>');
+    expect(taskSkill).toContain('Risk: <low|medium|high>');
+    expect(taskSkill).toContain('Plan-Approval: <not-required|required|approved>');
+    expect(taskSkill).toContain('per-unit coverage');
+    expect(taskSkill).toContain('High-risk tasks must not complete while `Plan-Approval:` is still `required`.');
     expect(taskSkill).toContain('Do not bypass a failed `TaskCreate` by directly executing the work.');
     expect(taskSkill).not.toContain('parallel');
 
@@ -310,7 +321,9 @@ describe('workflow docs', () => {
     expect(workflowSkill).toContain('EnterWorktree');
     expect(workflowSkill).toContain('ExitWorktree');
     expect(workflowSkill).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
-    expect(workflowSkill).toContain('执行当前计划');
+    expect(workflowSkill).toContain('Execute current plan');
+    expect(workflowSkill).toContain('Owner');
+    expect(workflowSkill).toContain('Plan-Approval');
     expect(workflowSkill).not.toContain('parallel');
 
     expect(sessionStartHook).toContain('/spwnr:plan');
@@ -332,8 +345,10 @@ describe('workflow docs', () => {
     expect(sessionStartHook).toContain('single-lane, team, or swarm');
     expect(sessionStartHook).toContain('worker-readiness recovery message');
     expect(sessionStartHook).toContain('Approved Execution Spec');
+    expect(sessionStartHook).toContain('Owner, Files, Claim-Policy, Heartbeat, Risk, and Plan-Approval');
+    expect(sessionStartHook).toContain('--unit briefs');
     expect(sessionStartHook).toContain('latest active revision');
-    expect(sessionStartHook).toContain('执行当前计划');
+    expect(sessionStartHook).toContain('Execute current plan');
     expect(sessionStartHook).not.toContain('parallel');
 
     expect(hooksJson).toContain('TaskCreated');
@@ -354,8 +369,10 @@ describe('workflow docs', () => {
     expect(foundationSkill).toContain('2 to 4 concrete options');
 
     expect(taskSkill).toContain('normalized registry lookup brief');
+    expect(taskSkill).toContain('per-unit coverage brief');
     expect(taskSkill).toContain('evaluation dimensions');
     expect(taskSkill).toContain('risk boundaries');
+    expect(taskSkill).toContain('smallest lineup that still covers every execution unit');
     expect(taskSkill).toContain('Tailor the output contract to the selected package\'s job');
     expect(taskSkill).toContain('single-lane');
     expect(taskSkill).toContain('team');

@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { Command, Option } from 'commander'
 import { HostScope, HostType } from '@spwnr/core-types'
 import { injectStatic, resolveDefaultStaticTarget } from '@spwnr/injector'
-import { RegistryService } from '@spwnr/registry'
+import { RegistryService, type WorkerCoveragePlanResult } from '@spwnr/registry'
 import { loadWorkerPolicy } from './worker-policy.js'
 
 interface ResolveWorkersActionOptions {
@@ -15,12 +15,18 @@ interface ResolveWorkersActionOptions {
   ensure?: boolean
   target?: string
   select?: string[]
+  unit?: string[]
 }
 
 interface EnsureResult {
   name: string
   status: 'already_present' | 'injected'
   targetPath: string
+}
+
+interface CoverageUnitInput {
+  unitId: string
+  taskBrief: string
 }
 
 function slugifyAgentName(name: string): string {
@@ -64,6 +70,31 @@ function parseSelectedPackages(values: string[] = []): string[] {
   }
 
   return selected
+}
+
+function parseCoverageUnits(values: string[] = []): CoverageUnitInput[] {
+  return values.map((value) => {
+    const [rawUnitId, ...rawBriefParts] = value.split('::')
+    const unitId = rawUnitId?.trim()
+    const taskBrief = rawBriefParts.join('::').trim()
+
+    if (!unitId || !taskBrief) {
+      throw new Error('Invalid --unit value. Use --unit "<unit-id>::<task brief>".')
+    }
+
+    return {
+      unitId,
+      taskBrief,
+    }
+  })
+}
+
+function deriveSelectionFromCoverage(coverage: WorkerCoveragePlanResult | null): string[] {
+  if (!coverage) {
+    return []
+  }
+
+  return coverage.recommendedSelection.map((entry) => entry.agentName)
 }
 
 async function ensureSelectedPackages(
@@ -129,6 +160,7 @@ export function makeResolveWorkersCommand(): Command {
     .option('--target <dir>', 'Override injection target directory for --ensure')
     .option('--format <format>', 'Output format', 'text')
     .option('--limit <n>', 'Maximum candidates to return', '8')
+    .option('--unit <unit-id::brief>', 'Execution unit coverage query (repeatable)', collectValues, [])
     .option('--ensure', 'Inject selected packages into the target host scope after resolution')
     .option('--select <name>', 'Selected package to ensure (repeatable)', collectValues, [])
     .action(async (options: ResolveWorkersActionOptions) => {
@@ -145,7 +177,26 @@ export function makeResolveWorkersCommand(): Command {
           domain: policy.preferredDomain,
           limit,
         })
-        const selected = parseSelectedPackages(options.select)
+        const coverageUnits = parseCoverageUnits(options.unit)
+        const unitCoverage = coverageUnits.length > 0
+          ? registry.buildCoveragePlan({
+              host,
+              preferredDomain: policy.preferredDomain,
+              units: coverageUnits,
+              limit,
+            })
+          : null
+        const explicitSelection = parseSelectedPackages(options.select)
+        const selected = explicitSelection.length > 0
+          ? explicitSelection
+          : options.ensure
+            ? deriveSelectionFromCoverage(unitCoverage)
+            : []
+        const selectionSource = explicitSelection.length > 0
+          ? 'explicit'
+          : selected.length > 0
+            ? 'coverage-recommendation'
+            : 'none'
 
         if (selected.length > policy.lineup.maxAgents) {
           throw new Error(`Selected lineup allows at most ${policy.lineup.maxAgents} package(s).`)
@@ -172,7 +223,9 @@ export function makeResolveWorkersCommand(): Command {
           policyPath,
           policy,
           candidates,
+          unitCoverage,
           missingMinimumSelection: selected.length < policy.lineup.minAgents,
+          selectionSource,
           selected,
           ensured,
         }
@@ -198,6 +251,28 @@ export function makeResolveWorkersCommand(): Command {
           console.log(`    domains:  ${domains}`)
           console.log(`    summary:  ${candidate.summary}`)
           console.log(`    hosts:    ${hosts}`)
+        }
+
+        if (unitCoverage) {
+          console.log('')
+          console.log('per-unit coverage')
+          for (const unit of unitCoverage.units) {
+            console.log(`  - ${unit.unitId}: ${unit.taskBrief}`)
+            for (const candidate of unit.candidates) {
+              console.log(`    * ${candidate.agentName}@${candidate.version} (${candidate.score})`)
+            }
+          }
+
+          console.log('')
+          console.log('recommended selection')
+          for (const selection of unitCoverage.recommendedSelection) {
+            console.log(`  - ${selection.agentName}: ${selection.coversUnitIds.join(', ')}`)
+          }
+
+          if (unitCoverage.uncoveredUnitIds.length > 0) {
+            console.log('')
+            console.log(`uncovered units: ${unitCoverage.uncoveredUnitIds.join(', ')}`)
+          }
         }
 
         if (options.ensure) {

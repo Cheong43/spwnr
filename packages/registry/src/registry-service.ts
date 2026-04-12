@@ -69,6 +69,39 @@ export interface WorkerShortlistResult {
   candidates: SearchPackageResult[]
 }
 
+export interface WorkerCoverageUnitOptions {
+  unitId: string
+  taskBrief: string
+  preferredDomain?: string
+  limit?: number
+}
+
+export interface WorkerCoverageUnitResult {
+  unitId: string
+  taskBrief: string
+  preferredDomain: string | null
+  candidates: SearchPackageResult[]
+}
+
+export interface WorkerCoverageSelectionEntry {
+  agentName: string
+  coversUnitIds: string[]
+}
+
+export interface WorkerCoveragePlanOptions {
+  host: HostType
+  preferredDomain?: string
+  units: WorkerCoverageUnitOptions[]
+  limit?: number
+}
+
+export interface WorkerCoveragePlanResult {
+  preferredDomain: string | null
+  units: WorkerCoverageUnitResult[]
+  recommendedSelection: WorkerCoverageSelectionEntry[]
+  uncoveredUnitIds: string[]
+}
+
 function normalizeText(value: string): string {
   return value.trim().toLocaleLowerCase()
 }
@@ -100,6 +133,79 @@ function toDisplayScore(rawScore: number): number {
   }
 
   return Number((-rawScore).toFixed(6))
+}
+
+function buildCoverageSelection(
+  units: WorkerCoverageUnitResult[],
+): Pick<WorkerCoveragePlanResult, 'recommendedSelection' | 'uncoveredUnitIds'> {
+  const remainingUnitIds = new Set(
+    units
+      .filter((unit) => unit.candidates.length > 0)
+      .map((unit) => unit.unitId),
+  )
+  const recommendedSelection: WorkerCoverageSelectionEntry[] = []
+
+  while (remainingUnitIds.size > 0) {
+    const packageCoverage = new Map<string, { coversUnitIds: string[]; aggregateScore: number }>()
+
+    for (const unit of units) {
+      if (!remainingUnitIds.has(unit.unitId)) {
+        continue
+      }
+
+      for (const candidate of unit.candidates) {
+        const entry = packageCoverage.get(candidate.agentName) ?? {
+          coversUnitIds: [],
+          aggregateScore: 0,
+        }
+        entry.coversUnitIds.push(unit.unitId)
+        entry.aggregateScore += candidate.score
+        packageCoverage.set(candidate.agentName, entry)
+      }
+    }
+
+    const rankedPackages = [...packageCoverage.entries()].sort((left, right) => {
+      const leftCoverage = left[1].coversUnitIds.length
+      const rightCoverage = right[1].coversUnitIds.length
+      if (leftCoverage !== rightCoverage) {
+        return rightCoverage - leftCoverage
+      }
+
+      if (left[1].aggregateScore !== right[1].aggregateScore) {
+        return right[1].aggregateScore - left[1].aggregateScore
+      }
+
+      return left[0].localeCompare(right[0])
+    })
+
+    const nextSelection = rankedPackages[0]
+    if (!nextSelection) {
+      break
+    }
+
+    const coversUnitIds = [...new Set(nextSelection[1].coversUnitIds)].sort()
+    recommendedSelection.push({
+      agentName: nextSelection[0],
+      coversUnitIds,
+    })
+
+    for (const unitId of coversUnitIds) {
+      remainingUnitIds.delete(unitId)
+    }
+  }
+
+  const uncoveredUnitIds = units
+    .filter((unit) =>
+      unit.candidates.length === 0
+        || !recommendedSelection.some((selection) => selection.coversUnitIds.includes(unit.unitId)),
+    )
+    .map((unit) => unit.unitId)
+    .sort()
+
+  return {
+    recommendedSelection,
+    uncoveredUnitIds,
+  }
 }
 
 export class RegistryService {
@@ -263,6 +369,26 @@ export class RegistryService {
         domain: options.preferredDomain,
         limit: options.limit ?? 8,
       }),
+    }
+  }
+
+  buildCoveragePlan(options: WorkerCoveragePlanOptions): WorkerCoveragePlanResult {
+    const units = options.units.map((unit) => ({
+      unitId: unit.unitId,
+      taskBrief: unit.taskBrief,
+      preferredDomain: unit.preferredDomain ?? options.preferredDomain ?? null,
+      candidates: this.searchPackages({
+        query: unit.taskBrief,
+        host: options.host,
+        domain: unit.preferredDomain ?? options.preferredDomain,
+        limit: unit.limit ?? options.limit ?? 8,
+      }),
+    }))
+
+    return {
+      preferredDomain: options.preferredDomain ?? null,
+      units,
+      ...buildCoverageSelection(units),
     }
   }
 

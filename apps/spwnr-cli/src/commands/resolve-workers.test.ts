@@ -8,11 +8,13 @@ import { makeResolveWorkersCommand } from './resolve-workers.js'
 
 const {
   searchPackagesMock,
+  buildCoveragePlanMock,
   infoMock,
   closeMock,
   injectStaticMock,
 } = vi.hoisted(() => ({
   searchPackagesMock: vi.fn(),
+  buildCoveragePlanMock: vi.fn(),
   infoMock: vi.fn(),
   closeMock: vi.fn(),
   injectStaticMock: vi.fn(),
@@ -21,6 +23,7 @@ const {
 vi.mock('@spwnr/registry', () => ({
   RegistryService: vi.fn().mockImplementation(() => ({
     searchPackages: searchPackagesMock,
+    buildCoveragePlan: buildCoveragePlanMock,
     info: infoMock,
     close: closeMock,
   })),
@@ -102,6 +105,12 @@ describe('resolve-workers command', () => {
       version: '0.1.0',
       installedDir: '/tmp/.spwnr/example',
     })
+    buildCoveragePlanMock.mockReturnValue({
+      preferredDomain: null,
+      units: [],
+      recommendedSelection: [],
+      uncoveredUnitIds: [],
+    })
   })
 
   afterEach(() => {
@@ -147,7 +156,9 @@ describe('resolve-workers command', () => {
     expect(payload.searchQuery).toBe('Build a backend API')
     expect(payload.candidates[0].agentName).toBe('api-architect')
     expect(payload.candidates[1].agentName).toBe('qa-auditor')
+    expect(payload.unitCoverage).toBeNull()
     expect(payload.missingMinimumSelection).toBe(true)
+    expect(payload.selectionSource).toBe('none')
   })
 
   it('injects only missing selected packages when --ensure is used', async () => {
@@ -192,5 +203,90 @@ describe('resolve-workers command', () => {
       expect.objectContaining({ name: 'api-architect', status: 'injected' }),
       expect.objectContaining({ name: 'qa-auditor', status: 'already_present' }),
     ])
+    expect(payload.selectionSource).toBe('explicit')
+  })
+
+  it('builds a per-unit coverage plan and can auto-select that recommendation for --ensure', async () => {
+    const stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    buildCoveragePlanMock.mockReturnValue({
+      preferredDomain: null,
+      units: [
+        {
+          unitId: 'build-api',
+          taskBrief: 'Implement the backend API',
+          preferredDomain: null,
+          candidates: [
+            {
+              agentName: 'api-architect',
+              version: '0.1.0',
+              summary: 'Design and implement backend APIs.',
+              domains: ['Develop'],
+              hosts: ['claude_code'],
+              score: 0.95,
+            },
+          ],
+        },
+        {
+          unitId: 'review-api',
+          taskBrief: 'Review tests and edge cases',
+          preferredDomain: null,
+          candidates: [
+            {
+              agentName: 'qa-auditor',
+              version: '0.1.0',
+              summary: 'Validate edge cases and test plans.',
+              domains: ['Develop'],
+              hosts: ['claude_code'],
+              score: 0.91,
+            },
+          ],
+        },
+      ],
+      recommendedSelection: [
+        { agentName: 'api-architect', coversUnitIds: ['build-api'] },
+        { agentName: 'qa-auditor', coversUnitIds: ['review-api'] },
+      ],
+      uncoveredUnitIds: [],
+    })
+
+    const program = new Command()
+    program.addCommand(makeResolveWorkersCommand())
+
+    await program.parseAsync([
+      'node',
+      'spwnr',
+      'resolve-workers',
+      '--search',
+      'Implement and validate a backend API',
+      '--host',
+      'claude_code',
+      '--format',
+      'json',
+      '--ensure',
+      '--unit',
+      'build-api::Implement the backend API',
+      '--unit',
+      'review-api::Review tests and edge cases',
+    ])
+
+    expect(searchPackagesMock).toHaveBeenCalledTimes(1)
+    expect(buildCoveragePlanMock).toHaveBeenCalledTimes(1)
+    expect(injectStaticMock).toHaveBeenCalledTimes(2)
+
+    const payload = JSON.parse(stdoutSpy.mock.calls.map(([value]) => String(value)).join(''))
+    expect(payload.selectionSource).toBe('coverage-recommendation')
+    expect(payload.selected).toEqual(['api-architect', 'qa-auditor'])
+    expect(payload.unitCoverage).toMatchObject({
+      preferredDomain: null,
+      units: [
+        expect.objectContaining({ unitId: 'build-api' }),
+        expect.objectContaining({ unitId: 'review-api' }),
+      ],
+      recommendedSelection: [
+        expect.objectContaining({ agentName: 'api-architect', coversUnitIds: ['build-api'] }),
+        expect.objectContaining({ agentName: 'qa-auditor', coversUnitIds: ['review-api'] }),
+      ],
+      uncoveredUnitIds: [],
+    })
   })
 })

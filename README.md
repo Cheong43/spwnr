@@ -70,6 +70,14 @@ pnpm test
 
 Run `pnpm test` after changes to verify the workspace and repo-level workflow smoke tests.
 
+If you plan to use the repo-root Claude Code workflow plugin with multi-agent `team` mode or `swarm` mode, enable Claude Code agent teams before installation or use:
+
+```bash
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+```
+
+Without this setting, `/spwnr:task` can still plan and run `single-lane`, but it must report `team` and `swarm` as unavailable.
+
 ## Repo Claude Plugin
 
 This repository now also carries a repo-root Claude Code plugin for dogfooding a plan-first Claude-native orchestration workflow:
@@ -79,7 +87,7 @@ This repository now also carries a repo-root Claude Code plugin for dogfooding a
 - hooks: [`hooks/`](./hooks)
 - skills: [`skills/`](./skills)
 
-The plugin is not a published Spwnr package. It is a repository-local workflow asset that plans first with `Skill`, `AskUserQuestion`, `TodoWrite`, `Read`, `Write`, and `Edit`, persists an executable plan artifact as the latest active revision under `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md` (for example `.claude/plans/spwnr-demo-2026-04-11-r2.md` after a material re-plan), runs a review loop after each plan write, and then only after the current run receives `执行当前计划` reads that active revision, appends `Approved Execution Spec`, resolves a best-fit agent lineup from the local Spwnr registry with `resolve-workers`, and orchestrates the selected agents through `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `Agent`, `TeamCreate`, `SendMessage`, `EnterWorktree`, `ExitWorktree`, and `TeamDelete`. `/spwnr:workers` remains the deeper audit entrypoint for registry health, vendored sync gaps, installation or injection recovery, and injected agents.
+The plugin is not a published Spwnr package. It is a repository-local workflow asset that plans first with `Skill`, `AskUserQuestion`, `TodoWrite`, `Read`, `Write`, and `Edit`, persists an executable plan artifact as the latest active revision under `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md` (for example `.claude/plans/spwnr-demo-2026-04-11-r2.md` after a material re-plan), runs a review loop after each plan write, and then only after the current run receives `Execute current plan` reads that active revision, appends `Approved Execution Spec`, resolves a best-fit agent lineup plus per-unit coverage from the local Spwnr registry with `resolve-workers`, and orchestrates the selected agents through `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `Agent`, `TeamCreate`, `SendMessage`, `EnterWorktree`, `ExitWorktree`, and `TeamDelete`. `/spwnr:workers` remains the deeper audit entrypoint for registry health, vendored sync gaps, installation or injection recovery, and injected agents.
 
 When installed in Claude Code, the slash commands are:
 
@@ -87,10 +95,12 @@ When installed in Claude Code, the slash commands are:
 - `/spwnr:task`
 - `/spwnr:workers`
 
+Claude Code team features are required for multi-agent `team` and `swarm` orchestration, so make sure `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is set in the shell or environment that launches Claude Code.
+
 For non-trivial work, start with planning:
 
-- `/spwnr:plan` aligns the goal, success criteria, boundaries, risks, and review-loop condition, writes the detailed plan to revision 1 at `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md`, or to `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md` when a material re-plan creates a new revision, upgrades `Detailed Plan` into orchestration-ready `Execution Units`, records `Plan Review Loop`, and then immediately asks whether to `执行当前计划`, `继续改进计划`, or `结束本轮`. Minor revisions update the same active revision; material re-plans supersede the older revision and create the next one.
-- `/spwnr:task` reuses the same planning gate, resolves the latest active revision, validates that executable `Execution Units` exist, asks for the same current-run execution choice when needed, appends `Approved Execution Spec`, creates a fresh task graph from that active revision, and only delegates after `执行当前计划`. It keeps `single-lane` as the default, uses `team` for queue-driven multi-agent execution, requires `EnterWorktree` / `ExitWorktree` for `swarm` writes, and leaves superseded-plan tasks visible for audit only.
+- `/spwnr:plan` aligns the goal, success criteria, boundaries, risks, and review-loop condition, writes the detailed plan to revision 1 at `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md`, or to `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md` when a material re-plan creates a new revision, upgrades `Detailed Plan` into orchestration-ready `Execution Units`, records `Plan Review Loop`, and then immediately asks whether to `Execute current plan`, `Continue improving plan`, or `End this round`. Minor revisions update the same active revision; material re-plans supersede the older revision and create the next one.
+- `/spwnr:task` reuses the same planning gate, resolves the latest active revision, validates that executable `Execution Units` exist, asks for the same current-run execution choice when needed, appends `Approved Execution Spec`, resolves both a global candidate pool and per-unit coverage, creates a fresh task graph from that active revision, and only delegates after `Execute current plan`. It keeps `single-lane` as the default, uses `team` for queue-driven multi-agent execution with explicit ownership boundaries, requires `EnterWorktree` / `ExitWorktree` for `swarm` writes, and leaves superseded-plan tasks visible for audit only.
 - `/spwnr:workers` checks whether the dynamic worker policy, local registry, vendored template sync, and current Claude agent state are healthy enough to support registry-backed selection, and acts as the required recovery entrypoint when `/spwnr:task` cannot form a usable lineup.
 
 ## CLI Surface

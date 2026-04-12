@@ -66,6 +66,8 @@ Before a plan can be treated as ready, it must capture:
 - execution strategy recommendation
 - agent capability requirements
 - failure and escalation rules
+- risky execution units that require teammate plan approval before implementation
+- file ownership boundaries and heartbeat expectations for multi-agent work
 
 If any of these are still too vague to support decomposition, sequencing, acceptance criteria, or future orchestration, keep asking structured follow-up questions and keep the latest draft visible.
 
@@ -84,10 +86,10 @@ You MUST complete these in order:
 9. Draft the plan now instead of waiting for every open decision.
 10. Self-review the plan for contradictions, placeholders, and vague sequencing.
 11. Update `Plan Review Loop` with the latest execution confirmation time, user feedback summary, and revision summary.
-12. After every write or revision, run the execution review loop with `AskUserQuestion` using `执行当前计划`, `继续改进计划`, and `结束本轮`.
-13. If the user chooses `继续改进计划`, collect free-form feedback, revise the same active revision when the execution shape still fits, or create the next revision when the request becomes a material re-plan, then repeat the review loop.
-14. If the user chooses `结束本轮`, preserve the artifact and stop without execution.
-15. If the user chooses `执行当前计划`, state that the plan is ready for execution and hand off to `workflow-task-orchestration` instead of creating ad-hoc tasks here.
+12. After every write or revision, run the execution review loop with `AskUserQuestion` using `Execute current plan`, `Continue improving plan`, and `End this round`.
+13. If the user chooses `Continue improving plan`, collect free-form feedback, revise the same active revision when the execution shape still fits, or create the next revision when the request becomes a material re-plan, then repeat the review loop.
+14. If the user chooses `End this round`, preserve the artifact and stop without execution.
+15. If the user chooses `Execute current plan`, state that the plan is ready for execution and hand off to `workflow-task-orchestration` instead of creating ad-hoc tasks here.
 
 ## Revisioned Plan Files
 
@@ -152,6 +154,11 @@ Each `Execution Unit` must include:
 - `acceptance check`
 - `dependencies`
 - `preferred capability tags`
+- `risk level`
+- `file ownership hints`
+- `claim policy recommendation`
+- `heartbeat expectation`
+- `worker plan approval`
 
 ## Clarification Loop
 
@@ -168,15 +175,15 @@ Every time `/spwnr:plan` writes or revises the plan artifact, it must immediatel
 
 The review loop options are fixed:
 
-- `执行当前计划`
-- `继续改进计划`
-- `结束本轮`
+- `Execute current plan`
+- `Continue improving plan`
+- `End this round`
 
 Interpret them this way:
 
-- `执行当前计划` is the only execution permission signal that lets `/spwnr:plan` hand off into `workflow-task-orchestration` during the current run
-- `继续改进计划` means do not execute, collect free-form user feedback, revise the same active revision when the execution shape still fits, or create the next revision when the request becomes a material re-plan
-- `结束本轮` means preserve the artifact, stop cleanly, and do not continue asking
+- `Execute current plan` is the only execution permission signal that lets `/spwnr:plan` hand off into `workflow-task-orchestration` during the current run
+- `Continue improving plan` means do not execute, collect free-form user feedback, revise the same active revision when the execution shape still fits, or create the next revision when the request becomes a material re-plan
+- `End this round` means preserve the artifact, stop cleanly, and do not continue asking
 
 Do not recreate the old `needs-confirmation` or `approved-plan-ready` state machine in the plan file. The plan artifact should record the review loop history, not a persistent execution state.
 

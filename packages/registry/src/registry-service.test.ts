@@ -310,4 +310,51 @@ describe('RegistryService', () => {
       'fastapi-developer',
     ])
   })
+
+  it('buildCoveragePlan() recommends a minimal lineup that covers multiple units', async () => {
+    await createPublishedPackage(tmpBase, svc, {
+      name: 'api-architect',
+      instruction: 'Design and implement backend APIs.',
+      domains: ['Develop'],
+      tags: ['backend', 'api'],
+      compatibilityHosts: ['claude_code'],
+    })
+    await createPublishedPackage(tmpBase, svc, {
+      name: 'qa-auditor',
+      instruction: 'Review tests, edge cases, and validation plans.',
+      domains: ['Develop'],
+      tags: ['qa', 'testing'],
+      compatibilityHosts: ['claude_code'],
+    })
+    await createPublishedPackage(tmpBase, svc, {
+      name: 'backend-reviewer',
+      instruction: 'Review backend architecture and implementation details.',
+      domains: ['Develop'],
+      tags: ['backend', 'review'],
+      compatibilityHosts: ['claude_code'],
+    })
+
+    const coverage = svc.buildCoveragePlan({
+      host: 'claude_code',
+      preferredDomain: 'Develop',
+      units: [
+        {
+          unitId: 'build-api',
+          taskBrief: 'Implement a backend API service',
+        },
+        {
+          unitId: 'review-api',
+          taskBrief: 'Review tests and edge cases for the backend API',
+        },
+      ],
+      limit: 4,
+    })
+
+    expect(coverage.units).toHaveLength(2)
+    expect(coverage.recommendedSelection).toEqual([
+      expect.objectContaining({ agentName: 'api-architect', coversUnitIds: ['build-api'] }),
+      expect.objectContaining({ agentName: 'qa-auditor', coversUnitIds: ['review-api'] }),
+    ])
+    expect(coverage.uncoveredUnitIds).toEqual([])
+  })
 })

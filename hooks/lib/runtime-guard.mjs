@@ -12,7 +12,21 @@ export const REQUIRED_TASK_MARKERS = [
   'Worktree:',
   'Approved Execution Spec:',
   'Blocked:',
+  'Owner:',
+  'Files:',
+  'Claim-Policy:',
+  'Heartbeat:',
+  'Risk:',
+  'Plan-Approval:',
 ];
+
+const CLAIM_POLICY_VALUES = new Set(['assigned', 'self-claim']);
+const RISK_VALUES = new Set(['low', 'medium', 'high']);
+const PLAN_APPROVAL_VALUES = new Set(['not-required', 'required', 'approved']);
+const MULTI_AGENT_MODES = new Set(['team', 'swarm']);
+const UNASSIGNED_OWNER_VALUES = new Set(['', 'unassigned', 'none', 'pool']);
+const NON_EXPLICIT_FILE_SCOPE_VALUES = new Set(['', 'none', 'unscoped']);
+const HEARTBEAT_VALUE_PATTERN = /^(?:[1-9]\d*)(?:s|m|h)?$/i;
 
 const RECENT_TEAM_SIGNAL_PATTERNS = [
   /\bTaskUpdate\b/,
@@ -69,6 +83,101 @@ function unwrapMarkerValue(value) {
   return normalized;
 }
 
+function normalizeMarkerEnum(value) {
+  return unwrapMarkerValue(value).toLowerCase();
+}
+
+function parseCsvMarkerValue(value) {
+  return unwrapMarkerValue(value)
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function readTaskContract(description) {
+  return {
+    mode: normalizeMarkerEnum(readMarkerValue(description, 'Mode:')),
+    worktree: normalizeMarkerEnum(readMarkerValue(description, 'Worktree:')),
+    owner: unwrapMarkerValue(readMarkerValue(description, 'Owner:')),
+    files: parseCsvMarkerValue(readMarkerValue(description, 'Files:')),
+    claimPolicy: normalizeMarkerEnum(readMarkerValue(description, 'Claim-Policy:')),
+    heartbeat: unwrapMarkerValue(readMarkerValue(description, 'Heartbeat:')),
+    risk: normalizeMarkerEnum(readMarkerValue(description, 'Risk:')),
+    planApproval: normalizeMarkerEnum(readMarkerValue(description, 'Plan-Approval:')),
+  };
+}
+
+function hasExplicitFileScope(files) {
+  return (
+    Array.isArray(files) &&
+    files.length > 0 &&
+    files.every((entry) => !NON_EXPLICIT_FILE_SCOPE_VALUES.has(entry.toLowerCase()))
+  );
+}
+
+function detectFileScopeOverlap(leftFiles, rightFiles) {
+  if (!hasExplicitFileScope(leftFiles) || !hasExplicitFileScope(rightFiles)) {
+    return [];
+  }
+
+  const right = new Set(rightFiles.map((entry) => entry.toLowerCase()));
+  return leftFiles.filter((entry) => right.has(entry.toLowerCase()));
+}
+
+function validateTaskContractMetadata(input, phase, env = process.env) {
+  const contract = readTaskContract(input.task_description);
+
+  if (!CLAIM_POLICY_VALUES.has(contract.claimPolicy)) {
+    return 'Task metadata is invalid. `Claim-Policy:` must be `assigned` or `self-claim`.';
+  }
+
+  if (!RISK_VALUES.has(contract.risk)) {
+    return 'Task metadata is invalid. `Risk:` must be `low`, `medium`, or `high`.';
+  }
+
+  if (!PLAN_APPROVAL_VALUES.has(contract.planApproval)) {
+    return 'Task metadata is invalid. `Plan-Approval:` must be `not-required`, `required`, or `approved`.';
+  }
+
+  if (!HEARTBEAT_VALUE_PATTERN.test(contract.heartbeat)) {
+    return 'Task metadata is invalid. `Heartbeat:` must be a positive interval such as `300s` or `5m`.';
+  }
+
+  const normalizedOwner = contract.owner.trim().toLowerCase();
+  if (contract.claimPolicy === 'self-claim' && !UNASSIGNED_OWNER_VALUES.has(normalizedOwner)) {
+    return 'Task metadata is invalid. Self-claim tasks must start with `Owner: unassigned`.';
+  }
+
+  if (contract.claimPolicy === 'assigned' && UNASSIGNED_OWNER_VALUES.has(normalizedOwner)) {
+    return 'Task metadata is invalid. Assigned tasks must declare a concrete `Owner:`.';
+  }
+
+  if (
+    MULTI_AGENT_MODES.has(contract.mode) &&
+    contract.worktree === 'not-required' &&
+    !hasExplicitFileScope(contract.files)
+  ) {
+    return 'Task metadata is invalid. Multi-agent no-worktree tasks must declare explicit `Files:` ownership boundaries.';
+  }
+
+  if (contract.risk === 'high' && contract.planApproval === 'not-required') {
+    return 'Task metadata is invalid. High-risk tasks must require worker plan approval before implementation.';
+  }
+
+  if (phase === 'completion' && contract.planApproval === 'required') {
+    return 'Task completion blocked. `Plan-Approval:` is still `required`; update it to `approved` before completing the task.';
+  }
+
+  if (phase === 'creation') {
+    const conflict = findFileOwnershipConflict(input, contract, env);
+    if (conflict) {
+      return `Task creation blocked. File ownership overlaps with task ${conflict.task.id}:${conflict.task.subject} on ${conflict.overlaps.join(', ')}. Split the files, assign the same owner, or require a worktree before continuing.`;
+    }
+  }
+
+  return null;
+}
+
 function resolvePlanArtifactPath(input) {
   const planPath = unwrapMarkerValue(readMarkerValue(input.task_description, 'Plan:'));
   return resolvePlanArtifactPathFromValue(planPath, input);
@@ -120,6 +229,46 @@ function extractTaskUnits(description) {
     .split(',')
     .map((entry) => entry.trim())
     .filter(Boolean);
+}
+
+function findFileOwnershipConflict(input, contract, env = process.env) {
+  if (
+    !input.session_id ||
+    !MULTI_AGENT_MODES.has(contract.mode) ||
+    contract.worktree !== 'not-required' ||
+    !hasExplicitFileScope(contract.files)
+  ) {
+    return null;
+  }
+
+  const currentOwner = contract.owner.trim().toLowerCase();
+  const openTasks = readOpenTasks(input.session_id, input, env);
+  for (const task of openTasks) {
+    if (
+      !MULTI_AGENT_MODES.has(task.mode) ||
+      task.worktree !== 'not-required' ||
+      !hasExplicitFileScope(task.files)
+    ) {
+      continue;
+    }
+
+    const existingOwner = task.owner.trim().toLowerCase();
+    const sameAssignedOwner =
+      !UNASSIGNED_OWNER_VALUES.has(currentOwner) &&
+      !UNASSIGNED_OWNER_VALUES.has(existingOwner) &&
+      currentOwner === existingOwner;
+
+    if (sameAssignedOwner) {
+      continue;
+    }
+
+    const overlaps = detectFileScopeOverlap(contract.files, task.files);
+    if (overlaps.length > 0) {
+      return { task, overlaps };
+    }
+  }
+
+  return null;
 }
 
 function extractPlanRevisionIdentity(planPath) {
@@ -239,7 +388,7 @@ function validateReferencedPlan(input, options = {}) {
   };
 }
 
-export function evaluateTaskCreated(input) {
+export function evaluateTaskCreated(input, env = process.env) {
   const missing = missingTaskMarkers(input.task_description);
   if (missing.length > 0) {
     return {
@@ -256,12 +405,20 @@ export function evaluateTaskCreated(input) {
     };
   }
 
+  const metadataError = validateTaskContractMetadata(input, 'creation', env);
+  if (metadataError) {
+    return {
+      exitCode: 2,
+      stderr: metadataError,
+    };
+  }
+
   return {
     exitCode: 0,
   };
 }
 
-export function evaluateTaskCompleted(input) {
+export function evaluateTaskCompleted(input, env = process.env) {
   const description = normalizeText(input.task_description);
   const missing = missingTaskMarkers(description);
   if (missing.length > 0) {
@@ -283,6 +440,14 @@ export function evaluateTaskCompleted(input) {
     return {
       exitCode: validation.exitCode,
       stderr: `Task completion blocked. ${validation.stderr}`,
+    };
+  }
+
+  const metadataError = validateTaskContractMetadata(input, 'completion', env);
+  if (metadataError) {
+    return {
+      exitCode: 2,
+      stderr: metadataError,
     };
   }
 
@@ -366,6 +531,10 @@ export function readOpenTasks(sessionId, input = {}, env = process.env) {
           subject: task.subject ?? 'unknown',
           description: task.description ?? '',
           status: task.status ?? 'unknown',
+          owner: unwrapMarkerValue(readMarkerValue(task.description ?? '', 'Owner:')),
+          files: parseCsvMarkerValue(readMarkerValue(task.description ?? '', 'Files:')),
+          mode: normalizeMarkerEnum(readMarkerValue(task.description ?? '', 'Mode:')),
+          worktree: normalizeMarkerEnum(readMarkerValue(task.description ?? '', 'Worktree:')),
           planStatus,
         };
       } catch {
@@ -403,9 +572,9 @@ export function evaluateStop(input, env = process.env) {
 export function evaluateRuntimeGuard(input, env = process.env) {
   switch (input.hook_event_name) {
     case 'TaskCreated':
-      return evaluateTaskCreated(input);
+      return evaluateTaskCreated(input, env);
     case 'TaskCompleted':
-      return evaluateTaskCompleted(input);
+      return evaluateTaskCompleted(input, env);
     case 'TeammateIdle':
       return evaluateTeammateIdle(input);
     case 'PermissionDenied':
