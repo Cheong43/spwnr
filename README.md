@@ -87,7 +87,7 @@ This repository now also carries a repo-root Claude Code plugin for dogfooding a
 - hooks: [`hooks/`](./hooks)
 - skills: [`skills/`](./skills)
 
-The plugin is not a published Spwnr package. It is a repository-local workflow asset that plans first with `Skill`, `AskUserQuestion`, `TodoWrite`, `Read`, `Write`, and `Edit`, persists an executable plan artifact as the latest active revision under `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md` (for example `.claude/plans/spwnr-demo-2026-04-11-r2.md` after a material re-plan), runs a review loop after each plan write, and then only after the current run receives `Execute current plan` reads that active revision, appends `Approved Execution Spec`, resolves a best-fit agent lineup plus per-unit coverage from the local Spwnr registry with `resolve-workers`, and orchestrates the selected agents through `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `Agent`, `TeamCreate`, `SendMessage`, `EnterWorktree`, `ExitWorktree`, and `TeamDelete`. `/spwnr:workers` remains the deeper audit entrypoint for registry health, vendored sync gaps, installation or injection recovery, and injected agents.
+The plugin is not a published Spwnr package. It is a repository-local workflow asset that plans first with `Skill`, `AskUserQuestion`, `TodoWrite`, `Read`, `Write`, and `Edit`, persists an executable plan artifact as the latest active revision under `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md` (for example `.claude/plans/spwnr-demo-2026-04-11-r2.md` after a material re-plan), runs a review loop after each plan write, and then only after the current run receives `Execute current plan` reads that active revision, appends `Approved Execution Spec`, resolves a best-fit agent lineup plus per-unit coverage from the local Spwnr registry with `resolve-workers`, and orchestrates the selected agents through `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `Agent`, `TeamCreate`, `SendMessage`, `EnterWorktree`, `ExitWorktree`, and `TeamDelete`. `/spwnr:workers` remains the deeper audit entrypoint for registry health, vendored sync gaps, installation or injection recovery, and injected agents. These workflows are for general tasks such as research, analysis, writing, operations, and coding, not only software implementation.
 
 When installed in Claude Code, the slash commands are:
 
@@ -105,10 +105,10 @@ For non-trivial work, start with planning:
 
 ## CLI Surface
 
-Inside this monorepo, the easiest way to invoke the CLI is:
+Use the published `spwnr` CLI for normal workflows:
 
 ```bash
-pnpm --filter @spwnr/cli dev -- --help
+spwnr --help
 ```
 
 Commands:
@@ -159,7 +159,7 @@ By default Spwnr stores registry data under `~/.spwnr`:
 Override the root location with `SPWNR_HOME`:
 
 ```bash
-SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- list
+SPWNR_HOME=/tmp/spwnr-demo spwnr list
 ```
 
 Spwnr does not provide compatibility fallbacks for older names or older home directories.
@@ -212,33 +212,33 @@ Additional workflow-oriented agent examples now live under:
 1. Validate the example package:
 
 ```bash
-pnpm --filter @spwnr/cli dev -- validate examples/code-reviewer --strict
+spwnr validate examples/code-reviewer --strict
 ```
 
 2. Publish it into an isolated local registry:
 
 ```bash
-SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- publish examples/code-reviewer
+SPWNR_HOME=/tmp/spwnr-demo spwnr publish examples/code-reviewer
 ```
 
 3. Inspect the published package and host matrix:
 
 ```bash
-SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- info code-reviewer
+SPWNR_HOME=/tmp/spwnr-demo spwnr info code-reviewer
 ```
 
 4. Inject it into a host:
 
 ```bash
-SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- inject code-reviewer --host claude_code --scope project
-SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- inject code-reviewer --host codex --scope project
+SPWNR_HOME=/tmp/spwnr-demo spwnr inject code-reviewer --host claude_code --scope project
+SPWNR_HOME=/tmp/spwnr-demo spwnr inject code-reviewer --host codex --scope project
 ```
 
 5. Compose a session descriptor when you want temporary injection:
 
 ```bash
-SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- session code-reviewer --host claude_code --format json
-SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- session code-reviewer --host copilot --format shell
+SPWNR_HOME=/tmp/spwnr-demo spwnr session code-reviewer --host claude_code --format json
+SPWNR_HOME=/tmp/spwnr-demo spwnr session code-reviewer --host copilot --format shell
 ```
 
 ## Notes

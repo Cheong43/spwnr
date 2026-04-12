@@ -31,7 +31,7 @@ function createTestPackage(dir: string, options: TestPackageOptions = {}) {
   mkdirSync(join(dir, 'schemas'), { recursive: true })
 
   const lines = [
-    'apiVersion: spwnr/v0.3',
+    'apiVersion: spwnr/v1',
     'kind: Subagent',
     'metadata:',
     `  name: ${name}`,
@@ -240,14 +240,11 @@ describe('RegistryService', () => {
 
     expect(results).toHaveLength(1)
     expect(results[0]).toMatchObject({
-      name: 'backend-developer',
+      agentName: 'backend-developer',
       version: '0.1.0',
-      instruction: 'Build backend services and APIs.',
-      description: 'Backend execution specialist.',
+      summary: 'Backend execution specialist.',
       domains: ['Develop'],
-      tags: ['backend', 'api'],
-      compatibilityHosts: ['claude_code'],
-      personaRole: 'developer',
+      hosts: ['claude_code'],
     })
   })
 
@@ -272,7 +269,7 @@ describe('RegistryService', () => {
       limit: 10,
     })
 
-    expect(results.map((result) => result.name)).toEqual([
+    expect(results.map((result) => result.agentName)).toEqual([
       'platform-engineer',
       'tooling-expert',
     ])
@@ -306,7 +303,7 @@ describe('RegistryService', () => {
       role: 'execute',
       preferredDomain: 'Develop',
     })
-    expect(shortlist.candidates.map((candidate) => candidate.name)).toEqual([
+    expect(shortlist.candidates.map((candidate) => candidate.agentName)).toEqual([
       'fastapi-developer',
     ])
   })
@@ -352,8 +349,10 @@ describe('RegistryService', () => {
 
     expect(coverage.units).toHaveLength(2)
     expect(coverage.recommendedSelection).toEqual([
-      expect.objectContaining({ agentName: 'api-architect', coversUnitIds: ['build-api'] }),
-      expect.objectContaining({ agentName: 'qa-auditor', coversUnitIds: ['review-api'] }),
+      expect.objectContaining({
+        agentName: 'api-architect',
+        coversUnitIds: ['build-api', 'review-api'],
+      }),
     ])
     expect(coverage.uncoveredUnitIds).toEqual([])
   })

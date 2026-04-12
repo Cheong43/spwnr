@@ -50,7 +50,7 @@ describe('TarballService', () => {
   })
 
   it('extract() preserves file contents', async () => {
-    const content = 'apiVersion: spwnr/v0.3\nkind: Subagent'
+    const content = 'apiVersion: spwnr/v1\nkind: Subagent'
     const srcDir = join(tmpBase, 'mypkg')
     mkdirSync(srcDir)
     writeFileSync(join(srcDir, 'subagent.yaml'), content)

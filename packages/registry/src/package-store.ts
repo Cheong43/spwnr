@@ -189,7 +189,7 @@ export class PackageStore {
     const effectiveLimit = Math.max(options.limit * 5, options.limit)
 
     if (!options.query) {
-      return this.db.prepare<[string | null, number], PackageSearchRow & { raw_score: number }>(`
+      return this.db.prepare<[string | null, string | null, number], PackageSearchRow & { raw_score: number }>(`
         SELECT
           package_id,
           version_id,

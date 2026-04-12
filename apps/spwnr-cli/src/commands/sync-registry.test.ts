@@ -21,7 +21,7 @@ vi.mock('@spwnr/registry', () => ({
 function createTemplateVersion(baseDir: string, name: string, version: string) {
   const versionDir = join(baseDir, 'templates', name, version)
   mkdirSync(versionDir, { recursive: true })
-  writeFileSync(join(versionDir, 'subagent.yaml'), 'apiVersion: spwnr/v0.3\n')
+  writeFileSync(join(versionDir, 'subagent.yaml'), 'apiVersion: spwnr/v1\n')
 }
 
 describe('sync-registry command', () => {

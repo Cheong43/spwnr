@@ -18,7 +18,7 @@ describe('PackageValidator', () => {
 
   function createManifest(overrides: Partial<SubagentManifest> = {}): SubagentManifest {
     return {
-      apiVersion: 'subagent.io/v0.3',
+      apiVersion: 'spwnr/v1',
       kind: 'Subagent',
       metadata: {
         name: 'test-agent',

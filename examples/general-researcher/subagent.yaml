@@ -1,4 +1,4 @@
-apiVersion: spwnr/v0.3
+apiVersion: spwnr/v1
 kind: Subagent
 metadata:
   name: general-researcher

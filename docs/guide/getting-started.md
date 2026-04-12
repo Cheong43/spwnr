@@ -67,7 +67,7 @@ examples/code-reviewer/
 The mainline manifest is agent-first and injection-first:
 
 ```yaml
-apiVersion: spwnr/v0.3
+apiVersion: spwnr/v1
 kind: Subagent
 metadata:
   name: code-reviewer

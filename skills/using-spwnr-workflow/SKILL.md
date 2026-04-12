@@ -1,6 +1,6 @@
 ---
 name: using-spwnr-workflow
-description: Use the Spwnr Claude Code plugin as a controller for non-trivial tasks that benefit from executable planning, registry-guided agent orchestration, and guarded execution.
+description: Use the Spwnr Claude Code plugin as a controller for non-trivial general tasks with executable planning, registry-guided agent orchestration, and guarded execution.
 ---
 
 # Using Spwnr Workflow
@@ -8,6 +8,8 @@ description: Use the Spwnr Claude Code plugin as a controller for non-trivial ta
 This plugin is a controller, not the worker itself.
 
 `/spwnr:plan` and `/spwnr:task` rely on Claude-native planning plus Spwnr registry-guided agent selection. `/spwnr:workers` remains the deeper audit and recovery surface for local registry health, vendored template sync, and injected agent visibility.
+
+These workflows are for general tasks such as research, analysis, writing, operations, and coding, not only software implementation.
 
 The durable workflow artifact lives at the latest active revision under `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md`, and later tasks plus derived agents should read that file instead of guessing the plan from thread context.
 
@@ -20,7 +22,7 @@ Use it when:
 ## Command Routing
 
 - Use `/spwnr:workers` when registry health, local package availability, or injected agent visibility is unclear.
-- If vendored community templates exist but the local registry is empty or sparse, sync them with `pnpm --filter @spwnr/cli dev -- sync-registry` before expecting registry-backed lineup resolution to look healthy.
+- If vendored community templates exist but the local registry is empty or sparse, sync them with `spwnr sync-registry` before expecting registry-backed lineup resolution to look healthy.
 - Prefer `/spwnr:plan` when the user wants to align and lock the plan before any execution, or wants a review-and-revise loop that can auto-handoff into execution later in the same run.
 - Prefer `/spwnr:task` when the user wants the same planning gate plus a direct execution entry that can still revise the plan before creating tasks.
 - Even inside `/spwnr:task`, start by planning rather than delegating immediately.

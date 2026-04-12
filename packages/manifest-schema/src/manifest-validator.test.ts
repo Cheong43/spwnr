@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { validateManifest } from './manifest-validator.js';
 
 const minimalManifest = {
-  apiVersion: 'subagent.io/v0.3',
+  apiVersion: 'spwnr/v1',
   kind: 'Subagent',
   metadata: {
     name: 'test-agent',

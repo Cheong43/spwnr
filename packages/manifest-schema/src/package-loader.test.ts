@@ -15,7 +15,7 @@ describe('PackageLoader', () => {
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  const minimalValidManifestYaml = `apiVersion: spwnr/v0.3
+  const minimalValidManifestYaml = `apiVersion: spwnr/v1
 kind: Subagent
 metadata:
   name: test-agent
@@ -30,7 +30,7 @@ spec:
 `;
 
   const minimalValidManifestJson = JSON.stringify({
-    apiVersion: 'subagent.io/v0.3',
+    apiVersion: 'spwnr/v1',
     kind: 'Subagent',
     metadata: {
       name: 'test-agent',
@@ -94,7 +94,7 @@ spec:
     mkdirSync(pkgDir, { recursive: true });
     writeFileSync(
       join(pkgDir, 'subagent.yaml'),
-      `apiVersion: spwnr/v0.3
+      `apiVersion: spwnr/v1
 kind: Subagent
 metadata:
   name: test-agent

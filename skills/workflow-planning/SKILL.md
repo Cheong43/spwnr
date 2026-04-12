@@ -1,6 +1,6 @@
 ---
 name: workflow-planning
-description: Use for /spwnr:plan. Produce an orchestration-ready plan artifact, run the execution review loop, and hand off into execution only after an explicit AskUserQuestion execute choice.
+description: Use for /spwnr:plan. Produce an orchestration-ready plan for non-trivial general tasks, then hand off into execution only after an explicit AskUserQuestion execute choice.
 ---
 
 # Workflow Planning

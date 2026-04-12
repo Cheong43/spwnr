@@ -10,7 +10,7 @@ import type { BackendAdapter, AdapterEvent, BackendAdapterRunOptions } from './t
 import type { SubagentManifest } from '@spwnr/core-types';
 
 const makeManifest = (name = 'test-pkg'): SubagentManifest => ({
-  apiVersion: 'subagent.io/v0.3',
+  apiVersion: 'spwnr/v1',
   kind: 'Subagent',
   metadata: {
     name,

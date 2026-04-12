@@ -2,7 +2,7 @@
 
 This repository includes a repo-root Claude Code plugin named `spwnr` that acts as a workflow controller for executable planning plus registry-guided agent, task, and team orchestration.
 
-The plugin is a dogfood asset for this repository. It is not a published Spwnr package. `/spwnr:plan` and `/spwnr:task` rely on Claude-native planning tools plus the local `spwnr` registry for runtime agent selection, while `/spwnr:workers` provides the deeper audit and recovery path. The shared workflow artifact is the latest active revision under `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md`.
+The plugin is a dogfood asset for this repository. It is not a published Spwnr package. `/spwnr:plan` and `/spwnr:task` rely on Claude-native planning tools plus the local `spwnr` registry for runtime agent selection, while `/spwnr:workers` provides the deeper audit and recovery path. The shared workflow artifact is the latest active revision under `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md`. These workflows are for general tasks such as research, analysis, writing, operations, and coding, not only software implementation.
 
 ## What The Plugin Does
 
@@ -67,21 +67,21 @@ claude --plugin-dir /absolute/path/to/spwnr
 3. Only if you want the registry audit to see vendored community templates, sync them into the local registry:
 
 ```bash
-pnpm --filter @spwnr/cli dev -- sync-registry
+spwnr sync-registry
 ```
 
 4. Preview dynamic registry candidates for a task:
 
 ```bash
-pnpm --filter @spwnr/cli dev -- resolve-workers --search "Implement a backend API and review it" --host claude_code --format json
+spwnr resolve-workers --search "Implement a backend API and review it" --host claude_code --format json
 ```
 
 5. Inject subagents into Claude Code when you want a fixed baseline immediately:
 
 ```bash
-pnpm --filter @spwnr/cli dev -- inject general-researcher --host claude_code --scope project
-pnpm --filter @spwnr/cli dev -- inject general-executor --host claude_code --scope project
-pnpm --filter @spwnr/cli dev -- inject general-reviewer --host claude_code --scope project
+spwnr inject general-researcher --host claude_code --scope project
+spwnr inject general-executor --host claude_code --scope project
+spwnr inject general-reviewer --host claude_code --scope project
 ```
 
 6. Enable agent teams if you want `team` or `swarm` mode:
@@ -93,13 +93,13 @@ export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 ## Command Intent
 
 `/spwnr:plan`
-- align the task, load `workflow-foundation` plus `workflow-planning` with `Skill`, ask only material decisions with `AskUserQuestion`, track blockers with `TodoWrite`, write the plan to revision 1 at `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md`, or the next `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md` file when a material re-plan occurs, upgrade `Detailed Plan` into orchestration-ready `Execution Units`, record `Plan Review Loop`, and immediately ask whether to `Execute current plan`, `Continue improving plan`, or `End this round`
+- align a general task, load `workflow-foundation` plus `workflow-planning` with `Skill`, ask only material decisions with `AskUserQuestion`, track blockers with `TodoWrite`, write the plan to revision 1 at `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md`, or the next `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md` file when a material re-plan occurs, upgrade `Detailed Plan` into orchestration-ready `Execution Units`, record `Plan Review Loop`, and immediately ask whether to `Execute current plan`, `Continue improving plan`, or `End this round`
 
 `/spwnr:task`
-- run the same planning gate first, then after the current run receives `Execute current plan` read the latest active revision, validate executable units, append `Approved Execution Spec`, resolve registry candidates plus per-unit coverage, select the smallest lineup that still covers every unit, create a fresh task graph with explicit ownership and risk metadata, form a team when needed, derive agents, execute, review, and tear down cleanly
+- run the same planning gate first for approved general-task work, then after the current run receives `Execute current plan` read the latest active revision, validate executable units, append `Approved Execution Spec`, resolve registry candidates plus per-unit coverage, select the smallest lineup that still covers every unit, create a fresh task graph with explicit ownership and risk metadata, form a team when needed, derive agents, execute, review, and tear down cleanly
 
 `/spwnr:workers`
-- inspect dynamic registry readiness, local registry state, install or inject suggestions, and the next recovery step when normal lineup resolution looks unhealthy
+- inspect dynamic registry readiness, local registry state, install or inject suggestions, and the next recovery step when normal lineup resolution for general-task workflows looks unhealthy
 
 ## Execution Modes
 

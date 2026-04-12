@@ -92,7 +92,7 @@ const HostInjectionConfigSchema = z.object({
 });
 
 const SemverRegex = /^\d+\.\d+\.\d+$/;
-const ApiVersionSchema = z.literal('subagent.io/v0.3');
+const ApiVersionSchema = z.literal('spwnr/v1');
 
 function findDuplicateSkillNames(skills: Array<{ name: string }>): string[] {
   const seen = new Set<string>();

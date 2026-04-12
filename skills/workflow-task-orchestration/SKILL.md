@@ -1,11 +1,11 @@
 ---
 name: workflow-task-orchestration
-description: Use for /spwnr:task. Reuse the planning gate, require the current run to receive an explicit execution choice, then resolve a dynamic lineup from the Spwnr registry and orchestrate exact execution tasks in single-lane, team, or swarm mode.
+description: Use for /spwnr:task. Reuse the planning gate, require explicit execution approval, then orchestrate approved general-task work in single-lane, team, or swarm mode.
 ---
 
 # Workflow Task Orchestration
 
-Use this skill for non-trivial work that benefits from a controller plus derived agents.
+Use this skill for non-trivial general work that benefits from a controller plus derived agents.
 
 This skill owns the full controller behavior for `/spwnr:task`.
 
@@ -16,7 +16,7 @@ Use `worker-audit` only when the user explicitly needs a deeper registry readine
 
 - use `Skill`, `AskUserQuestion`, `TodoWrite`, `Read`, `Write`, and `Edit` for the planning gate
 - after approval, create and track execution tasks with `TaskCreate`, `TaskGet`, `TaskList`, and `TaskUpdate`
-- resolve candidate agents from the local Spwnr registry with `spwnr resolve-workers --search "<keyword>" --host claude_code --format json`, or use `pnpm --filter @spwnr/cli dev -- resolve-workers --search "<keyword>" --host claude_code --format json` when the direct binary is unavailable
+- resolve candidate agents from the local Spwnr registry with `spwnr resolve-workers --search "<keyword>" --host claude_code --format json`
 - resolve a per-unit coverage plan with repeatable `--unit "<unit-id>::<brief>"` queries when the plan contains multiple execution units
 - choose a best-fit lineup from that candidate pool instead of reusing any fixed three-role template
 - create teams with `TeamCreate`, steer teammates with `SendMessage`, and always clean up with `TeamDelete`

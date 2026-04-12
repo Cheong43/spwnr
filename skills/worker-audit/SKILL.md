@@ -1,6 +1,6 @@
 ---
 name: worker-audit
-description: Use for /spwnr:workers. Inspect dynamic registry policy, local registry readiness, and current Claude agent availability.
+description: Use for /spwnr:workers. Inspect registry readiness and current Claude agent availability for general-task workflows.
 ---
 
 # Worker Audit
@@ -18,7 +18,7 @@ It is a health-check and recovery surface, not a prerequisite step for `/spwnr:t
 3. Check project-scoped agents under `.claude/agents/`.
 4. Check user-scoped agents under `~/.claude/agents/`.
 5. Determine whether `spwnr` is available directly.
-6. If `spwnr` is not available directly, determine whether the workspace command `pnpm --filter @spwnr/cli dev --` is available.
+6. If `spwnr` is not available directly, tell the user to install the published `spwnr-cli` package before continuing. Do not redirect them to local development commands.
 7. Check whether `vendor/spwnr-registry` exists in the current repository.
 8. Inspect the local Spwnr registry and determine whether published packages exist at all, and whether dynamic resolution is likely usable.
 
@@ -47,16 +47,16 @@ Use these sections:
 When the local registry is missing usable packages, prefer these exact commands:
 
 - sync vendored community templates into the local registry
-  - `pnpm --filter @spwnr/cli dev -- sync-registry`
+  - `spwnr sync-registry`
 - preview registry candidates for a task
-  - `pnpm --filter @spwnr/cli dev -- resolve-workers --search "<search query>" --host claude_code --format json`
+  - `spwnr resolve-workers --search "<search query>" --host claude_code --format json`
 
 When a specific agent must be present immediately in Claude Code, prefer:
 
 - user scope
-  - `pnpm --filter @spwnr/cli dev -- inject <name> --host claude_code --scope user`
+  - `spwnr inject <name> --host claude_code --scope user`
 - repo scope
-  - `pnpm --filter @spwnr/cli dev -- inject <name> --host claude_code --scope project`
+  - `spwnr inject <name> --host claude_code --scope project`
 
 ## Rules
 

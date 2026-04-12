@@ -84,7 +84,7 @@ describe('ErrorCodes', () => {
 describe('SubagentManifest', () => {
   it('should compile with all required fields', () => {
     const manifest: SubagentManifest = {
-      apiVersion: 'subagent.io/v0.3',
+      apiVersion: 'spwnr/v1',
       kind: 'Subagent',
       metadata: {
         name: 'test-agent',
@@ -102,7 +102,7 @@ describe('SubagentManifest', () => {
       },
     };
     
-    expect(manifest.apiVersion).toBe('subagent.io/v0.3');
+    expect(manifest.apiVersion).toBe('spwnr/v1');
     expect(manifest.kind).toBe('Subagent');
     expect(manifest.metadata.name).toBe('test-agent');
     expect(manifest.metadata.version).toBe('1.0.0');
@@ -114,7 +114,7 @@ describe('SubagentManifest', () => {
 
   it('should support optional fields in manifest', () => {
     const manifest: SubagentManifest = {
-      apiVersion: 'subagent.io/v0.3',
+      apiVersion: 'spwnr/v1',
       kind: 'Subagent',
       metadata: {
         name: 'test-agent',

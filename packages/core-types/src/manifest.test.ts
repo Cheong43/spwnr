@@ -3,7 +3,7 @@ import { resolveSkillsForHost, type SubagentManifest } from './manifest.js';
 
 function createManifest(skills: NonNullable<SubagentManifest['spec']['skills']>): SubagentManifest {
   return {
-    apiVersion: 'subagent.io/v0.3',
+    apiVersion: 'spwnr/v1',
     kind: 'Subagent',
     metadata: {
       name: 'skill-test-agent',
