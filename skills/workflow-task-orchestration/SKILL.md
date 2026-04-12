@@ -1,6 +1,6 @@
 ---
 name: workflow-task-orchestration
-description: Use for /spwnr:task. Reuse the planning gate, require explicit approval, then resolve a dynamic lineup from the Spwnr registry and orchestrate exact execution tasks in single-lane, team, or swarm mode.
+description: Use for /spwnr:task. Reuse the planning gate, require the current run to receive an explicit execution choice, then resolve a dynamic lineup from the Spwnr registry and orchestrate exact execution tasks in single-lane, team, or swarm mode.
 ---
 
 # Workflow Task Orchestration
@@ -35,14 +35,16 @@ Before any delegation, the controller must lock:
 - constraints
 - open risks
 - approval condition
+- current-run execution confirmation
 - plan artifact path
 - executable `Execution Units`
 
 Track these readiness fields in `TodoWrite` while the plan is still being refined.
 Track the plan artifact path at the same time so the later orchestration pass can read the same file.
 
-If the user has not clearly approved the draft plan in the current thread, stop after presenting the plan and ask for confirmation.
+If the current run has not yet received `执行当前计划`, keep the work in the review loop until the user explicitly chooses execution.
 Do not delegate agents, do not imply approval, and do not drift into execution just because the plan looks plausible.
+Treat only the latest active revision as executable. Superseded revisions and their tasks remain audit-only.
 
 ## Required Workflow
 
@@ -52,36 +54,42 @@ Always follow this sequence:
 2. Inspect the repository or current context before asking the user anything.
 3. Load `workflow-foundation` and `workflow-task-orchestration` with `Skill`.
 4. Compare plausible ways to attack the task before locking the plan.
-5. Read `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD-HHMMSS>.md` with `Read`; if it does not exist yet, create it with the same structure used by `/spwnr:plan`.
-6. Draft or refresh the plan and capture the goal, success criteria, scope boundaries, constraints, open risks, approval condition, and plan file path in `TodoWrite`.
-7. If material unknowns still change decomposition, sequencing, acceptance criteria, or execution topology, present structured follow-up decisions with `AskUserQuestion` and stop in planning mode.
-8. If the user has not clearly approved the plan in the current thread, present the proposed plan, ask for confirmation, and stop. Include the plan file path in that response.
-9. Validate that the plan artifact contains executable `Execution Units`, `Environment And Preconditions`, `Execution Strategy Recommendation`, `Agent Capability Requirements`, and `Failure And Escalation Rules`.
-10. Produce a short plan summary and a normalized registry lookup brief that reflects the approved objective, evaluation dimensions, likely comparison set, risk boundaries, and desired deliverable style.
-11. Resolve candidate agents from the local registry with `resolve-workers`, using the normalized task brief and current host.
-12. If the registry is empty, stale, or does not return a usable candidate pool, stop immediately and return `Worker Readiness Required`. Tell the user to run `/spwnr:workers` to install or inject the missing agents, then return to this same plan file. Do not call `TaskCreate`, `TeamCreate`, `Agent`, `SendMessage`, or `EnterWorktree` on this branch.
-13. Append `Approved Execution Spec` to the plan file with `Edit`.
-14. Convert the approved `Execution Units` into exact execution tasks.
-15. Create one task per execution unit with `TaskCreate`.
-16. If more than one execution unit exists, create one `integration` task.
-17. Always create one `review` task.
-18. Include the plan file path, unit id, dependency ids, done definition, assigned capability or package target, mode, worktree requirement, approved execution spec marker, and blocked flag in every task description.
-19. Use `TaskGet` and `TaskList` immediately after task creation to confirm that task creation succeeded and the dependency graph matches the approved plan.
-20. Choose the execution mode: `single-lane`, `team`, or `swarm`.
-21. `single-lane` is for mostly sequential work with one execution lane.
-22. `team` is for multiple independent or lightly coupled execution units coordinated through the shared task queue.
-23. `swarm` is for multiple coordinated specialist passes on shared output where writing agents require worktree isolation.
-24. If `team` or `swarm` is required but `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is not available, stop and tell the user that team features are unavailable instead of silently downgrading.
-25. If `EnterWorktree` fails for `swarm`, stop and ask the user whether to downgrade instead of silently switching modes.
-26. Build an internal orchestration spec.
-27. Select a dynamic registry-backed lineup that fits the approved plan, the current candidate pool, and the chosen execution mode.
-28. Create the orchestration team with `TeamCreate` when using `team` or `swarm`.
-29. Derive only the selected agents with `Agent`, and include the plan file path, required sections to read, selected package name, and no-scope-drift rule in every brief.
-30. Execute the plan according to the chosen mode and keep every task current with `TaskUpdate`.
-31. Record worktree paths and selected package names in the plan file and matching task updates whenever `EnterWorktree` is used.
-32. Run the review phase with the best-fit selected validation agent, or with the controller if a separate validation package was not selected.
-33. If review finds blocking issues, route the fixes back through execution once using the same orchestration spec and update task state accordingly.
-34. Integrate the final response, mark all remaining tasks complete with `TaskUpdate`, and close the team with `TeamDelete`. Exit any active worktrees with `ExitWorktree`.
+5. Resolve the latest active revision first: `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` for revision 1, or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md` for later material re-plans.
+6. Read that latest active revision with `Read`; if it does not exist yet, create revision 1 with the same structure used by `/spwnr:plan`.
+7. Draft or refresh the plan and capture the goal, success criteria, scope boundaries, constraints, open risks, current-run execution confirmation, and plan file path in `TodoWrite`.
+8. If the task changes the goal, deliverable type, or execution-unit graph, treat it as a material re-plan: create the next revision file, mark the older revision `superseded`, and switch the active plan path to the new revision before continuing.
+9. If material unknowns still change decomposition, sequencing, acceptance criteria, or execution topology, present structured follow-up decisions with `AskUserQuestion` and stop in planning mode.
+10. If the current run has not received `执行当前计划`, present the latest plan, run `AskUserQuestion` with `执行当前计划`, `继续改进计划`, and `结束本轮`, and branch deliberately:
+11. If the user chooses `继续改进计划`, collect free-form feedback, revise the same active revision when the execution shape still fits, update `Plan Review Loop`, and repeat the review loop instead of creating tasks.
+12. If the user chooses `结束本轮`, preserve the artifact, state that execution has not started, and stop.
+13. Validate that the latest active revision contains executable `Execution Units`, `Environment And Preconditions`, `Execution Strategy Recommendation`, `Agent Capability Requirements`, and `Failure And Escalation Rules`.
+14. Produce a short plan summary and a normalized registry lookup brief that reflects the approved objective, evaluation dimensions, likely comparison set, risk boundaries, and desired deliverable style.
+15. Resolve candidate agents from the local registry with `resolve-workers`, using the normalized task brief and current host.
+16. If the registry is empty, stale, or does not return a usable candidate pool, stop immediately and return `Worker Readiness Required`. Tell the user to run `/spwnr:workers` to install or inject the missing agents, then return to this same active revision. Do not call `TaskCreate`, `TeamCreate`, `Agent`, `SendMessage`, or `EnterWorktree` on this branch.
+17. Append `Approved Execution Spec` to the latest active revision with `Edit` before any `TaskCreate`.
+18. Convert the approved `Execution Units` into exact execution tasks.
+19. Create a fresh task graph from that active revision. Do not reuse prior task ids, dependency chains, or task status from superseded revisions.
+20. Create one task per execution unit with `TaskCreate`.
+21. If more than one execution unit exists, create one `integration` task.
+22. Always create one `review` task.
+23. Include the plan file path, unit id, dependency ids, done definition, assigned capability or package target, mode, worktree requirement, approved execution spec marker, and blocked flag in every task description.
+24. Use `TaskGet` and `TaskList` immediately after task creation to confirm that task creation succeeded and the dependency graph matches the approved plan.
+25. If `TaskCreate` is blocked, do not say you will execute anyway. Repair the plan artifact or task metadata, then retry only when the contract is valid.
+26. Choose the execution mode: `single-lane`, `team`, or `swarm`.
+27. `single-lane` is for mostly sequential work with one execution lane.
+28. `team` is for multiple independent or lightly coupled execution units coordinated through the shared task queue.
+29. `swarm` is for multiple coordinated specialist passes on shared output where writing agents require worktree isolation.
+30. If `team` or `swarm` is required but `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is not available, stop and tell the user that team features are unavailable instead of silently downgrading.
+31. If `EnterWorktree` fails for `swarm`, stop and ask the user whether to downgrade instead of silently switching modes.
+32. Build an internal orchestration spec.
+33. Select a dynamic registry-backed lineup that fits the approved plan, the current candidate pool, and the chosen execution mode.
+34. Create the orchestration team with `TeamCreate` when using `team` or `swarm`.
+35. Derive only the selected agents with `Agent`, and include the plan file path, required sections to read, selected package name, and no-scope-drift rule in every brief.
+36. Execute the plan according to the chosen mode and keep every task current with `TaskUpdate`.
+37. Record worktree paths and selected package names in the plan file and matching task updates whenever `EnterWorktree` is used.
+38. Run the review phase with the best-fit selected validation agent, or with the controller if a separate validation package was not selected.
+39. If review finds blocking issues, route the fixes back through execution once using the same orchestration spec and update task state accordingly.
+40. Integrate the final response, mark all remaining tasks complete with `TaskUpdate`, and close the team with `TeamDelete`. Exit any active worktrees with `ExitWorktree`.
 
 ## Execution Task Contract
 
@@ -98,6 +106,7 @@ Every execution, integration, and review task description must include these exa
 - `Blocked: no`
 
 These fields are mandatory because runtime hooks use them as the minimum contract for task creation and completion.
+The plan file referenced by `Plan:` must also contain an `Approved Execution Spec` section before task creation is allowed.
 
 ## Orchestration Spec
 
@@ -108,6 +117,7 @@ After approval and before delegation, build an internal orchestration spec conta
 - normalized registry lookup brief
 - candidate pool returned by `resolve-workers`
 - selected lineup and why each package was chosen
+- latest active revision and any superseded revision ids kept for audit
 - execution mode
 - team topology
 - work packages mapped from execution units
@@ -115,6 +125,7 @@ After approval and before delegation, build an internal orchestration spec conta
 - agent brief per selected package
 - final review scope
 - fallback policy for registry gaps, `team`, `swarm`, and worktree failures
+- fallback policy when the review loop has not yet produced `执行当前计划`
 
 Use this spec as the source of truth for every worker handoff and for the controller's synthesis step.
 
@@ -175,17 +186,22 @@ The recovery steps must:
 - list the missing capabilities or packages
 - direct the user to run `/spwnr:workers`
 - tell the user to install or inject the missing agents
-- state that execution should resume from the same plan file after readiness is restored
+- state that execution should resume from the same active revision after readiness is restored
 
 ## Rules
 
-- Do not delegate before the plan is explicitly approved.
+- Do not delegate before the current run has explicitly chosen `执行当前计划`.
+- Do not treat a stale plan status marker as approval; only the current run's `执行当前计划` choice unlocks execution.
 - Do not mutate state from the planning phase of `/spwnr:task`; task creation and team creation only happen after approval.
+- Do not recreate `needs-confirmation` or `approved-plan-ready` in the plan artifact.
+- Do not keep executing against a superseded plan revision when a material re-plan has created a newer active revision.
 - Do not skip the review stage.
 - Do not let the reviewer invent new scope; it should judge the request and the current plan.
 - Treat the plan file as the source of truth; do not expect later agents to reconstruct the plan from chat context alone.
+- Treat the latest active revision as the source of truth; superseded revisions and their tasks are audit-only.
 - Treat the registry candidate pool as the source of truth for lineup selection; do not silently fall back to a hard-coded template.
 - Do not silently downgrade from `team` or `swarm` to `single-lane` when prerequisites fail.
+- Do not bypass a failed `TaskCreate` by directly executing the work.
 - Always use `TeamDelete` before finalizing once the orchestration team is no longer needed.
 - Keep controller-issued briefs mode-aware by including the package objective, dependency edges, merge expectations, done definition, and exact plan file sections that the agent must read before acting.
 - Tailor the output contract to the selected package's job.

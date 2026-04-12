@@ -64,5 +64,5 @@ When a specific agent must be present immediately in Claude Code, prefer:
 - Report whether the local registry has enough published packages to support a useful candidate pool.
 - Report whether vendored registry content exists but still needs syncing.
 - If all readiness conditions are satisfied, say that the registry audit path is healthy and remind the user that `/spwnr:task` can resolve its lineup directly.
-- If `/spwnr:task` is blocked, explicitly say that the user should install or inject the missing agents first, then return to the same plan file and rerun `/spwnr:task`.
+- If `/spwnr:task` is blocked, explicitly say that the user should install or inject the missing agents first, then return to the same active revision and rerun `/spwnr:task`.
 - If a task brief is explicitly provided, you may suggest using `resolve-workers` to preview likely candidates, but do not mutate state from this skill.

@@ -2,7 +2,7 @@
 
 This repository includes a repo-root Claude Code plugin named `spwnr` that acts as a workflow controller for executable planning plus registry-guided agent, task, and team orchestration.
 
-The plugin is a dogfood asset for this repository. It is not a published Spwnr package. `/spwnr:plan` and `/spwnr:task` rely on Claude-native planning tools plus the local `spwnr` registry for runtime agent selection, while `/spwnr:workers` provides the deeper audit and recovery path. The shared workflow artifact is `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md`.
+The plugin is a dogfood asset for this repository. It is not a published Spwnr package. `/spwnr:plan` and `/spwnr:task` rely on Claude-native planning tools plus the local `spwnr` registry for runtime agent selection, while `/spwnr:workers` provides the deeper audit and recovery path. The shared workflow artifact is the latest active revision under `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md`.
 
 ## What The Plugin Does
 
@@ -12,11 +12,11 @@ The plugin coordinates a plan-first workflow:
 2. load the planning stack with `Skill`
 3. draft and refine the plan until the important details are aligned
 4. ask only material decisions with `AskUserQuestion`
-5. track blockers and approval state with `TodoWrite`
+5. track blockers and review-loop outcomes with `TodoWrite`
 6. inspect repository context with `Read`
-7. write or update the persisted plan artifact with `Write` or `Edit`
-8. stop for explicit approval if the plan is not yet confirmed
-9. read the plan artifact with `Read`, validate executable `Execution Units`, resolve a candidate pool with `resolve-workers`, create exact execution tasks with `TaskCreate`, and append the approved execution spec with `Edit`
+7. write or update the latest active plan revision with `Write` or `Edit`
+8. run the execution review loop after each write, asking whether to `执行当前计划`, `继续改进计划`, or `结束本轮`
+9. if the current run receives `执行当前计划`, read the latest active revision with `Read`, validate executable `Execution Units`, append `Approved Execution Spec` with `Edit`, resolve a candidate pool with `resolve-workers`, and create a fresh task graph with `TaskCreate`
 10. validate the queue with `TaskGet` and `TaskList`
 11. build an orchestration spec and create a team with `TeamCreate` when `team` or `swarm` mode is required
 12. derive only the selected registry-backed agents with `Agent`
@@ -93,10 +93,10 @@ export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 ## Command Intent
 
 `/spwnr:plan`
-- align the task, load `workflow-foundation` plus `workflow-planning` with `Skill`, ask only material decisions with `AskUserQuestion`, track blockers with `TodoWrite`, write the plan to `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md`, upgrade `Detailed Plan` into orchestration-ready `Execution Units`, and stop in `needs-confirmation` or `approved-plan-ready`
+- align the task, load `workflow-foundation` plus `workflow-planning` with `Skill`, ask only material decisions with `AskUserQuestion`, track blockers with `TodoWrite`, write the plan to revision 1 at `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md`, or the next `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md` file when a material re-plan occurs, upgrade `Detailed Plan` into orchestration-ready `Execution Units`, record `Plan Review Loop`, and immediately ask whether to `执行当前计划`, `继续改进计划`, or `结束本轮`
 
 `/spwnr:task`
-- run the same planning gate first, then after explicit approval read the plan file, validate executable units, resolve registry candidates, select the lineup, create exact execution tasks, form a team when needed, derive agents, execute, review, and tear down cleanly
+- run the same planning gate first, then after the current run receives `执行当前计划` read the latest active revision, validate executable units, append `Approved Execution Spec`, resolve registry candidates, select the lineup, create a fresh task graph, form a team when needed, derive agents, execute, review, and tear down cleanly
 
 `/spwnr:workers`
 - inspect dynamic registry readiness, local registry state, install or inject suggestions, and the next recovery step when normal lineup resolution looks unhealthy
@@ -119,10 +119,12 @@ After approval, `/spwnr:task` chooses an execution mode based on the plan:
 ## Notes
 
 - The marketplace config is committed as static JSON in `.claude-plugin/marketplace.json`.
-- `.claude/plans/` is the runtime artifact directory for persisted workflow plans and should not be committed.
+- `.claude/plans/` is the runtime artifact directory for persisted workflow plan revisions and should not be committed.
 - `/spwnr:task` now runs on Claude-native `Read`, `Write`, `Edit`, `Agent`, `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `SendMessage`, `EnterWorktree`, `ExitWorktree`, and `TeamDelete`, with runtime agent selection coming from `resolve-workers`.
 - The plugin can still auto-inject selected local packages for baseline flows, but already-injected project or user agents mainly improve `/spwnr:workers` audit visibility.
 - The local registry is the source of truth for runtime lineup selection. Vendored templates are not selectable there until `sync-registry` publishes them locally.
-- Plan approval is conversational and thread-local; clear confirmations such as `continue`, `execute`, or `按这个 plan 做` unlock delegation.
+- The execution permission signal is conversational and current-run only; the review loop choice `执行当前计划` unlocks delegation, while `继续改进计划` keeps the controller in revision mode.
+- Revision metadata should mark one latest active revision and preserve older plan revisions for audit with `Revision Status: superseded` plus `Superseded By` pointing at the replacement revision file.
 - Missing or weak candidate pools are treated as a worker readiness gap, not as a reason to improvise a fallback lineup.
 - If worktree setup fails for `swarm`, the controller should stop and ask before any downgrade instead of silently reverting to `single-lane`.
+- If `TaskCreate` is blocked, the controller should repair the plan artifact or task metadata and must not continue by directly executing anyway.

@@ -14,7 +14,7 @@ Use this skill as the shared ruleset behind Spwnr workflow planning and orchestr
 - For non-trivial work, enter a planning gate before delegation or implementation.
 - Use `AskUserQuestion` for material clarification decisions when 2 to 4 concrete options are available.
 - Use `TodoWrite` to keep the draft plan, blockers, readiness fields, and approval condition visible through the planning gate.
-- Persist the shared plan artifact to `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` with `Write` or `Edit`, and treat that file as the durable source of truth for later tasks and registry-selected agents.
+- Persist the shared plan artifact to the latest active revision under `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md` with `Write` or `Edit`, and treat that latest active plan revision as the durable source of truth for later tasks and registry-selected agents.
 - Compare at least 2 plausible approaches when the path is not obvious.
 - State the recommended approach and why it is the best fit.
 - Convert blocking uncertainty into 2 to 4 concrete options, mark one as recommended, and give a one-line tradeoff for each option.
@@ -22,6 +22,7 @@ Use this skill as the shared ruleset behind Spwnr workflow planning and orchestr
 - If the repository is empty or underspecified, propose sensible defaults and label them clearly.
 - Do not call `Agent`, `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `TeamDelete`, `SendMessage`, `EnterWorktree`, or `ExitWorktree` for non-trivial work until a draft plan is visible and the user has clearly approved it.
 - Treat plan approval as thread-local and conversational. Clear approval signals include phrases like `continue`, `execute`, `go ahead`.
+- Treat a material re-plan as any change to the goal, deliverable type, or execution-unit graph. Minor refinements stay in the same active revision; material re-plans create the next revision file and supersede the older revision.
 
 ## Plan-First Gate
 

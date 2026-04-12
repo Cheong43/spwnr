@@ -1,6 +1,6 @@
 ---
 name: workflow-planning
-description: Use for /spwnr:plan. Produce an orchestration-ready plan artifact, surface only material decisions, and stop at plan confirmation without executing.
+description: Use for /spwnr:plan. Produce an orchestration-ready plan artifact, run the execution review loop, and hand off into execution only after an explicit AskUserQuestion execute choice.
 ---
 
 # Workflow Planning
@@ -14,22 +14,28 @@ Use `workflow-foundation` as the shared source of truth for context inspection, 
 ## Planning Tool Protocol
 
 - load `workflow-foundation` and `workflow-planning` with `Skill` before specialized planning behavior
-- use `AskUserQuestion` only for structured follow-up questions that materially change the plan
-- use `TodoWrite` to maintain the draft plan, blockers, readiness fields, and approval condition
+- use `AskUserQuestion` for structured follow-up questions that materially change the plan and for the execution review loop
+- use `TodoWrite` to maintain the draft plan, blockers, readiness fields, and the latest review-loop outcome
 - read supporting repository context with `Read`
-- write the detailed plan to `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` with `Write` or `Edit`
-- keep one plan file per project per day and update that file instead of creating a second draft
+- write revision 1 to `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md`, or create `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md` for later material re-plans
+- keep one active plan revision per project per day: minor refinements update the active revision, while a material re-plan creates the next revision file
 - always surface the plan file path in the response
-- do not call `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `Agent`, `TeamCreate`, `TeamDelete`, `SendMessage`, `EnterWorktree`, or `ExitWorktree` from `/spwnr:plan`
+- add `Revision`, `Revision Status`, `Supersedes`, and `Superseded By` metadata to the plan artifact
+- update the same active revision in place when the user requests minor revisions, and supersede the older revision when the request becomes a material re-plan
+- do not call `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `Agent`, `TeamCreate`, `TeamDelete`, `SendMessage`, `EnterWorktree`, or `ExitWorktree` from the planning loop of `/spwnr:plan`
 
 <HARD-GATE>
 Do NOT create any task.
+Do NOT create any task from the planning loop.
 Do NOT create any team.
+Do NOT create any team from the planning loop.
 Do NOT derive any agent.
+Do NOT derive any agent from the planning loop.
 Do NOT enter any worktree.
+Do NOT enter any worktree from the planning loop.
 Do NOT carry out the task itself.
-Do NOT produce the final deliverable, perform execution work, or switch into implementation mode from this skill.
-Your job is to produce the best possible executable plan artifact for the current scope, not to start doing the work.
+Do NOT produce the final deliverable or perform implementation work from the planning loop.
+Your job is to produce the best possible executable plan artifact for the current scope, run the review loop, and hand off cleanly when the user chooses execution.
 </HARD-GATE>
 
 ## Core Intent
@@ -40,8 +46,9 @@ Turn an ambiguous or partially specified request into a practical plan that is:
 - scoped enough to avoid vague or bloated planning
 - honest about uncertainty
 - explicit about which open decisions actually matter
+- ready to survive several review-and-revise passes without losing continuity
 
-The output should help a later `/spwnr:task` run create precise tasks and choose the right execution topology without reconstructing intent from chat history.
+The output should help a later `/spwnr:task` run or an immediate `/spwnr:plan` handoff create precise tasks and choose the right execution topology without reconstructing intent from chat history.
 
 ## Plan Readiness Gate
 
@@ -52,7 +59,7 @@ Before a plan can be treated as ready, it must capture:
 - scope boundaries
 - constraints
 - open risks
-- approval condition
+- review-loop condition
 - plan artifact path
 - executable `Execution Units`
 - environment and preconditions
@@ -75,18 +82,38 @@ You MUST complete these in order:
 7. Open or create the plan artifact with `Write` or `Edit`.
 8. Run the clarification loop with `AskUserQuestion` when unresolved details still change decomposition, sequencing, acceptance criteria, or execution topology.
 9. Draft the plan now instead of waiting for every open decision.
-10. Set the plan status to either `needs-confirmation` or `approved-plan-ready`.
-11. Self-review the plan for contradictions, placeholders, and vague sequencing.
+10. Self-review the plan for contradictions, placeholders, and vague sequencing.
+11. Update `Plan Review Loop` with the latest execution confirmation time, user feedback summary, and revision summary.
+12. After every write or revision, run the execution review loop with `AskUserQuestion` using `执行当前计划`, `继续改进计划`, and `结束本轮`.
+13. If the user chooses `继续改进计划`, collect free-form feedback, revise the same active revision when the execution shape still fits, or create the next revision when the request becomes a material re-plan, then repeat the review loop.
+14. If the user chooses `结束本轮`, preserve the artifact and stop without execution.
+15. If the user chooses `执行当前计划`, state that the plan is ready for execution and hand off to `workflow-task-orchestration` instead of creating ad-hoc tasks here.
+
+## Revisioned Plan Files
+
+Treat revision 1 as the base filename for compatibility:
+
+- `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md`
+
+When the user introduces a material re-plan on the same day, create the next revision file:
+
+- `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-r2.md`
+- `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-r3.md`
+
+A material re-plan is any change to the goal, deliverable type, or execution-unit graph.
+Minor refinements that preserve the execution shape should stay in the latest active revision.
+When a new revision is created, mark the previous revision `Revision Status: superseded`, record `Superseded By`, and treat the newer file as the latest active revision.
 
 ## Plan Artifact Protocol
 
 The markdown plan artifact is the durable handoff for later orchestration.
 
-- path: `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD-HHMMSS>.md`
-- update the same file throughout the day for the same project
+- path: `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` for revision 1, or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md` for later revisions
+- update the same active revision throughout the day for the same project unless a material re-plan requires the next revision file
 - use local date for the filename
 - do not rely on `TodoWrite` alone as the long-term plan record
-- later `/spwnr:task` runs and derived agents must read this file instead of inferring the plan from thread context
+- later `/spwnr:task` runs and derived agents must read the latest active revision instead of inferring the plan from thread context
+- `Approved Execution Spec` may be appended later before task creation, but it is not a plan-state marker
 
 The plan artifact must contain these sections in order:
 
@@ -96,8 +123,15 @@ The plan artifact must contain these sections in order:
 4. `Approach Analysis`
 5. `Detailed Plan`
 6. `Decisions Needed`
-7. `Approval Status`
+7. `Plan Review Loop`
 8. `Pending Handoff Notes`
+
+Inside `Metadata`, include:
+
+- `Revision`
+- `Revision Status`
+- `Supersedes`
+- `Superseded By`
 
 Inside `Detailed Plan`, add these subsections in order:
 
@@ -128,17 +162,23 @@ When unresolved details still change decomposition, sequencing, acceptance crite
 - prefer 2 to 4 concrete options with a recommendation
 - stop after the current clarification round rather than pretending the plan is settled
 
-## Plan Status
+## Execution Review Loop
 
-Every `/spwnr:plan` response must end in one of these states:
+Every time `/spwnr:plan` writes or revises the plan artifact, it must immediately run the execution review loop with `AskUserQuestion`.
 
-- `needs-confirmation` when material decisions remain, approval has not been given, or the user still needs to react to the proposed plan
-- `approved-plan-ready` only when the plan is concrete enough to execute and the user has clearly approved it in the current thread
+The review loop options are fixed:
 
-Do not mark the plan `approved-plan-ready` without clear in-thread confirmation from the user.
+- `执行当前计划`
+- `继续改进计划`
+- `结束本轮`
 
-If the status is `needs-confirmation`, keep the current draft visible and ask the next best structured follow-up questions.
-If the status is `approved-plan-ready`, state clearly that the plan is ready to hand off into execution, but do not perform that execution here.
+Interpret them this way:
+
+- `执行当前计划` is the only execution permission signal that lets `/spwnr:plan` hand off into `workflow-task-orchestration` during the current run
+- `继续改进计划` means do not execute, collect free-form user feedback, revise the same active revision when the execution shape still fits, or create the next revision when the request becomes a material re-plan
+- `结束本轮` means preserve the artifact, stop cleanly, and do not continue asking
+
+Do not recreate the old `needs-confirmation` or `approved-plan-ready` state machine in the plan file. The plan artifact should record the review loop history, not a persistent execution state.
 
 ## Capability Guidance
 
@@ -157,9 +197,9 @@ Keep capability recommendations generic in `/spwnr:plan`; concrete runtime agent
 Use these sections in order:
 
 1. `Plan Artifact`
-2. `Plan Status`
-3. `Locked Readiness Fields`
-4. `Approach Analysis`
-5. `Detailed Plan`
-6. `Decisions Needed`
+2. `Locked Readiness Fields`
+3. `Approach Analysis`
+4. `Detailed Plan`
+5. `Decisions Needed`
+6. `Plan Review Loop`
 7. `Next Step`

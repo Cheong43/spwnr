@@ -127,6 +127,7 @@ describe('workflow docs', () => {
       '/spwnr:task',
       '/spwnr:workers',
       '.claude/plans/spwnr-',
+      '-r2.md',
       'registry-guided',
       'Skill',
       'AskUserQuestion',
@@ -146,9 +147,16 @@ describe('workflow docs', () => {
       'ExitWorktree',
       'resolve-workers',
       'sync-registry',
-      'needs-confirmation',
-      'approved-plan-ready',
-      'explicit approval',
+      'Plan Review Loop',
+      'Approved Execution Spec',
+      'Revision Status',
+      'Superseded By',
+      'active revision',
+      'material re-plan',
+      '执行当前计划',
+      '继续改进计划',
+      '结束本轮',
+      'current run',
       'single-lane',
       'team',
       'swarm',
@@ -225,7 +233,7 @@ describe('workflow docs', () => {
     expect(taskCommand).toContain('swarm');
     expect(taskCommand).toContain('/spwnr:workers');
     expect(taskCommand).toContain('install or inject');
-    expect(taskCommand).toContain('same plan file');
+    expect(taskCommand).toContain('active revision');
     expect(taskCommand).not.toContain('parallel');
 
     expect(workersCommand).toContain('registry health and readiness audit');
@@ -236,20 +244,28 @@ describe('workflow docs', () => {
     expect(foundationSkill).toContain('Use `AskUserQuestion`');
     expect(foundationSkill).toContain('Use `TodoWrite`');
     expect(foundationSkill).toContain('Persist the shared plan artifact');
+    expect(foundationSkill).toContain('latest active plan revision');
     expect(foundationSkill).toContain('Do not call `Agent`, `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `TeamDelete`, `SendMessage`, `EnterWorktree`, or `ExitWorktree`');
 
     expect(planningSkill).toContain('## Planning Tool Protocol');
     expect(planningSkill).toContain('<HARD-GATE>');
-    expect(planningSkill).toContain('Do NOT create any task.');
-    expect(planningSkill).toContain('Do NOT create any team.');
-    expect(planningSkill).toContain('Do NOT derive any agent.');
-    expect(planningSkill).toContain('Do NOT enter any worktree.');
+    expect(planningSkill).toContain('Do NOT create any task');
+    expect(planningSkill).toContain('Do NOT create any team');
+    expect(planningSkill).toContain('Do NOT derive any agent');
+    expect(planningSkill).toContain('Do NOT enter any worktree');
     expect(planningSkill).toContain('Execution Units');
     expect(planningSkill).toContain('Environment And Preconditions');
     expect(planningSkill).toContain('Execution Strategy Recommendation');
     expect(planningSkill).toContain('Agent Capability Requirements');
     expect(planningSkill).toContain('Failure And Escalation Rules');
-    expect(planningSkill).toContain('Do not mark the plan `approved-plan-ready` without clear in-thread confirmation from the user.');
+    expect(planningSkill).toContain('## Execution Review Loop');
+    expect(planningSkill).toContain('Plan Review Loop');
+    expect(planningSkill).toContain('Revision Status');
+    expect(planningSkill).toContain('Superseded By');
+    expect(planningSkill).toContain('material re-plan');
+    expect(planningSkill).toContain('latest active revision');
+    expect(planningSkill).toContain('Do not recreate the old `needs-confirmation` or `approved-plan-ready` state machine in the plan file.');
+    expect(planningSkill).toContain('`执行当前计划`');
 
     expect(taskSkill).toContain('## Planning Gate');
     expect(taskSkill).toContain('## Execution Task Contract');
@@ -268,18 +284,24 @@ describe('workflow docs', () => {
     expect(taskSkill).toContain('team');
     expect(taskSkill).toContain('swarm');
     expect(taskSkill).toContain('execution tasks');
-    expect(taskSkill).toContain('same plan file');
+    expect(taskSkill).toContain('latest active revision');
+    expect(taskSkill).toContain('fresh task graph');
+    expect(taskSkill).toContain('superseded');
     expect(taskSkill).toContain('install or inject the missing agents');
     expect(taskSkill).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
+    expect(taskSkill).toContain('current run');
+    expect(taskSkill).toContain('Approved Execution Spec');
+    expect(taskSkill).toContain('Do not bypass a failed `TaskCreate` by directly executing the work.');
     expect(taskSkill).not.toContain('parallel');
 
     expect(workerAuditSkill).toContain('health-check and recovery surface');
     expect(workerAuditSkill).toContain('install or inject');
-    expect(workerAuditSkill).toContain('return to the same plan file');
+    expect(workerAuditSkill).toContain('return to the same active revision');
     expect(workerAuditSkill).toContain('Do not silently invent a fallback agent lineup');
 
     expect(workflowSkill).toContain('Use `workflow-planning` as the primary skill');
     expect(workflowSkill).toContain('align and lock the plan before any execution');
+    expect(workflowSkill).toContain('active revision');
     expect(workflowSkill).toContain('Read');
     expect(workflowSkill).toContain('Edit');
     expect(workflowSkill).toContain('TaskCreate');
@@ -288,6 +310,7 @@ describe('workflow docs', () => {
     expect(workflowSkill).toContain('EnterWorktree');
     expect(workflowSkill).toContain('ExitWorktree');
     expect(workflowSkill).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
+    expect(workflowSkill).toContain('执行当前计划');
     expect(workflowSkill).not.toContain('parallel');
 
     expect(sessionStartHook).toContain('/spwnr:plan');
@@ -308,6 +331,9 @@ describe('workflow docs', () => {
     expect(sessionStartHook).toContain('ExitWorktree');
     expect(sessionStartHook).toContain('single-lane, team, or swarm');
     expect(sessionStartHook).toContain('worker-readiness recovery message');
+    expect(sessionStartHook).toContain('Approved Execution Spec');
+    expect(sessionStartHook).toContain('latest active revision');
+    expect(sessionStartHook).toContain('执行当前计划');
     expect(sessionStartHook).not.toContain('parallel');
 
     expect(hooksJson).toContain('TaskCreated');
