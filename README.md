@@ -1,10 +1,26 @@
 # Spwnr
 
-Spwnr is a pnpm monorepo for packaging and declaratively injecting agent capabilities into host-native runtimes such as Claude Code, Codex, Copilot, and OpenCode.
+Spwnr is a multi-agent plugin for general tasks, currently supporting Claude Code.
 
-Spwnr does not run agents for the host. It owns package definition, validation, publishing, installation, static injection, and session descriptor composition. Scheduling and execution stay inside the host itself.
+## Claude Code Quick Start
 
-The current direction is documented in [docs/archive/Spwnr-PRD-AND-TDD.md](./docs/archive/Spwnr-PRD-AND-TDD.md). A usage walkthrough lives in [docs/guide/getting-started.md](./docs/guide/getting-started.md).
+```bash
+# Claude Code plugin install
+/plugin marketplace add Cheong43/spwnr
+/plugin install Cheong43@spwnr
+```
+
+```bash
+# spwnr cli install
+npm i @spwnr/cli
+```
+
+```bash
+# Edit Claude Code config on .Claude/setting.json
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+```
+
+A usage walkthrough lives in [docs/guide/getting-started.md](./docs/guide/getting-started.md).
 
 ## Community Registry
 

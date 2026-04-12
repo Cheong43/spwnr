@@ -1,8 +1,8 @@
 {
-  "name": "spwnr-dev",
+  "name": "spwnr",
   "description": "Development marketplace for the Spwnr Claude Code plugin",
   "owner": {
-    "name": "Spwnr Team"
+    "name": "Cheong43"
   },
   "plugins": [
     {
@@ -11,7 +11,7 @@
       "version": "0.1.0",
       "source": "./",
       "author": {
-        "name": "Spwnr Team"
+        "name": "Cheong43"
       }
     }
   ]

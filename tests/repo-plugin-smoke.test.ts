@@ -300,6 +300,12 @@ describe('workflow docs', () => {
     expect(taskSkill).toContain('Heartbeat: <interval>');
     expect(taskSkill).toContain('Risk: <low|medium|high>');
     expect(taskSkill).toContain('Plan-Approval: <not-required|required|approved>');
+    expect(taskSkill).toContain('### Compatibility Matrix');
+    expect(taskSkill).toContain('`Claim-Policy: assigned` -> `Owner` must be a concrete owner');
+    expect(taskSkill).toContain('`Claim-Policy: self-claim` -> `Owner` must start as exactly `unassigned`');
+    expect(taskSkill).toContain('`Risk: high` -> `Plan-Approval` must be `required` or `approved`; never use `not-required`');
+    expect(taskSkill).toContain('### TaskCreate Preflight');
+    expect(taskSkill).toContain('Before the first `TaskCreate`, the controller must check every draft task description against this exact checklist:');
     expect(taskSkill).toContain('per-unit coverage');
     expect(taskSkill).toContain('High-risk tasks must not complete while `Plan-Approval:` is still `required`.');
     expect(taskSkill).toContain('Do not bypass a failed `TaskCreate` by directly executing the work.');

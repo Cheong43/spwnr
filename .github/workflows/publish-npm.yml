@@ -1,0 +1,59 @@
+name: Publish npm Packages
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/publish-npm.yml'
+      - 'apps/spwnr-cli/**'
+      - 'packages/adapters/**'
+      - 'packages/core-types/**'
+      - 'packages/injector/**'
+      - 'packages/manifest-schema/**'
+      - 'packages/registry/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'scripts/publish-public-packages.mjs'
+      - 'tsconfig.base.json'
+      - 'vitest.workspace.ts'
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-npm-packages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          registry-url: https://registry.npmjs.org
+
+      - name: Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Publish missing versions
+        run: node ./scripts/publish-public-packages.mjs

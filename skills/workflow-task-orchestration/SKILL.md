@@ -69,29 +69,30 @@ Always follow this sequence:
 16. If the registry is empty, stale, or does not return a usable candidate pool, stop immediately and return `Worker Readiness Required`. Tell the user to run `/spwnr:workers` to install or inject the missing agents, then return to this same active revision. Do not call `TaskCreate`, `TeamCreate`, `Agent`, `SendMessage`, or `EnterWorktree` on this branch.
 17. Append `Approved Execution Spec` to the latest active revision with `Edit` before any `TaskCreate`.
 18. Convert the approved `Execution Units` into exact execution tasks, carrying forward ownership boundaries, heartbeat expectations, claim policy, risk level, and worker plan approval requirements.
-19. Create a fresh task graph from that active revision. Do not reuse prior task ids, dependency chains, or task status from superseded revisions.
-20. Create one task per execution unit with `TaskCreate`.
-21. If more than one execution unit exists, create one `integration` task.
-22. Always create one `review` task.
-23. Include the plan file path, unit id, dependency ids, done definition, assigned capability or package target, mode, worktree requirement, approved execution spec marker, blocked flag, owner, file scope, claim policy, heartbeat, risk, and plan approval state in every task description.
-24. Use `TaskGet` and `TaskList` immediately after task creation to confirm that task creation succeeded and the dependency graph matches the approved plan.
-25. If `TaskCreate` is blocked, do not say you will execute anyway. Repair the plan artifact or task metadata, then retry only when the contract is valid.
-26. Choose the execution mode: `single-lane`, `team`, or `swarm`.
-27. `single-lane` is for mostly sequential work with one execution lane.
-28. `team` is for multiple independent or lightly coupled execution units coordinated through the shared task queue.
-29. `swarm` is for multiple coordinated specialist passes on shared output where writing agents require worktree isolation.
-30. If `team` or `swarm` is required but `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is not available, stop and tell the user that team features are unavailable instead of silently downgrading.
-31. If `EnterWorktree` fails for `swarm`, stop and ask the user whether to downgrade instead of silently switching modes.
-32. Build an internal orchestration spec.
-33. Select a dynamic registry-backed lineup that fits the approved plan, the current candidate pool, and the chosen execution mode.
-34. Prefer the smallest lineup that still covers every execution unit. If the per-unit coverage plan exposes uncovered units, stop instead of improvising.
-35. Create the orchestration team with `TeamCreate` when using `team` or `swarm`.
-36. Derive only the selected agents with `Agent`, and include the plan file path, required sections to read, selected package name, no-scope-drift rule, ownership boundaries, and any plan-approval gate in every brief.
-37. Execute the plan according to the chosen mode and keep every task current with `TaskUpdate`.
-38. Record worktree paths and selected package names in the plan file and matching task updates whenever `EnterWorktree` is used.
-39. Run the review phase with the best-fit selected validation agent, or with the controller if a separate validation package was not selected.
-40. If review finds blocking issues, route the fixes back through execution once using the same orchestration spec and update task state accordingly.
-41. Integrate the final response, mark all remaining tasks complete with `TaskUpdate`, and close the team with `TeamDelete`. Exit any active worktrees with `ExitWorktree`.
+19. Before the first `TaskCreate`, run a metadata preflight over every draft task description and verify the runtime-guard invariants in `Execution Task Contract` and `Risk-Gated Units`. Do not use hook failures as discovery for these rules.
+20. Create a fresh task graph from that active revision. Do not reuse prior task ids, dependency chains, or task status from superseded revisions.
+21. Create one task per execution unit with `TaskCreate`.
+22. If more than one execution unit exists, create one `integration` task.
+23. Always create one `review` task.
+24. Include the plan file path, unit id, dependency ids, done definition, assigned capability or package target, mode, worktree requirement, approved execution spec marker, blocked flag, owner, file scope, claim policy, heartbeat, risk, and plan approval state in every task description.
+25. Use `TaskGet` and `TaskList` immediately after task creation to confirm that task creation succeeded and the dependency graph matches the approved plan.
+26. If `TaskCreate` is blocked, do not say you will execute anyway. Repair the plan artifact or task metadata, then retry only when the contract is valid.
+27. Choose the execution mode: `single-lane`, `team`, or `swarm`.
+28. `single-lane` is for mostly sequential work with one execution lane.
+29. `team` is for multiple independent or lightly coupled execution units coordinated through the shared task queue.
+30. `swarm` is for multiple coordinated specialist passes on shared output where writing agents require worktree isolation.
+31. If `team` or `swarm` is required but `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is not available, stop and tell the user that team features are unavailable instead of silently downgrading.
+32. If `EnterWorktree` fails for `swarm`, stop and ask the user whether to downgrade instead of silently switching modes.
+33. Build an internal orchestration spec.
+34. Select a dynamic registry-backed lineup that fits the approved plan, the current candidate pool, and the chosen execution mode.
+35. Prefer the smallest lineup that still covers every execution unit. If the per-unit coverage plan exposes uncovered units, stop instead of improvising.
+36. Create the orchestration team with `TeamCreate` when using `team` or `swarm`.
+37. Derive only the selected agents with `Agent`, and include the plan file path, required sections to read, selected package name, no-scope-drift rule, ownership boundaries, and any plan-approval gate in every brief.
+38. Execute the plan according to the chosen mode and keep every task current with `TaskUpdate`.
+39. Record worktree paths and selected package names in the plan file and matching task updates whenever `EnterWorktree` is used.
+40. Run the review phase with the best-fit selected validation agent, or with the controller if a separate validation package was not selected.
+41. If review finds blocking issues, route the fixes back through execution once using the same orchestration spec and update task state accordingly.
+42. Integrate the final response, mark all remaining tasks complete with `TaskUpdate`, and close the team with `TeamDelete`. Exit any active worktrees with `ExitWorktree`.
 
 ## Execution Task Contract
 
@@ -116,6 +117,25 @@ Every execution, integration, and review task description must include these exa
 These fields are mandatory because runtime hooks use them as the minimum contract for task creation and completion.
 The plan file referenced by `Plan:` must also contain an `Approved Execution Spec` section before task creation is allowed.
 High-risk tasks must not complete while `Plan-Approval:` is still `required`.
+
+### Compatibility Matrix
+
+- `Claim-Policy: assigned` -> `Owner` must be a concrete owner such as an agent name or `controller`; never use `unassigned`
+- `Claim-Policy: self-claim` -> `Owner` must start as exactly `unassigned`
+- `Risk: high` -> `Plan-Approval` must be `required` or `approved`; never use `not-required`
+- if a task is intended to be claimed later by a worker, prefer `Owner: unassigned` with `Claim-Policy: self-claim`
+- if a task is already bound to a controller or named worker at creation time, use `Claim-Policy: assigned` with that concrete `Owner`
+
+### TaskCreate Preflight
+
+Before the first `TaskCreate`, the controller must check every draft task description against this exact checklist:
+
+- every required marker is present exactly once with a concrete value
+- `Owner` and `Claim-Policy` satisfy the compatibility matrix above
+- `Risk` and `Plan-Approval` satisfy the compatibility matrix above
+- multi-agent no-worktree tasks have explicit `Files:` ownership boundaries instead of `none`
+- high-risk units are already marked for worker plan approval before task creation
+- `single-lane` initial graphs default to `Owner: unassigned` plus `Claim-Policy: self-claim` unless the controller intentionally binds the task to a concrete owner
 
 ## Orchestration Spec
 
