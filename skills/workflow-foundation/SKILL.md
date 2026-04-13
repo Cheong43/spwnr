@@ -27,7 +27,7 @@ Use this skill as the shared ruleset behind Spwnr workflow planning and orchestr
 ## Plan-First Gate
 
 - A ready plan must lock the goal, success criteria, scope boundaries, constraints, open risks, and approval condition.
-- A ready plan must exist on disk at `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md`.
+- A ready plan must exist on disk at `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD-HHMMSS>-<GOAL>.md` or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD-HHMMSS>-<GOAL>-rN.md`.
 - A ready plan must be explicit enough for a later agent to execute without reconstructing intent from chat history.
 - Keep asking structured follow-up questions while unresolved details still change decomposition, sequencing, acceptance criteria, or execution topology.
 - Keep the current draft visible while clarifying so the user can react to something concrete.
@@ -59,8 +59,8 @@ Use this skill as the shared ruleset behind Spwnr workflow planning and orchestr
 
 ## Plan Artifact Convention
 
-- Revision 1 path: `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md`
-- Later material re-plans on the same day: `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-r2.md`, `-r3.md`, and so on
+- Revision 1 path: `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD-HHMMSS>-<GOAL>.md`
+- Later material re-plans on the same day: `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD-HHMMSS>-<GOAL>-r2.md`, `-r3.md`, and so on
 - When a new revision is created, mark the previous revision `Revision Status: superseded`, record `Superseded By`, and treat the newer file as the latest active revision.
 - Every plan artifact must include `Revision`, `Revision Status`, `Supersedes`, and `Superseded By`.
 - Superseded revisions and their tasks are audit-only.
