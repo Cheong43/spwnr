@@ -15,12 +15,13 @@ describe('repo-root Claude plugin', () => {
   it('ships valid plugin, marketplace, worker, and hook JSON files', () => {
     const plugin = readJson('.claude-plugin/plugin.json');
     const marketplace = readJson('.claude-plugin/marketplace.json');
+    const repoPackage = readJson('package.json');
     const workers = readJson('.claude-plugin/workers.json');
     const hooks = readJson('hooks/hooks.json');
 
     expect(plugin).toMatchObject({
       name: 'spwnr',
-      version: '0.1.0',
+      version: '0.2.0',
     });
     expect(plugin).not.toHaveProperty('hooks');
     expect(marketplace).toMatchObject({
@@ -29,9 +30,13 @@ describe('repo-root Claude plugin', () => {
         expect.objectContaining({
           name: 'spwnr',
           source: './',
-          version: '0.1.0',
+          version: '0.2.0',
         }),
       ],
+    });
+    expect(repoPackage).toMatchObject({
+      name: 'spwnr',
+      version: '0.2.0',
     });
     expect(workers).toMatchObject({
       selectionMode: 'dynamic',
@@ -142,9 +147,10 @@ describe('workflow docs', () => {
       'TeamCreate',
       'SendMessage',
       'TeamDelete',
-      'EnterWorktree',
-      'ExitWorktree',
       'resolve-workers',
+      'Expert Planning Round',
+      'Worker Readiness Required',
+      'research -> draft -> review',
       'sync-registry',
       'Plan Review Loop',
       'Approved Execution Spec',
@@ -158,7 +164,6 @@ describe('workflow docs', () => {
       'current run',
       'single-lane',
       'team',
-      'swarm',
       'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1',
       '/plugin install spwnr@spwnr',
       'claude --plugin-dir /absolute/path/to/spwnr',
@@ -188,7 +193,7 @@ describe('workflow docs', () => {
     }
   });
 
-  it('encode plan-first execution guards, worker recovery, and team or swarm contracts', () => {
+  it('encode plan-first execution guards, worker recovery, and team contracts', () => {
     const gitignore = readFileSync(resolve(repoRoot, '.gitignore'), 'utf-8');
     const planCommand = readFileSync(resolve(repoRoot, 'commands/plan.md'), 'utf-8');
     const taskCommand = readFileSync(resolve(repoRoot, 'commands/task.md'), 'utf-8');
@@ -209,10 +214,15 @@ describe('workflow docs', () => {
     expect(planCommand).toContain('Read');
     expect(planCommand).toContain('Write');
     expect(planCommand).toContain('Edit');
+    expect(planCommand).toContain('resolve-workers');
+    expect(planCommand).toContain('planning-only experts');
+    expect(planCommand).toContain('`research`, `draft`, and `review`');
+    expect(planCommand).toContain('Expert Planning Round');
+    expect(planCommand).toContain('Worker Readiness Required');
     expect(planCommand).toContain('Execution Units');
     expect(planCommand).toContain('never call `TaskCreate`');
     expect(planCommand).toContain('never call `SendMessage`');
-    expect(planCommand).toContain('never create tasks, teams, or agents');
+    expect(planCommand).toContain('never create tasks or teams from this command');
     expect(planCommand).not.toContain('TaskCreateTool');
 
     expect(taskCommand).toContain('Read');
@@ -225,11 +235,8 @@ describe('workflow docs', () => {
     expect(taskCommand).toContain('SendMessage');
     expect(taskCommand).toContain('Agent');
     expect(taskCommand).toContain('TeamDelete');
-    expect(taskCommand).toContain('EnterWorktree');
-    expect(taskCommand).toContain('ExitWorktree');
     expect(taskCommand).toContain('single-lane');
     expect(taskCommand).toContain('team');
-    expect(taskCommand).toContain('swarm');
     expect(taskCommand).toContain('/spwnr:workers');
     expect(taskCommand).toContain('install or inject');
     expect(taskCommand).toContain('active revision');
@@ -244,14 +251,20 @@ describe('workflow docs', () => {
     expect(foundationSkill).toContain('Use `TodoWrite`');
     expect(foundationSkill).toContain('Persist the shared plan artifact');
     expect(foundationSkill).toContain('latest active plan revision');
-    expect(foundationSkill).toContain('Do not call `Agent`, `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `TeamDelete`, `SendMessage`, `EnterWorktree`, or `ExitWorktree`');
+    expect(foundationSkill).toContain('planning-only `Agent` pass is allowed only after a draft plan is visible');
+    expect(foundationSkill).toContain('Do not call `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `TeamDelete`, or `SendMessage`');
 
     expect(planningSkill).toContain('## Planning Tool Protocol');
-    expect(planningSkill).toContain('<HARD-GATE>');
+    expect(planningSkill).toContain('## <HARD-GATE>');
     expect(planningSkill).toContain('Do NOT create any task');
     expect(planningSkill).toContain('Do NOT create any team');
-    expect(planningSkill).toContain('Do NOT derive any agent');
+    expect(planningSkill).toContain('You MAY derive planning-only experts with `Agent`');
     expect(planningSkill).toContain('Do NOT enter any worktree');
+    expect(planningSkill).toContain('## Planning Expert Loop');
+    expect(planningSkill).toContain('resolve-workers');
+    expect(planningSkill).toContain('Expert Planning Round');
+    expect(planningSkill).toContain('Worker Readiness Required');
+    expect(planningSkill).toContain('`research`, `draft`, and `review`');
     expect(planningSkill).toContain('Execution Units');
     expect(planningSkill).toContain('Environment And Preconditions');
     expect(planningSkill).toContain('Execution Strategy Recommendation');
@@ -268,8 +281,10 @@ describe('workflow docs', () => {
     expect(planningSkill).toContain('latest active revision');
     expect(planningSkill).toContain('Do not recreate the old `needs-confirmation` or `approved-plan-ready` state machine in the plan file.');
     expect(planningSkill).toContain('`Execute current plan`');
+    expect(planningSkill).not.toContain('Do NOT derive any agent.');
 
     expect(taskSkill).toContain('## Planning Gate');
+    expect(taskSkill).toContain('## Approved Execution Spec');
     expect(taskSkill).toContain('## Execution Task Contract');
     expect(taskSkill).toContain('## Worker Readiness Required');
     expect(taskSkill).toContain('## Failure Recovery Contract');
@@ -280,11 +295,8 @@ describe('workflow docs', () => {
     expect(taskSkill).toContain('TeamCreate');
     expect(taskSkill).toContain('SendMessage');
     expect(taskSkill).toContain('TeamDelete');
-    expect(taskSkill).toContain('EnterWorktree');
-    expect(taskSkill).toContain('ExitWorktree');
     expect(taskSkill).toContain('single-lane');
     expect(taskSkill).toContain('team');
-    expect(taskSkill).toContain('swarm');
     expect(taskSkill).toContain('execution tasks');
     expect(taskSkill).toContain('latest active revision');
     expect(taskSkill).toContain('fresh task graph');
@@ -293,26 +305,28 @@ describe('workflow docs', () => {
     expect(taskSkill).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
     expect(taskSkill).toContain('current run');
     expect(taskSkill).toContain('Approved Execution Spec');
-    expect(taskSkill).toContain('Owner: <agent-name|controller|unassigned>');
-    expect(taskSkill).toContain('Files: <csv scope or none>');
-    expect(taskSkill).toContain('Claim-Policy: <assigned|self-claim>');
-    expect(taskSkill).toContain('Risk: <low|medium|high>');
-    expect(taskSkill).toContain('Plan-Approval: <not-required|required|approved>');
     expect(taskSkill).not.toContain('Depends-On: <csv or none>');
     expect(taskSkill).not.toContain('Done: <done definition>');
     expect(taskSkill).not.toContain('Capability: <capability or selected package>');
     expect(taskSkill).not.toContain('Approved Execution Spec: present');
     expect(taskSkill).not.toContain('Heartbeat: <interval>');
-    expect(taskSkill).toContain('### Compatibility Matrix');
-    expect(taskSkill).toContain('`Claim-Policy: assigned` -> `Owner` must be a concrete owner');
-    expect(taskSkill).toContain('`Claim-Policy: self-claim` -> `Owner` must start as exactly `unassigned`');
-    expect(taskSkill).toContain('`Risk: high` -> `Plan-Approval` must be `required` or `approved`; never use `not-required`');
-    expect(taskSkill).toContain('### TaskCreate Preflight');
-    expect(taskSkill).toContain('Before the first `TaskCreate`, the controller must check every draft task description against this exact checklist:');
     expect(taskSkill).toContain('per-unit coverage');
     expect(taskSkill).toContain('High-risk tasks must not complete while `Plan-Approval:` is still `required`.');
     expect(taskSkill).toContain('Do not bypass a failed `TaskCreate` by directly executing the work.');
     expect(taskSkill).not.toContain('`parallel`');
+
+    expect(foundationSkill).toContain('## Execution Task Contract');
+    expect(foundationSkill).toContain('Owner: <agent-name|controller|unassigned>');
+    expect(foundationSkill).toContain('Files: <csv scope or none>');
+    expect(foundationSkill).toContain('Claim-Policy: <assigned|self-claim>');
+    expect(foundationSkill).toContain('Risk: <low|medium|high>');
+    expect(foundationSkill).toContain('Plan-Approval: <not-required|required|approved>');
+    expect(foundationSkill).toContain('### Compatibility Matrix');
+    expect(foundationSkill).toContain('`Claim-Policy: assigned` -> `Owner` must be a concrete owner');
+    expect(foundationSkill).toContain('`Claim-Policy: self-claim` -> `Owner` must start as exactly `unassigned`');
+    expect(foundationSkill).toContain('`Risk: high` -> `Plan-Approval` must be `required` or `approved`; never use `not-required`');
+    expect(foundationSkill).toContain('### TaskCreate Preflight');
+    expect(foundationSkill).toContain('Before the first `TaskCreate`, the controller must check every draft task description against this exact checklist:');
 
     expect(workerAuditSkill).toContain('health-check and recovery surface');
     expect(workerAuditSkill).toContain('install or inject');
@@ -321,14 +335,15 @@ describe('workflow docs', () => {
 
     expect(workflowSkill).toContain('Use `workflow-planning` as the primary skill');
     expect(workflowSkill).toContain('align and lock the plan before any execution');
+    expect(workflowSkill).toContain('planning expert loop');
+    expect(workflowSkill).toContain('Worker Readiness Required');
+    expect(workflowSkill).toContain('`research`, `draft`, and `review`');
     expect(workflowSkill).toContain('active revision');
     expect(workflowSkill).toContain('Read');
     expect(workflowSkill).toContain('Edit');
     expect(workflowSkill).toContain('TaskCreate');
     expect(workflowSkill).toContain('TeamCreate');
     expect(workflowSkill).toContain('SendMessage');
-    expect(workflowSkill).toContain('EnterWorktree');
-    expect(workflowSkill).toContain('ExitWorktree');
     expect(workflowSkill).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
     expect(workflowSkill).toContain('Execute current plan');
     expect(workflowSkill).toContain('Owner');
@@ -342,6 +357,10 @@ describe('workflow docs', () => {
     expect(sessionStartHook).toContain('Read');
     expect(sessionStartHook).toContain('Write');
     expect(sessionStartHook).toContain('Edit');
+    expect(sessionStartHook).toContain('planning expert loop');
+    expect(sessionStartHook).toContain('spwnr resolve-workers');
+    expect(sessionStartHook).toContain('Worker Readiness Required');
+    expect(sessionStartHook).toContain('planning-only');
     expect(sessionStartHook).toContain('TaskCreate');
     expect(sessionStartHook).toContain('TaskGet');
     expect(sessionStartHook).toContain('TaskList');
@@ -349,9 +368,8 @@ describe('workflow docs', () => {
     expect(sessionStartHook).toContain('TeamCreate');
     expect(sessionStartHook).toContain('SendMessage');
     expect(sessionStartHook).toContain('TeamDelete');
-    expect(sessionStartHook).toContain('EnterWorktree');
-    expect(sessionStartHook).toContain('ExitWorktree');
-    expect(sessionStartHook).toContain('single-lane, team, or swarm');
+    expect(sessionStartHook).toContain('single-lane or team execution');
+    expect(sessionStartHook).toContain('defaults to team');
     expect(sessionStartHook).toContain('worker-readiness recovery message');
     expect(sessionStartHook).toContain('Approved Execution Spec');
     expect(sessionStartHook).toContain('Owner, Files, Claim-Policy, Risk, and Plan-Approval');
@@ -385,6 +403,18 @@ describe('workflow docs', () => {
     expect(taskSkill).toContain('Tailor the output contract to the selected package\'s job');
     expect(taskSkill).toContain('single-lane');
     expect(taskSkill).toContain('team');
-    expect(taskSkill).toContain('swarm');
+    expect(taskSkill).not.toContain('swarm');
+  });
+
+  it('keep workflow skills within the 200-line host budget', () => {
+    const countLines = (value: string): number => value.split('\n').length;
+
+    const foundationSkill = readFileSync(resolve(repoRoot, 'skills/workflow-foundation/SKILL.md'), 'utf-8');
+    const planningSkill = readFileSync(resolve(repoRoot, 'skills/workflow-planning/SKILL.md'), 'utf-8');
+    const taskSkill = readFileSync(resolve(repoRoot, 'skills/workflow-task-orchestration/SKILL.md'), 'utf-8');
+
+    expect(countLines(foundationSkill)).toBeLessThanOrEqual(200);
+    expect(countLines(planningSkill)).toBeLessThanOrEqual(200);
+    expect(countLines(taskSkill)).toBeLessThanOrEqual(200);
   });
 });

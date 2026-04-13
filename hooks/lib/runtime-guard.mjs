@@ -18,7 +18,7 @@ export const REQUIRED_TASK_MARKERS = [
 const CLAIM_POLICY_VALUES = new Set(['assigned', 'self-claim']);
 const RISK_VALUES = new Set(['low', 'medium', 'high']);
 const PLAN_APPROVAL_VALUES = new Set(['not-required', 'required', 'approved']);
-const MULTI_AGENT_MODES = new Set(['team', 'swarm']);
+const MULTI_AGENT_MODES = new Set(['team']);
 const UNASSIGNED_OWNER_VALUES = new Set(['', 'unassigned', 'none', 'pool']);
 const NON_EXPLICIT_FILE_SCOPE_VALUES = new Set(['', 'none', 'unscoped']);
 

@@ -2,7 +2,7 @@
 
 This repository includes a repo-root Claude Code plugin named `spwnr` that acts as a workflow controller for executable planning plus registry-guided agent, task, and team orchestration.
 
-The plugin is a dogfood asset for this repository. It is not a published Spwnr package. `/spwnr:plan` and `/spwnr:task` rely on Claude-native planning tools plus the local `spwnr` registry for runtime agent selection, while `/spwnr:workers` provides the deeper audit and recovery path. The shared workflow artifact is the latest active revision under `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md`. These workflows are for general tasks such as research, analysis, writing, operations, and coding, not only software implementation.
+The plugin is a dogfood asset for this repository. It is not a published Spwnr package. `/spwnr:plan` and `/spwnr:task` rely on Claude-native planning tools plus the local `spwnr` registry for runtime agent selection, while `/spwnr:workers` provides the deeper audit and recovery path. In `0.2.0`, `/spwnr:plan` also uses planning-time registry preview plus planning-only `Agent` passes to run `research -> draft -> review` before execution approval. The shared workflow artifact is the latest active revision under `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md`. These workflows are for general tasks such as research, analysis, writing, operations, and coding, not only software implementation.
 
 ## What The Plugin Does
 
@@ -15,14 +15,17 @@ The plugin coordinates a plan-first workflow:
 5. track blockers and review-loop outcomes with `TodoWrite`
 6. inspect repository context with `Read`
 7. write or update the latest active plan revision with `Write` or `Edit`
-8. run the execution review loop after each write, asking whether to `Execute current plan`, `Continue improving plan`, or `End this round`
-9. if the current run receives `Execute current plan`, read the latest active revision with `Read`, validate executable `Execution Units`, append `Approved Execution Spec` with `Edit`, resolve a candidate pool with `resolve-workers`, resolve per-unit coverage when needed, and create a fresh task graph with `TaskCreate`
-10. validate the queue with `TaskGet` and `TaskList`
-11. build an orchestration spec and create a team with `TeamCreate` when `team` or `swarm` mode is required
-12. derive only the selected registry-backed agents with `Agent`
-13. execute in `single-lane`, `team`, or worktree-isolated `swarm` mode
-14. update task state, escalate incidents with `SendMessage` when teams are active, enforce ownership plus risk metadata on tasks, record worktree paths plus selected package names, and tear down the team with `TaskUpdate`, `ExitWorktree`, and `TeamDelete`
-15. integrate the final answer
+8. generate planning retrieval briefs for `research`, `draft`, and `review`
+9. preview planning candidates with `resolve-workers` and derive planning-only experts with `Agent`
+10. synthesize their outputs into `Expert Planning Round`, or stop with `Worker Readiness Required` and route the user to `/spwnr:workers` if the planning expert set cannot be formed
+11. run the execution review loop after each successful write, asking whether to `Execute current plan`, `Continue improving plan`, or `End this round`
+12. if the current run receives `Execute current plan`, read the latest active revision with `Read`, validate executable `Execution Units`, append `Approved Execution Spec` with `Edit`, resolve a candidate pool with `resolve-workers`, resolve per-unit coverage when needed, and create a fresh task graph with `TaskCreate`
+13. validate the queue with `TaskGet` and `TaskList`
+14. build an orchestration spec and create a team with `TeamCreate` when `team` mode is required
+15. derive only the selected registry-backed agents with `Agent`
+16. execute in `single-lane` or `team` mode
+17. update task state, escalate incidents with `SendMessage` when teams are active, enforce ownership plus risk metadata on tasks, record selected package names, and tear down the team with `TaskUpdate` and `TeamDelete`
+18. integrate the final answer
 
 The controller lives in the repo root under:
 
@@ -84,7 +87,7 @@ spwnr inject general-executor --host claude_code --scope project
 spwnr inject general-reviewer --host claude_code --scope project
 ```
 
-6. Enable agent teams if you want `team` or `swarm` mode:
+6. Enable agent teams if you want `team` mode:
 
 ```bash
 export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
@@ -93,7 +96,7 @@ export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 ## Command Intent
 
 `/spwnr:plan`
-- align a general task, load `workflow-foundation` plus `workflow-planning` with `Skill`, ask only material decisions with `AskUserQuestion`, track blockers with `TodoWrite`, write the plan to revision 1 at `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md`, or the next `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md` file when a material re-plan occurs, upgrade `Detailed Plan` into orchestration-ready `Execution Units`, record `Plan Review Loop`, and immediately ask whether to `Execute current plan`, `Continue improving plan`, or `End this round`
+- align a general task, load `workflow-foundation` plus `workflow-planning` with `Skill`, ask only material decisions with `AskUserQuestion`, track blockers with `TodoWrite`, write the plan to revision 1 at `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md`, or the next `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md` file when a material re-plan occurs, upgrade `Detailed Plan` into orchestration-ready `Execution Units`, run a planning expert sequence `research -> draft -> review` with `resolve-workers` plus planning-only `Agent`, record `Expert Planning Round` and `Plan Review Loop`, and immediately ask whether to `Execute current plan`, `Continue improving plan`, or `End this round`; if the planning expert loop cannot form a viable lineup, stop with `Worker Readiness Required` and send the user to `/spwnr:workers`
 
 `/spwnr:task`
 - run the same planning gate first for approved general-task work, then after the current run receives `Execute current plan` read the latest active revision, validate executable units, append `Approved Execution Spec`, resolve registry candidates plus per-unit coverage, select the smallest lineup that still covers every unit, create a fresh task graph with explicit ownership and risk metadata, form a team when needed, derive agents, execute, review, and tear down cleanly
@@ -105,9 +108,9 @@ export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 
 After approval, `/spwnr:task` chooses an execution mode based on the plan:
 
+- `team` as the default mode for non-trivial work
 - `single-lane` for mostly sequential work with one execution lane
 - `team` for multiple execution units coordinated through the shared task queue, especially when file ownership boundaries are explicit
-- `swarm` for multiple coordinated specialist passes on one shared output, and only when repository writes can be isolated with `EnterWorktree` / `ExitWorktree`
 
 ## What This Does Not Do
 
@@ -120,12 +123,12 @@ After approval, `/spwnr:task` chooses an execution mode based on the plan:
 
 - The marketplace config is committed as static JSON in `.claude-plugin/marketplace.json`.
 - `.claude/plans/` is the runtime artifact directory for persisted workflow plan revisions and should not be committed.
-- `/spwnr:task` now runs on Claude-native `Read`, `Write`, `Edit`, `Agent`, `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `SendMessage`, `EnterWorktree`, `ExitWorktree`, and `TeamDelete`, with runtime agent selection coming from `resolve-workers`.
+- `/spwnr:task` now runs on Claude-native `Read`, `Write`, `Edit`, `Agent`, `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `SendMessage`, and `TeamDelete`, with runtime agent selection coming from `resolve-workers`.
 - execution tasks should now carry `Owner`, `Files`, `Claim-Policy`, `Risk`, and `Plan-Approval` fields so runtime hooks can enforce teammate boundaries and risky-unit approval gates.
 - The plugin can still auto-inject selected local packages for baseline flows, but already-injected project or user agents mainly improve `/spwnr:workers` audit visibility.
 - The local registry is the source of truth for runtime lineup selection. Vendored templates are not selectable there until `sync-registry` publishes them locally.
 - The execution permission signal is conversational and current-run only; the review loop choice `Execute current plan` unlocks delegation, while `Continue improving plan` keeps the controller in revision mode.
 - Revision metadata should mark one latest active revision and preserve older plan revisions for audit with `Revision Status: superseded` plus `Superseded By` pointing at the replacement revision file.
 - Missing or weak candidate pools are treated as a worker readiness gap, not as a reason to improvise a fallback lineup.
-- If worktree setup fails for `swarm`, the controller should stop and ask before any downgrade instead of silently reverting to `single-lane`.
+- If `team` prerequisites fail, the controller should stop and ask before any downgrade instead of silently reverting to `single-lane`.
 - If `TaskCreate` is blocked, the controller should repair the plan artifact or task metadata and must not continue by directly executing anyway.

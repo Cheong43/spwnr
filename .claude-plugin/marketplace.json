@@ -8,7 +8,7 @@
     {
       "name": "spwnr",
       "description": "Repo-level Claude Code plugin that coordinates registry-guided agent, task, and team orchestration.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "source": "./",
       "author": {
         "name": "Cheong43"
