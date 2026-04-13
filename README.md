@@ -10,14 +10,8 @@ Spwnr is a multi-agent plugin for general tasks, currently supporting Claude Cod
 # Claude Code plugin install
 /plugin marketplace add Cheong43/spwnr
 /plugin install Cheong43@spwnr
-```
-
-```bash
 # spwnr cli install
 npm i @spwnr/cli
-```
-
-```bash
 # Edit Claude Code config on .Claude/setting.json
 export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 ```
