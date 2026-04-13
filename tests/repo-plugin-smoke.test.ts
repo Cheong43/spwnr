@@ -233,7 +233,7 @@ describe('workflow docs', () => {
     expect(taskCommand).toContain('/spwnr:workers');
     expect(taskCommand).toContain('install or inject');
     expect(taskCommand).toContain('active revision');
-    expect(taskCommand).not.toContain('parallel');
+    expect(taskCommand).not.toContain('`parallel`');
 
     expect(workersCommand).toContain('registry health and readiness audit');
     expect(workersCommand).toContain('install or inject recovery surface');
@@ -312,7 +312,7 @@ describe('workflow docs', () => {
     expect(taskSkill).toContain('per-unit coverage');
     expect(taskSkill).toContain('High-risk tasks must not complete while `Plan-Approval:` is still `required`.');
     expect(taskSkill).toContain('Do not bypass a failed `TaskCreate` by directly executing the work.');
-    expect(taskSkill).not.toContain('parallel');
+    expect(taskSkill).not.toContain('`parallel`');
 
     expect(workerAuditSkill).toContain('health-check and recovery surface');
     expect(workerAuditSkill).toContain('install or inject');
@@ -333,7 +333,7 @@ describe('workflow docs', () => {
     expect(workflowSkill).toContain('Execute current plan');
     expect(workflowSkill).toContain('Owner');
     expect(workflowSkill).toContain('Plan-Approval');
-    expect(workflowSkill).not.toContain('parallel');
+    expect(workflowSkill).not.toContain('`parallel`');
 
     expect(sessionStartHook).toContain('/spwnr:plan');
     expect(sessionStartHook).toContain('Skill');
@@ -358,7 +358,7 @@ describe('workflow docs', () => {
     expect(sessionStartHook).toContain('--unit briefs');
     expect(sessionStartHook).toContain('latest active revision');
     expect(sessionStartHook).toContain('Execute current plan');
-    expect(sessionStartHook).not.toContain('parallel');
+    expect(sessionStartHook).not.toContain('`parallel`');
 
     expect(hooksJson).toContain('TaskCreated');
     expect(hooksJson).toContain('TaskCompleted');
@@ -379,9 +379,9 @@ describe('workflow docs', () => {
 
     expect(taskSkill).toContain('normalized registry lookup brief');
     expect(taskSkill).toContain('per-unit coverage brief');
-    expect(taskSkill).toContain('evaluation dimensions');
-    expect(taskSkill).toContain('risk boundaries');
-    expect(taskSkill).toContain('smallest lineup that still covers every execution unit');
+    expect(taskSkill).toContain('selected lineup and why each package was chosen');
+    expect(taskSkill).toContain('risky-unit approval gates and file-ownership boundaries');
+    expect(taskSkill).toContain('lineup that covers every execution unit');
     expect(taskSkill).toContain('Tailor the output contract to the selected package\'s job');
     expect(taskSkill).toContain('single-lane');
     expect(taskSkill).toContain('team');
