@@ -1,0 +1,350 @@
+# Instincts generated from https://github.com/Cheong43/spwnr
+# Generated: 2026-04-13T14:54:26.208Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: spwnr-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/Cheong43/spwnr
+---
+
+# Spwnr Commit Length
+
+## Action
+
+Write moderate-length commit messages (~57 characters)
+
+## Evidence
+
+- Average commit message length: 57 chars
+- Based on 3 commits
+
+---
+id: spwnr-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/Cheong43/spwnr
+---
+
+# Spwnr Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: spwnr-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/Cheong43/spwnr
+---
+
+# Spwnr Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: spwnr-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/Cheong43/spwnr
+---
+
+# Spwnr Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: spwnr-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/Cheong43/spwnr
+---
+
+# Spwnr Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: spwnr-workflow-update-workflow-skill-and-documentation
+trigger: "when doing update workflow skill and documentation"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/Cheong43/spwnr
+---
+
+# Spwnr Workflow Update Workflow Skill And Documentation
+
+## Action
+
+Follow the update-workflow-skill-and-documentation workflow:
+1. Edit one or more SKILL.md files under skills/workflow-* or skills/using-spwnr-workflow/
+2. Update related documentation files (e.g., docs/guide/claude-plugin-workflow.md, README.md, commands/*.md)
+3. Modify or add tests to ensure compliance with new or updated skill structures
+4. Update plugin or package metadata if necessary
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: skills/workflow-*/SKILL.md, skills/using-spwnr-workflow/SKILL.md, docs/guide/claude-plugin-workflow.md
+
+---
+id: spwnr-instinct-camelcase-files
+trigger: "When creating or renaming a file in the codebase"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: Cheong43/spwnr
+---
+
+# Spwnr Instinct Camelcase Files
+
+## Action
+
+Name the file using camelCase format
+
+## Evidence
+
+- Pattern in namingConventions.files
+- Consistent file naming in skills/, commands/
+
+---
+id: spwnr-instinct-camelcase-functions
+trigger: "When defining a function"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: Cheong43/spwnr
+---
+
+# Spwnr Instinct Camelcase Functions
+
+## Action
+
+Name the function using camelCase format
+
+## Evidence
+
+- Pattern in namingConventions.functions
+- TypeScript code style settings
+
+---
+id: spwnr-instinct-pascalcase-classes
+trigger: "When defining a class"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: Cheong43/spwnr
+---
+
+# Spwnr Instinct Pascalcase Classes
+
+## Action
+
+Name the class using PascalCase format
+
+## Evidence
+
+- Pattern in namingConventions.classes
+- TypeScript code style settings
+
+---
+id: spwnr-instinct-screaming-constants
+trigger: "When defining a constant"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: Cheong43/spwnr
+---
+
+# Spwnr Instinct Screaming Constants
+
+## Action
+
+Name the constant using SCREAMING_SNAKE_CASE format
+
+## Evidence
+
+- Pattern in namingConventions.constants
+- TypeScript code style settings
+
+---
+id: spwnr-instinct-relative-imports
+trigger: "When importing modules within the repository"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: Cheong43/spwnr
+---
+
+# Spwnr Instinct Relative Imports
+
+## Action
+
+Use relative import paths
+
+## Evidence
+
+- Pattern in importStyle
+- TypeScript code style settings
+
+---
+id: spwnr-instinct-named-exports
+trigger: "When exporting modules or functions"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: Cheong43/spwnr
+---
+
+# Spwnr Instinct Named Exports
+
+## Action
+
+Use named exports instead of default exports
+
+## Evidence
+
+- Pattern in exportStyle
+- TypeScript code style settings
+
+---
+id: spwnr-instinct-separate-tests
+trigger: "When adding or updating tests"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: Cheong43/spwnr
+---
+
+# Spwnr Instinct Separate Tests
+
+## Action
+
+Place test files in the separate tests/ directory
+
+## Evidence
+
+- Pattern in architecture.folderStructure.testLocation
+- tests/ directory present
+
+---
+id: spwnr-instinct-update-tests-with-skills
+trigger: "When updating or refactoring a skill or workflow"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: Cheong43/spwnr
+---
+
+# Spwnr Instinct Update Tests With Skills
+
+## Action
+
+Modify or add tests to ensure compliance with new or updated skill structures
+
+## Evidence
+
+- Workflow: update-workflow-skill-and-documentation
+- tests/repo-plugin-smoke.test.ts updated with skills
+
+---
+id: spwnr-instinct-git-refactor-prefix
+trigger: "When making a commit that refactors code"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: Cheong43/spwnr
+---
+
+# Spwnr Instinct Git Refactor Prefix
+
+## Action
+
+Prefix the commit message with 'refactor:'
+
+## Evidence
+
+- Pattern in commits.prefixes
+- Examples: 'refactor: update plan file naming convention...'
+
+---
+id: spwnr-instinct-git-semver-bump
+trigger: "When releasing a new version"
+confidence: 0.8
+domain: git
+source: repo-analysis
+source_repo: Cheong43/spwnr
+---
+
+# Spwnr Instinct Git Semver Bump
+
+## Action
+
+Use a commit message like 'Bump to X.Y.Z' to indicate version changes
+
+## Evidence
+
+- Commit example: 'Bump to 0.2.0'
+
+---
+id: spwnr-instinct-update-workflow-skill-docs
+trigger: "When enhancing, refactoring, or clarifying workflow skills, protocols, or execution modes"
+confidence: 0.92
+domain: workflow
+source: repo-analysis
+source_repo: Cheong43/spwnr
+---
+
+# Spwnr Instinct Update Workflow Skill Docs
+
+## Action
+
+Edit SKILL.md files under skills/workflow-* or skills/using-spwnr-workflow/, update related documentation, modify/add tests, and update plugin/package metadata as needed
+
+## Evidence
+
+- Workflow: update-workflow-skill-and-documentation
+- Commit sequences and files involved as per workflow definition
+
