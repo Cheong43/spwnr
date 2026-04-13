@@ -167,7 +167,7 @@ export function makeResolveWorkersCommand(): Command {
       const registry = new RegistryService()
 
       try {
-        const { path: policyPath, policy } = loadWorkerPolicy()
+        const { path: policyPath, source: policySource, policy } = loadWorkerPolicy()
         const host = options.host as HostType
         const scope = options.scope as HostScope
         const limit = Math.max(1, Number.parseInt(options.limit, 10) || 8)
@@ -221,6 +221,7 @@ export function makeResolveWorkersCommand(): Command {
           host,
           scope,
           policyPath,
+          policySource,
           policy,
           candidates,
           unitCoverage,
@@ -235,7 +236,9 @@ export function makeResolveWorkersCommand(): Command {
           return
         }
 
-        console.log(`Dynamic worker policy: ${policyPath ?? 'default in-memory policy'}`)
+        console.log(
+          `Dynamic worker policy: ${policyPath ?? 'default dynamic policy (no .claude-plugin/workers.json)'}`,
+        )
         console.log(`Selection mode: ${policy.selectionMode}`)
         console.log(`Registry source: ${policy.registrySource}`)
         if (policy.preferredDomain) {

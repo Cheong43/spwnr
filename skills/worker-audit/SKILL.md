@@ -13,18 +13,20 @@ It is a health-check and recovery surface, not a prerequisite step for `/spwnr:t
 
 ## Required Checks
 
-1. Read `.claude-plugin/workers.json` with `Read`.
-2. Confirm the worker policy is in dynamic mode.
-3. Check project-scoped agents under `.claude/agents/`.
-4. Check user-scoped agents under `~/.claude/agents/`.
-5. Determine whether `spwnr` is available directly.
-6. If `spwnr` is not available directly, tell the user to install the published `spwnr-cli` package before continuing. Do not redirect them to local development commands.
-7. Check whether `vendor/spwnr-registry` exists in the current repository.
-8. Inspect the local Spwnr registry and determine whether published packages exist at all, and whether dynamic resolution is likely usable.
+1. Check whether `.claude-plugin/workers.json` exists.
+2. If it exists, read `.claude-plugin/workers.json` with `Read`. If it does not exist, treat the project as using the default dynamic worker policy.
+3. Confirm the worker policy is in dynamic mode. Missing config still means dynamic mode is active by default.
+4. Check project-scoped agents under `.claude/agents/`.
+5. Check user-scoped agents under `~/.claude/agents/`.
+6. Determine whether `spwnr` is available directly.
+7. If `spwnr` is not available directly, tell the user to install the published `spwnr-cli` package before continuing. Do not redirect them to local development commands.
+8. Check whether `vendor/spwnr-registry` exists in the current repository.
+9. Inspect the local Spwnr registry and determine whether published packages exist at all, and whether dynamic resolution is likely usable.
 
 ## Dynamic Readiness Rules
 
 - Treat the local Spwnr registry as the runtime source of truth.
+- Treat a missing `.claude-plugin/workers.json` as the built-in default dynamic policy, not as an unconfigured or disabled state.
 - Do not assume vendored templates are usable until they have been synced into the local registry.
 - Report already-injected project and user agents as current availability, not as the selection source of truth.
 - If the vendored registry exists but the local registry looks sparse or empty, call out that `sync-registry` is likely needed.
@@ -61,6 +63,7 @@ When a specific agent must be present immediately in Claude Code, prefer:
 ## Rules
 
 - Report whether dynamic selection is enabled and quote the key policy fields.
+- If `.claude-plugin/workers.json` is absent, explicitly say that dynamic selection is still enabled by default and note that the built-in defaults are `registrySource=local`, `selectionMethod=llm_choose`, `missingPolicy=auto_install_local`, and lineup `1-4`.
 - Report whether the local registry has enough published packages to support a useful candidate pool.
 - Report whether vendored registry content exists but still needs syncing.
 - If all readiness conditions are satisfied, say that the registry audit path is healthy and remind the user that `/spwnr:task` can resolve its lineup directly.

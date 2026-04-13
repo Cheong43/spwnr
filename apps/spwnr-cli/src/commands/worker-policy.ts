@@ -17,6 +17,7 @@ export interface DynamicWorkerPolicy {
 
 export interface LoadedWorkerPolicy {
   path: string | null
+  source: 'default' | 'file'
   policy: DynamicWorkerPolicy
 }
 
@@ -48,13 +49,18 @@ export function loadWorkerPolicy(cwd: string = process.cwd()): LoadedWorkerPolic
   const policyPath = resolve(cwd, '.claude-plugin', 'workers.json')
 
   if (!existsSync(policyPath)) {
-    return { path: null, policy: DEFAULT_POLICY }
+    return {
+      path: null,
+      source: 'default',
+      policy: DEFAULT_POLICY,
+    }
   }
 
   const raw = JSON.parse(readFileSync(policyPath, 'utf-8')) as Partial<DynamicWorkerPolicy>
 
   return {
     path: policyPath,
+    source: 'file',
     policy: {
       selectionMode: 'dynamic',
       registrySource: 'local',

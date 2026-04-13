@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Command } from 'commander'
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
@@ -148,6 +148,7 @@ describe('resolve-workers command', () => {
     }))
 
     const payload = JSON.parse(stdoutSpy.mock.calls.map(([value]) => String(value)).join(''))
+    expect(payload.policySource).toBe('file')
     expect(payload.policy.selectionMode).toBe('dynamic')
     expect(payload.policy.lineup).toEqual({
       minAgents: 1,
@@ -159,6 +160,40 @@ describe('resolve-workers command', () => {
     expect(payload.unitCoverage).toBeNull()
     expect(payload.missingMinimumSelection).toBe(true)
     expect(payload.selectionSource).toBe('none')
+  })
+
+  it('falls back to the default dynamic policy when .claude-plugin/workers.json is missing', async () => {
+    unlinkSync(resolve(tempDir, '.claude-plugin', 'workers.json'))
+
+    const stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    const program = new Command()
+    program.addCommand(makeResolveWorkersCommand())
+
+    await program.parseAsync([
+      'node',
+      'spwnr',
+      'resolve-workers',
+      '--search',
+      'Build a backend API',
+      '--host',
+      'claude_code',
+      '--format',
+      'json',
+    ])
+
+    const payload = JSON.parse(stdoutSpy.mock.calls.map(([value]) => String(value)).join(''))
+    expect(payload.policyPath).toBeNull()
+    expect(payload.policySource).toBe('default')
+    expect(payload.policy).toMatchObject({
+      selectionMode: 'dynamic',
+      registrySource: 'local',
+      selectionMethod: 'llm_choose',
+      missingPolicy: 'auto_install_local',
+      lineup: {
+        minAgents: 1,
+        maxAgents: 4,
+      },
+    })
   })
 
   it('injects only missing selected packages when --ensure is used', async () => {

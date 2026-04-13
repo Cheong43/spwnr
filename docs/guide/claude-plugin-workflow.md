@@ -39,7 +39,7 @@ The agents remain normal Spwnr subagent packages published into the local Spwnr 
 - `examples/general-executor`
 - `examples/general-reviewer`
 
-Dynamic selection can audit other published packages, including synced community templates, as long as they exist in the local registry and support `claude_code`.
+Dynamic selection can audit other published packages, including synced community templates, as long as they exist in the local registry and support `claude_code`. If `.claude-plugin/workers.json` is missing, the built-in default dynamic policy still remains active.
 
 `/spwnr:task` uses this same registry selection path directly during normal execution. If lineup resolution fails, `/spwnr:workers` becomes the required recovery step before execution should continue.
 
