@@ -35,7 +35,7 @@ Use it when:
 - Use `EnterWorktree` and `ExitWorktree` for `swarm` execution that writes repository state, and ask the user before any downgrade if worktree setup fails.
 - If registry resolution cannot satisfy the approved capability requirements, stop and direct the user to `/spwnr:workers` before retrying `/spwnr:task`.
 - If `TaskCreate` is blocked, repair the plan artifact or task metadata first and never continue by directly executing anyway.
-- High-risk execution units should carry explicit `Owner`, `Files`, `Claim-Policy`, `Heartbeat`, `Risk`, and `Plan-Approval` metadata so runtime hooks can enforce ownership boundaries and teammate mini-plan approval.
+- High-risk execution units should carry explicit `Owner`, `Files`, `Claim-Policy`, `Risk`, and `Plan-Approval` metadata so runtime hooks can enforce ownership boundaries and teammate mini-plan approval.
 - Keep superseded plan revisions and their tasks visible for audit, but treat only the latest active revision as eligible for execution or stop-hook blocking.
 - Use `worker-audit` as the primary skill behind `/spwnr:workers`.
 - `TeamCreate`, `TeamDelete`, and `SendMessage` require `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`; if teams are unavailable, `/spwnr:task` must say so explicitly instead of silently downgrading.

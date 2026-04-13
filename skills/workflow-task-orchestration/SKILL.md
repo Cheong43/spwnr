@@ -100,17 +100,12 @@ Every execution, integration, and review task description must include these exa
 
 - `Plan: <path>`
 - `Unit: <unit-id>`
-- `Depends-On: <csv or none>`
-- `Done: <done definition>`
-- `Capability: <capability or selected package>`
 - `Mode: <single-lane|team|swarm>`
 - `Worktree: <required|optional|not-required>`
-- `Approved Execution Spec: present`
 - `Blocked: no`
 - `Owner: <agent-name|controller|unassigned>`
 - `Files: <csv scope or none>`
 - `Claim-Policy: <assigned|self-claim>`
-- `Heartbeat: <interval>`
 - `Risk: <low|medium|high>`
 - `Plan-Approval: <not-required|required|approved>`
 

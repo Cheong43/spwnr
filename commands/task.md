@@ -20,7 +20,7 @@ Guardrails:
 - when multiple execution units exist, also resolve per-unit coverage with repeatable `--unit "<unit-id>::<brief>"` inputs and prefer the smallest lineup that still covers every unit
 - if registry resolution fails or the candidate pool cannot satisfy the required capabilities, stop immediately, do not create tasks or teams, and tell the user to run `/spwnr:workers` to install or inject the missing agents before returning to this same active revision
 - after the current-run execute choice, a successful registry resolution, and a persisted `Approved Execution Spec`, create a fresh task graph from the active revision with `TaskCreate`, validate it with `TaskGet` and `TaskList`, and keep it current with `TaskUpdate`
-- every task description must include `Plan`, `Unit`, `Depends-On`, `Done`, `Capability`, `Mode`, `Worktree`, `Approved Execution Spec`, `Blocked`, `Owner`, `Files`, `Claim-Policy`, `Heartbeat`, `Risk`, and `Plan-Approval`
+- every task description must include `Plan`, `Unit`, `Mode`, `Worktree`, `Blocked`, `Owner`, `Files`, `Claim-Policy`, `Risk`, and `Plan-Approval`
 - use `single-lane`, `team`, or `swarm` execution only after the current run has received `Execute current plan`
 - derive only the selected registry-backed agents with `Agent`
 - use `TeamCreate`, `SendMessage`, and `TeamDelete` only in `team` or `swarm` mode

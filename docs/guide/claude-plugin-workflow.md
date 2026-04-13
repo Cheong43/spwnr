@@ -121,7 +121,7 @@ After approval, `/spwnr:task` chooses an execution mode based on the plan:
 - The marketplace config is committed as static JSON in `.claude-plugin/marketplace.json`.
 - `.claude/plans/` is the runtime artifact directory for persisted workflow plan revisions and should not be committed.
 - `/spwnr:task` now runs on Claude-native `Read`, `Write`, `Edit`, `Agent`, `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `SendMessage`, `EnterWorktree`, `ExitWorktree`, and `TeamDelete`, with runtime agent selection coming from `resolve-workers`.
-- execution tasks should now carry `Owner`, `Files`, `Claim-Policy`, `Heartbeat`, `Risk`, and `Plan-Approval` fields so runtime hooks can enforce teammate boundaries and risky-unit approval gates.
+- execution tasks should now carry `Owner`, `Files`, `Claim-Policy`, `Risk`, and `Plan-Approval` fields so runtime hooks can enforce teammate boundaries and risky-unit approval gates.
 - The plugin can still auto-inject selected local packages for baseline flows, but already-injected project or user agents mainly improve `/spwnr:workers` audit visibility.
 - The local registry is the source of truth for runtime lineup selection. Vendored templates are not selectable there until `sync-registry` publishes them locally.
 - The execution permission signal is conversational and current-run only; the review loop choice `Execute current plan` unlocks delegation, while `Continue improving plan` keeps the controller in revision mode.

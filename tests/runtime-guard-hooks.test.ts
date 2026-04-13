@@ -67,17 +67,12 @@ afterEach(() => {
 const validTaskDescription = [
   'Plan: .claude/plans/spwnr-demo-2026-04-11.md',
   'Unit: unit-01',
-  'Depends-On: none',
-  'Done: implementation and tests complete',
-  'Capability: frontend-delivery',
   'Mode: team',
   'Worktree: not-required',
-  'Approved Execution Spec: present',
   'Blocked: no',
   'Owner: builder',
   'Files: src/app.tsx, src/app.test.tsx',
   'Claim-Policy: assigned',
-  'Heartbeat: 5m',
   'Risk: medium',
   'Plan-Approval: not-required',
 ].join('\n');
@@ -85,17 +80,12 @@ const validTaskDescription = [
 describe('runtime guard helpers', () => {
   it('detects missing task markers', () => {
     expect(missingTaskMarkers('Plan: x\nUnit: u1')).toEqual([
-      'Depends-On:',
-      'Done:',
-      'Capability:',
       'Mode:',
       'Worktree:',
-      'Approved Execution Spec:',
       'Blocked:',
       'Owner:',
       'Files:',
       'Claim-Policy:',
-      'Heartbeat:',
       'Risk:',
       'Plan-Approval:',
     ]);
@@ -112,7 +102,7 @@ describe('TaskCreated guard', () => {
 
     expect(result.exitCode).toBe(2);
     expect(result.stderr).toContain('Task creation blocked');
-    expect(result.stderr).toContain('Depends-On:');
+    expect(result.stderr).toContain('Mode:');
   });
 
   it('allows task creation when structured metadata is present', () => {
@@ -124,6 +114,29 @@ describe('TaskCreated guard', () => {
         hook_event_name: 'TaskCreated',
         task_subject: 'Execute unit-01',
         task_description: validTaskDescription,
+        cwd: dir,
+      }),
+    ).toEqual({ exitCode: 0 });
+  });
+
+  it('allows task creation when deprecated metadata is still present', () => {
+    const dir = makeTempDir();
+    writePlanArtifact(dir, buildPlanArtifactContents({}));
+
+    const legacyTaskDescription = [
+      validTaskDescription,
+      'Depends-On: none',
+      'Done: implementation and tests complete',
+      'Capability: frontend-delivery',
+      'Approved Execution Spec: present',
+      'Heartbeat: 5m',
+    ].join('\n');
+
+    expect(
+      evaluateTaskCreated({
+        hook_event_name: 'TaskCreated',
+        task_subject: 'Execute unit-01',
+        task_description: legacyTaskDescription,
         cwd: dir,
       }),
     ).toEqual({ exitCode: 0 });
@@ -338,6 +351,29 @@ describe('TaskCompleted guard', () => {
         hook_event_name: 'TaskCompleted',
         task_subject: 'Execute unit-01',
         task_description: validTaskDescription,
+        cwd: dir,
+      }),
+    ).toEqual({ exitCode: 0 });
+  });
+
+  it('allows completion when deprecated metadata is still present', () => {
+    const dir = makeTempDir();
+    writePlanArtifact(dir, buildPlanArtifactContents({}));
+
+    const legacyTaskDescription = [
+      validTaskDescription,
+      'Depends-On: none',
+      'Done: implementation and tests complete',
+      'Capability: frontend-delivery',
+      'Approved Execution Spec: present',
+      'Heartbeat: 5m',
+    ].join('\n');
+
+    expect(
+      evaluateTaskCompleted({
+        hook_event_name: 'TaskCompleted',
+        task_subject: 'Execute unit-01',
+        task_description: legacyTaskDescription,
         cwd: dir,
       }),
     ).toEqual({ exitCode: 0 });

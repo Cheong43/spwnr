@@ -5,17 +5,12 @@ import { join, resolve } from 'node:path';
 export const REQUIRED_TASK_MARKERS = [
   'Plan:',
   'Unit:',
-  'Depends-On:',
-  'Done:',
-  'Capability:',
   'Mode:',
   'Worktree:',
-  'Approved Execution Spec:',
   'Blocked:',
   'Owner:',
   'Files:',
   'Claim-Policy:',
-  'Heartbeat:',
   'Risk:',
   'Plan-Approval:',
 ];
@@ -26,7 +21,6 @@ const PLAN_APPROVAL_VALUES = new Set(['not-required', 'required', 'approved']);
 const MULTI_AGENT_MODES = new Set(['team', 'swarm']);
 const UNASSIGNED_OWNER_VALUES = new Set(['', 'unassigned', 'none', 'pool']);
 const NON_EXPLICIT_FILE_SCOPE_VALUES = new Set(['', 'none', 'unscoped']);
-const HEARTBEAT_VALUE_PATTERN = /^(?:[1-9]\d*)(?:s|m|h)?$/i;
 
 const RECENT_TEAM_SIGNAL_PATTERNS = [
   /\bTaskUpdate\b/,
@@ -101,7 +95,6 @@ function readTaskContract(description) {
     owner: unwrapMarkerValue(readMarkerValue(description, 'Owner:')),
     files: parseCsvMarkerValue(readMarkerValue(description, 'Files:')),
     claimPolicy: normalizeMarkerEnum(readMarkerValue(description, 'Claim-Policy:')),
-    heartbeat: unwrapMarkerValue(readMarkerValue(description, 'Heartbeat:')),
     risk: normalizeMarkerEnum(readMarkerValue(description, 'Risk:')),
     planApproval: normalizeMarkerEnum(readMarkerValue(description, 'Plan-Approval:')),
   };
@@ -137,10 +130,6 @@ function validateTaskContractMetadata(input, phase, env = process.env) {
 
   if (!PLAN_APPROVAL_VALUES.has(contract.planApproval)) {
     return 'Task metadata is invalid. `Plan-Approval:` must be `not-required`, `required`, or `approved`.';
-  }
-
-  if (!HEARTBEAT_VALUE_PATTERN.test(contract.heartbeat)) {
-    return 'Task metadata is invalid. `Heartbeat:` must be a positive interval such as `300s` or `5m`.';
   }
 
   const normalizedOwner = contract.owner.trim().toLowerCase();

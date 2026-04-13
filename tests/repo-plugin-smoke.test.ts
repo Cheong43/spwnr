@@ -297,9 +297,13 @@ describe('workflow docs', () => {
     expect(taskSkill).toContain('Owner: <agent-name|controller|unassigned>');
     expect(taskSkill).toContain('Files: <csv scope or none>');
     expect(taskSkill).toContain('Claim-Policy: <assigned|self-claim>');
-    expect(taskSkill).toContain('Heartbeat: <interval>');
     expect(taskSkill).toContain('Risk: <low|medium|high>');
     expect(taskSkill).toContain('Plan-Approval: <not-required|required|approved>');
+    expect(taskSkill).not.toContain('Depends-On: <csv or none>');
+    expect(taskSkill).not.toContain('Done: <done definition>');
+    expect(taskSkill).not.toContain('Capability: <capability or selected package>');
+    expect(taskSkill).not.toContain('Approved Execution Spec: present');
+    expect(taskSkill).not.toContain('Heartbeat: <interval>');
     expect(taskSkill).toContain('### Compatibility Matrix');
     expect(taskSkill).toContain('`Claim-Policy: assigned` -> `Owner` must be a concrete owner');
     expect(taskSkill).toContain('`Claim-Policy: self-claim` -> `Owner` must start as exactly `unassigned`');
@@ -351,7 +355,7 @@ describe('workflow docs', () => {
     expect(sessionStartHook).toContain('single-lane, team, or swarm');
     expect(sessionStartHook).toContain('worker-readiness recovery message');
     expect(sessionStartHook).toContain('Approved Execution Spec');
-    expect(sessionStartHook).toContain('Owner, Files, Claim-Policy, Heartbeat, Risk, and Plan-Approval');
+    expect(sessionStartHook).toContain('Owner, Files, Claim-Policy, Risk, and Plan-Approval');
     expect(sessionStartHook).toContain('--unit briefs');
     expect(sessionStartHook).toContain('latest active revision');
     expect(sessionStartHook).toContain('Execute current plan');

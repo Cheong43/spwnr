@@ -102,6 +102,50 @@ Typical output locations:
 - `copilot`: `.github/agents` or `~/.copilot/agents`
 - `opencode`: `.opencode/agents` or `~/.config/opencode/agents`
 
+## Use the Claude Code Plugin
+
+This repository also includes a Claude Code plugin that adds Spwnr workflow commands directly inside Claude Code.
+
+Install it in Claude Code:
+
+```text
+/plugin marketplace add Cheong43/spwnr
+/plugin install Cheong43@spwnr
+```
+
+If you want Claude Code to use multi-agent team features, enable them before launching Claude Code:
+
+```bash
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+```
+
+After the plugin is installed, you can use these commands inside Claude Code:
+
+- `/spwnr:plan`
+- `/spwnr:task`
+- `/spwnr:workers`
+
+What they are for:
+
+- `/spwnr:plan` helps you turn a request into a clear execution plan before doing the work.
+- `/spwnr:task` runs the approved work using the available Spwnr agents.
+- `/spwnr:workers` checks whether the local agent setup is healthy and helps recover when worker selection fails.
+
+Recommended usage inside Claude Code:
+
+1. Open your project in Claude Code.
+2. Run `/spwnr:plan` to clarify the goal and generate a plan.
+3. If the plan looks good, continue with `/spwnr:task`.
+4. If Claude cannot find suitable workers or your local setup looks incomplete, run `/spwnr:workers`.
+
+If you want fixed agents to be available in the current project right away, inject them first:
+
+```bash
+spwnr inject general-researcher --host claude_code --scope project
+spwnr inject general-executor --host claude_code --scope project
+spwnr inject general-reviewer --host claude_code --scope project
+```
+
 ## Preview a Session Payload
 
 If you want to inspect what Spwnr would hand to a host for one session, use `session`:
