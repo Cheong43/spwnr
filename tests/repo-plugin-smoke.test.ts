@@ -24,7 +24,7 @@ describe('repo-root Claude plugin', () => {
       hooks: './hooks/hooks.json',
     });
     expect(marketplace).toMatchObject({
-      name: 'spwnr-dev',
+      name: 'spwnr',
       plugins: [
         expect.objectContaining({
           name: 'spwnr',
@@ -122,7 +122,6 @@ describe('workflow docs', () => {
 
     for (const expectedSnippet of [
       'spwnr',
-      'spwnr-dev',
       '/spwnr:plan',
       '/spwnr:task',
       '/spwnr:workers',
@@ -161,7 +160,7 @@ describe('workflow docs', () => {
       'team',
       'swarm',
       'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1',
-      '/plugin install spwnr@spwnr-dev',
+      '/plugin install spwnr@spwnr',
       'claude --plugin-dir /absolute/path/to/spwnr',
     ]) {
       expect(combinedDocs).toContain(expectedSnippet);

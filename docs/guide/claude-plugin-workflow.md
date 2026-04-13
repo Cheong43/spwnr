@@ -49,7 +49,7 @@ Dynamic selection can audit other published packages, including synced community
 
 ```text
 /plugin marketplace add /absolute/path/to/spwnr
-/plugin install spwnr@spwnr-dev
+/plugin install spwnr@spwnr
 ```
 
 or for local development:
