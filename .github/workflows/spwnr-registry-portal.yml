@@ -9,8 +9,6 @@ on:
       - '.github/workflows/spwnr-registry-portal.yml'
       - 'scripts/build-registry-portal.mjs'
       - 'site/registry-portal/**'
-      - 'vendor/spwnr-registry'
-      - '.gitmodules'
 
 permissions:
   contents: read
@@ -27,9 +25,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-          submodules: recursive
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
