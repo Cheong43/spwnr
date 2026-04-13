@@ -9,8 +9,8 @@ Spwnr is an open-source toolkit for packaging, injecting, and orchestrating mult
 ```bash
 # Claude Code plugin install
 /plugin marketplace add Cheong43/spwnr
-/plugin install Cheong43@spwnr
-
+/plugin install spwnr@spwnr
+/reload-plugins
 # spwnr cli install
 npm i @spwnr/cli
 

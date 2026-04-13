@@ -15,6 +15,5 @@
     "agents",
     "tasks",
     "teams"
-  ],
-  "hooks": "./hooks/hooks.json"
+  ]
 }

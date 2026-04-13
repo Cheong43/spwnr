@@ -110,7 +110,7 @@ Install it in Claude Code:
 
 ```text
 /plugin marketplace add Cheong43/spwnr
-/plugin install Cheong43@spwnr
+/plugin install spwnr@spwnr
 ```
 
 If you want Claude Code to use multi-agent team features, enable them before launching Claude Code:

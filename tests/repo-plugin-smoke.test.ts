@@ -21,8 +21,8 @@ describe('repo-root Claude plugin', () => {
     expect(plugin).toMatchObject({
       name: 'spwnr',
       version: '0.1.0',
-      hooks: './hooks/hooks.json',
     });
+    expect(plugin).not.toHaveProperty('hooks');
     expect(marketplace).toMatchObject({
       name: 'spwnr',
       plugins: [
