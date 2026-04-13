@@ -263,4 +263,3 @@ SPWNR_HOME=/tmp/spwnr-demo spwnr session code-reviewer --host copilot --format s
 
 - [Getting Started](./docs/guide/getting-started.md)
 - [Claude Plugin Workflow](./docs/guide/claude-plugin-workflow.md)
-- [Archived PRD and TDD](./docs/archive/Spwnr-PRD-AND-TDD.md)

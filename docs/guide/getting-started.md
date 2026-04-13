@@ -1,332 +1,160 @@
 # Getting Started with Spwnr
 
-This guide walks through the current Spwnr product path: define an agent package, validate it, publish it to the local registry, then inject it into a host or compose a session descriptor.
+Spwnr helps you install ready-made agents into tools like Claude Code, Codex, Copilot, and OpenCode.
 
-Spwnr does not execute the agent for the host. Claude Code, Codex, Copilot, and OpenCode keep their own scheduling and runtime behavior.
+This guide is for people who want to use agents, not build them.
 
-## Prerequisites
+## Before You Start
 
 - Node.js 22+
 - pnpm 9+
-- Optional host CLIs only if you want to consume the generated assets immediately in those hosts
+- A supported host tool if you want to inject an agent right away
 
-## Install
-
-From the monorepo root:
+## Install the CLI
 
 ```bash
-pnpm install
-pnpm build
+npm i -g @spwnr/cli
+spwnr --help
 ```
 
-Use the CLI through the workspace script:
+If you prefer, you can also run the CLI without a global install:
 
 ```bash
-pnpm --filter @spwnr/cli dev -- --help
+npx @spwnr/cli --help
 ```
 
-## Available Commands
+## Load the Community Templates
 
-- `validate <dir>`: validate a package directory
-- `publish <dir>`: publish a package to the local registry
-- `install <name> [version]`: install a package from the local registry into `SPWNR_HOME`
-- `list|ls`: list published packages
-- `info <name> [version]`: show package metadata and host support
-- `inject <name> [version]`: write host-native static assets
-- `session <name> [version]`: compose a temporary session descriptor or shell snippet
-- `run <name> [version]`: deprecated; use `inject` or `session`
-
-## Package Structure
-
-The included example package lives at `examples/code-reviewer`:
-
-```text
-examples/code-reviewer/
-  subagent.yaml
-  agent.md
-  schemas/            # optional
-    input.schema.json
-    output.schema.json
-    memory.schema.json
-  skills/
-    universal/
-      diff-reader/
-        SKILL.md
-      repo-navigator/
-        SKILL.md
-    claude_code/
-      diff-reader/
-        SKILL.md
-    codex/
-      diff-reader/
-        SKILL.md
-```
-
-## Manifest Shape
-
-The mainline manifest is agent-first and injection-first:
-
-```yaml
-apiVersion: spwnr/v1
-kind: Subagent
-metadata:
-  name: code-reviewer
-  version: 0.1.0
-  instruction: Review git diffs and surface concrete, actionable issues.
-  description: Review git diff and produce actionable feedback
-  authors:
-    - name: Spwnr Team
-      github: Cheong43
-  license: MIT
-spec:
-  persona:
-    role: senior-code-reviewer
-    style: systematic
-    tone: concise
-  agent:
-    path: ./agent.md
-  schemas:
-    input: ./schemas/input.schema.json
-    output: ./schemas/output.schema.json
-    memory: ./schemas/memory.schema.json
-  injection:
-    hosts:
-      claude_code:
-        static:
-          enabled: true
-          defaultScope: project
-        session:
-          enabled: true
-          defaultScope: user
-      codex:
-        static:
-          enabled: true
-          defaultScope: project
-        session:
-          enabled: true
-          defaultScope: project
-  skills:
-    universal:
-      - name: diff-reader
-        path: ./skills/universal/diff-reader
-      - name: repo-navigator
-        path: ./skills/universal/repo-navigator
-    hosts:
-      claude_code:
-        - name: diff-reader
-          path: ./skills/claude_code/diff-reader
-      codex:
-        - name: diff-reader
-          path: ./skills/codex/diff-reader
-  compatibility:
-    hosts:
-      - claude_code
-      - codex
-      - copilot
-      - opencode
-  dependencies:
-    packages:
-      - ecosystem: binary
-        name: git
-      - ecosystem: npm
-        name: gh
-        versionRange: ^2.0.0
-```
-
-Notes:
-
-- `metadata.instruction` is required and must be between 1 and 400 Unicode characters.
-- `spec.agent.path` is required and points to the canonical `agent.md` prompt asset.
-- `spec.schemas` is optional. Declare only the schemas you actually ship.
-- `spec.injection.hosts` declares which hosts support static and session injection.
-- `spec.skills.universal` is the host-neutral baseline; `spec.skills.hosts.<host>` overrides same-named skills for that host.
-- Put host-specific tool binding notes directly inside the matching `SKILL.md` files instead of in structured manifest fields.
-- `metadata.authors` captures maintainers for registry presentation and review handoff.
-- `spec.dependencies.packages` captures structured dependency metadata for package consumers.
-- `compatibility.hosts` uses host names, not runtime names.
-
-## Validate
-
-Validate the example package:
+If you are using this repository, initialize the bundled registry first:
 
 ```bash
-pnpm --filter @spwnr/cli dev -- validate examples/code-reviewer
+git submodule update --init --recursive
 ```
 
-Strict validation also parses the referenced JSON schema files:
+Then sync the bundled templates into your local Spwnr library:
 
 ```bash
-pnpm --filter @spwnr/cli dev -- validate examples/code-reviewer --strict
+spwnr sync-registry
 ```
 
-Expected output:
+This copies the templates from `vendor/spwnr-registry` into your local Spwnr storage so you can browse and install them.
 
-```text
-✓ code-reviewer@0.1.0 is valid
-```
+## Browse What Is Available
 
-## Publish
-
-Publish the package to the local registry:
+List everything currently available in your local library:
 
 ```bash
-SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- publish examples/code-reviewer
+spwnr list
 ```
 
-Expected output:
-
-```text
-✓ Published code-reviewer@0.1.0
-  Signature: <hash>
-  Tarball: /tmp/spwnr-demo/tarballs/code-reviewer/0.1.0.tar.gz
-```
-
-## Inspect Published Packages
-
-List packages:
+Inspect one template before installing it:
 
 ```bash
-SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- list
+spwnr info code-reviewer
 ```
 
-Inspect package metadata and host support:
+`spwnr info` shows the template description, version, and which hosts it supports.
+
+## Install a Template Locally
+
+Install a template into your local Spwnr home:
 
 ```bash
-SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- info code-reviewer
+spwnr install code-reviewer
 ```
 
-Typical `info` output includes the host matrix:
+This stores the template under `~/.spwnr` so Spwnr can reuse it later.
 
-```text
-Name:      code-reviewer
-Version:   0.1.0
-Instruction: Review git diffs and surface concrete, actionable issues.
-Schemas:   input, output, memory
-Tarball:   /tmp/spwnr-demo/tarballs/code-reviewer/0.1.0.tar.gz
-Hosts:
-  claude_code: static(project), session(user)
-  codex: static(project), session(project)
-  copilot: static(project), session(user)
-  opencode: static(project), session(project)
-```
+## Add an Agent to Your Tool
 
-## Install Into Spwnr Home
+Use `inject` to write the host-native agent files for the tool you want to use.
 
-`install` extracts the published package into `SPWNR_HOME`:
+For Claude Code:
 
 ```bash
-SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- install code-reviewer
+spwnr inject code-reviewer --host claude_code --scope project
 ```
 
-This is useful when you want a local package copy under `~/.spwnr/packages/...`, but it is not the same thing as host injection.
-
-## Static Injection
-
-Use `inject` when you want Spwnr to write host-native files into a project or user scope.
-
-Claude Code example:
+For Codex:
 
 ```bash
-SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- inject code-reviewer --host claude_code --scope project
+spwnr inject code-reviewer --host codex --scope project
 ```
 
-This writes a markdown agent file under `.claude/agents/`.
-
-Codex example:
+For GitHub Copilot:
 
 ```bash
-SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- inject code-reviewer --host codex --scope project
+spwnr inject code-reviewer --host copilot --scope project
 ```
 
-This writes a Codex custom agent file under `.codex/agents/code-reviewer.toml`.
+For OpenCode:
 
-Host targets:
+```bash
+spwnr inject code-reviewer --host opencode --scope project
+```
+
+Project scope writes files into the current repository. User scope writes them into your home-level config for that host.
+
+Typical output locations:
 
 - `claude_code`: `.claude/agents` or `~/.claude/agents`
+- `codex`: `.codex/agents` or `~/.codex/agents`
 - `copilot`: `.github/agents` or `~/.copilot/agents`
 - `opencode`: `.opencode/agents` or `~/.config/opencode/agents`
-- `codex`: `.codex/agents` or `~/.codex/agents`
 
-You can override the output location with `--target <dir>`.
+## Preview a Session Payload
 
-## Session Composition
-
-Use `session` when you want temporary injection data for a single host session.
-
-Claude Code JSON bundle:
+If you want to inspect what Spwnr would hand to a host for one session, use `session`:
 
 ```bash
-SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- session code-reviewer --host claude_code --format json
+spwnr session code-reviewer --host claude_code --format json
 ```
 
-Copilot shell snippet:
+Or request shell output when the host supports it:
 
 ```bash
-SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- session code-reviewer --host copilot --format shell
+spwnr session code-reviewer --host copilot --format shell
 ```
 
-Current session outputs by host:
+This is useful for debugging or advanced workflows, but most users can stick with `inject`.
 
-- `claude_code`: JSON bundle compatible with `claude --agents`
-- `copilot`: temporary profile descriptor or shell snippet
-- `opencode`: overlay or descriptor JSON
-- `codex`: preview-only descriptor, not runtime execution
+## Change Where Spwnr Stores Data
 
-## Storage
+By default, Spwnr stores its local data in `~/.spwnr`.
 
-By default, Spwnr stores local data in `~/.spwnr`:
-
-- SQLite DB: `~/.spwnr/sqlite/spwnr.db`
-- Tarballs: `~/.spwnr/tarballs/<name>/<version>.tar.gz`
-- Installed packages: `~/.spwnr/packages/<name>/<version>`
-
-Override the storage root with `SPWNR_HOME`:
+To use a different location:
 
 ```bash
-SPWNR_HOME=/custom/path pnpm --filter @spwnr/cli dev -- list
+SPWNR_HOME=/custom/path spwnr list
 ```
 
-This rename is a hard cut. Spwnr does not read older names or older home directories.
+This is handy if you want separate sandboxes for testing.
 
-## Common Tasks
-
-Publish and inject in one isolated sandbox:
+## Typical First Run
 
 ```bash
-SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- publish examples/code-reviewer
-SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- inject code-reviewer --host opencode --scope project
-```
-
-Preview a Claude session payload:
-
-```bash
-SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- session code-reviewer --host claude_code --format json
-```
-
-Generate a Copilot shell snippet:
-
-```bash
-SPWNR_HOME=/tmp/spwnr-demo pnpm --filter @spwnr/cli dev -- session code-reviewer --host copilot --format shell
+git submodule update --init --recursive
+spwnr sync-registry
+spwnr list
+spwnr info code-reviewer
+spwnr install code-reviewer
+spwnr inject code-reviewer --host codex --scope project
 ```
 
 ## Troubleshooting
 
-`Cannot find module @spwnr/...`
-- Run `pnpm install` and `pnpm build` at the workspace root.
+`spwnr: command not found`
+- Reinstall with `npm i -g @spwnr/cli`, or run with `npx @spwnr/cli`.
+
+`No registry source found`
+- Run the command from this repository, or pass an explicit directory to `spwnr sync-registry <dir>`.
 
 `Package not found`
-- Publish it first with `publish <dir>`.
-- Confirm you are reading the expected registry by checking `SPWNR_HOME`.
+- Run `spwnr sync-registry` first, then check the package name with `spwnr list`.
 
 `Injection failed`
-- Check that the package declares the target host under `spec.compatibility.hosts`.
-- Check that `spec.injection.hosts.<host>` is enabled for the requested mode.
-
-`run` command no longer works
-- This is expected. `spwnr run` is deprecated and only remains as a pointer to `inject` and `session`.
+- Check the package details with `spwnr info <name>` and make sure your target host is listed.
 
 ## Next Reading
 
 - [Claude Plugin Workflow](./claude-plugin-workflow.md)
-- [Spwnr PRD and TDD](../archive/Spwnr-PRD-AND-TDD.md)
-- [Code reviewer example](../../examples/code-reviewer)
