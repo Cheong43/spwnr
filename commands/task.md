@@ -21,12 +21,10 @@ Guardrails:
 - if registry resolution fails or the candidate pool cannot satisfy the required capabilities, stop immediately, do not create tasks or teams, and tell the user to run `/spwnr:workers` to install or inject the missing agents before returning to this same active revision
 - after the current-run execute choice, a successful registry resolution, and a persisted `Approved Execution Spec`, create a fresh task graph from the active revision with `TaskCreate`, validate it with `TaskGet` and `TaskList`, and keep it current with `TaskUpdate`
 - every task description must include `Plan`, `Unit`, `Mode`, `Worktree`, `Blocked`, `Owner`, `Files`, `Claim-Policy`, `Risk`, and `Plan-Approval`
-- use `single-lane`, `team`, or `swarm` execution only after the current run has received `Execute current plan`
+- use `single-lane` or `team` execution only after the current run has received `Execute current plan`
 - derive only the selected registry-backed agents with `Agent`
-- use `TeamCreate`, `SendMessage`, and `TeamDelete` only in `team` or `swarm` mode
-- require `EnterWorktree` and `ExitWorktree` for `swarm`; `single-lane` does not require worktree by default
-- if `EnterWorktree` fails, stop and ask the user whether to downgrade instead of silently falling back
-- if agent teams are unavailable, treat `team` and `swarm` as unavailable and tell the user explicitly instead of silently downgrading
+- use `TeamCreate`, `SendMessage`, and `TeamDelete` only in `team` mode
+- if agent teams are unavailable, treat `team` as unavailable and tell the user explicitly instead of silently downgrading
 - always close the orchestration lifecycle with `TeamDelete` when a team was created
 - require `Plan-Approval: approved` before completing high-risk tasks
 - if `TaskCreate` fails, repair the plan artifact or task metadata first; never say you will directly execute anyway

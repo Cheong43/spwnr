@@ -1,6 +1,6 @@
 ---
 name: workflow-task-orchestration
-description: Use for /spwnr:task. Reuse the planning gate, require explicit execution approval, then orchestrate approved general-task work in single-lane, team, or swarm mode.
+description: Use for /spwnr:task. Reuse the planning gate, require explicit execution approval, then orchestrate approved general-task work in single-lane or team mode.
 ---
 
 # Workflow Task Orchestration
@@ -17,8 +17,7 @@ Use `worker-audit` only when the user explicitly needs a deeper registry readine
 - Use `Skill`, `AskUserQuestion`, `TodoWrite`, `Read`, `Write`, and `Edit` for the planning gate and plan maintenance.
 - Use `TaskCreate`, `TaskGet`, `TaskList`, and `TaskUpdate` only after the current run explicitly approves execution.
 - Resolve registry candidates with `spwnr resolve-workers --search "<keyword>" --host claude_code --format json`, plus repeatable `--unit "<unit-id>::<brief>"` queries for per-unit coverage when the plan has multiple execution units.
-- Use `TeamCreate`, `SendMessage`, and `TeamDelete` only in `team` or `swarm` mode.
-- Use `EnterWorktree` and `ExitWorktree` for `swarm` writes.
+- Use `TeamCreate`, `SendMessage`, and `TeamDelete` only in `team` mode.
 
 ## Planning Gate
 
@@ -35,9 +34,8 @@ Before any `TaskCreate`:
 1. Validate that the latest active revision contains executable `Execution Units`, `Environment And Preconditions`, `Execution Strategy Recommendation`, `Agent Capability Requirements`, and `Failure And Escalation Rules`.
 2. Produce a short plan summary, a normalized registry lookup brief, and one concise per-unit coverage brief for each execution unit.
 3. Resolve the candidate pool from the local registry. If multiple units exist, use per-unit coverage to prove the lineup that covers every execution unit.
-4. Choose the mode deliberately: default to `team` for bounded parallel units, `swarm` for coordinated shared-output passes, and `single-lane` only when the work is truly narrow or sequential.
-5. If `team` or `swarm` is required but `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is unavailable, stop and say so explicitly instead of silently downgrading.
-6. If `swarm` is selected and `EnterWorktree` fails, stop and ask the user whether to downgrade instead of silently switching modes.
+4. Choose the mode deliberately: default to `team`, and use `single-lane` only when the work is truly narrow or sequential.
+5. If `team` is required but `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is unavailable, stop and say so explicitly instead of silently downgrading.
 7. Append `Approved Execution Spec` to the active revision with `Edit`.
 
 ## Execution Task Contract
@@ -58,9 +56,8 @@ Before delegation, build an internal spec containing the plan artifact path, app
 ## Execution Mode Selection
 
 - `single-lane`: use one primary worker when coordination overhead would exceed the benefit; add a second worker only when it materially improves validation or synthesis.
-- `team`: use multiple bounded execution tasks, explicit ownership, and a shared queue; no-worktree multi-agent writes require explicit `Files:` boundaries.
-- `swarm`: use 2 to 30 coordinated work packages that contribute to the same shared output, and require each writing agent to enter an isolated worktree before mutating repository state.
-- Do not silently downgrade from `team` or `swarm` to `single-lane` when prerequisites fail.
+- `team`: this is the default mode. Use multiple bounded execution tasks, explicit ownership, and a shared queue; no-worktree multi-agent writes require explicit `Files:` boundaries.
+- Do not silently downgrade from `team` to `single-lane` when prerequisites fail.
 
 ## Failure Recovery Contract
 

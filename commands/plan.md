@@ -27,7 +27,7 @@ Guardrails:
 - if planning-time registry lookup cannot provide viable experts for any required role, stop with `Worker Readiness Required`, direct the user to `/spwnr:workers`, and preserve the same active revision
 - after each write or revision, immediately run the execution review loop with `AskUserQuestion`
 - when the user chooses `Execute current plan`, hand off to `workflow-task-orchestration` instead of asking for a separate `/spwnr:task`
-- never call `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `TeamDelete`, `EnterWorktree`, or `ExitWorktree` from this command
+- never call `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, or `TeamDelete` from this command
 - never call `SendMessage` from this command
 - never create tasks or teams from this command
 - never derive execution agents from this command

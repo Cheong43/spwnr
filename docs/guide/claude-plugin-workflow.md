@@ -21,10 +21,10 @@ The plugin coordinates a plan-first workflow:
 11. run the execution review loop after each successful write, asking whether to `Execute current plan`, `Continue improving plan`, or `End this round`
 12. if the current run receives `Execute current plan`, read the latest active revision with `Read`, validate executable `Execution Units`, append `Approved Execution Spec` with `Edit`, resolve a candidate pool with `resolve-workers`, resolve per-unit coverage when needed, and create a fresh task graph with `TaskCreate`
 13. validate the queue with `TaskGet` and `TaskList`
-14. build an orchestration spec and create a team with `TeamCreate` when `team` or `swarm` mode is required
+14. build an orchestration spec and create a team with `TeamCreate` when `team` mode is required
 15. derive only the selected registry-backed agents with `Agent`
-16. execute in `single-lane`, `team`, or worktree-isolated `swarm` mode
-17. update task state, escalate incidents with `SendMessage` when teams are active, enforce ownership plus risk metadata on tasks, record worktree paths plus selected package names, and tear down the team with `TaskUpdate`, `ExitWorktree`, and `TeamDelete`
+16. execute in `single-lane` or `team` mode
+17. update task state, escalate incidents with `SendMessage` when teams are active, enforce ownership plus risk metadata on tasks, record selected package names, and tear down the team with `TaskUpdate` and `TeamDelete`
 18. integrate the final answer
 
 The controller lives in the repo root under:
@@ -87,7 +87,7 @@ spwnr inject general-executor --host claude_code --scope project
 spwnr inject general-reviewer --host claude_code --scope project
 ```
 
-6. Enable agent teams if you want `team` or `swarm` mode:
+6. Enable agent teams if you want `team` mode:
 
 ```bash
 export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
@@ -108,9 +108,9 @@ export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 
 After approval, `/spwnr:task` chooses an execution mode based on the plan:
 
+- `team` as the default mode for non-trivial work
 - `single-lane` for mostly sequential work with one execution lane
 - `team` for multiple execution units coordinated through the shared task queue, especially when file ownership boundaries are explicit
-- `swarm` for multiple coordinated specialist passes on one shared output, and only when repository writes can be isolated with `EnterWorktree` / `ExitWorktree`
 
 ## What This Does Not Do
 
@@ -123,12 +123,12 @@ After approval, `/spwnr:task` chooses an execution mode based on the plan:
 
 - The marketplace config is committed as static JSON in `.claude-plugin/marketplace.json`.
 - `.claude/plans/` is the runtime artifact directory for persisted workflow plan revisions and should not be committed.
-- `/spwnr:task` now runs on Claude-native `Read`, `Write`, `Edit`, `Agent`, `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `SendMessage`, `EnterWorktree`, `ExitWorktree`, and `TeamDelete`, with runtime agent selection coming from `resolve-workers`.
+- `/spwnr:task` now runs on Claude-native `Read`, `Write`, `Edit`, `Agent`, `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `SendMessage`, and `TeamDelete`, with runtime agent selection coming from `resolve-workers`.
 - execution tasks should now carry `Owner`, `Files`, `Claim-Policy`, `Risk`, and `Plan-Approval` fields so runtime hooks can enforce teammate boundaries and risky-unit approval gates.
 - The plugin can still auto-inject selected local packages for baseline flows, but already-injected project or user agents mainly improve `/spwnr:workers` audit visibility.
 - The local registry is the source of truth for runtime lineup selection. Vendored templates are not selectable there until `sync-registry` publishes them locally.
 - The execution permission signal is conversational and current-run only; the review loop choice `Execute current plan` unlocks delegation, while `Continue improving plan` keeps the controller in revision mode.
 - Revision metadata should mark one latest active revision and preserve older plan revisions for audit with `Revision Status: superseded` plus `Superseded By` pointing at the replacement revision file.
 - Missing or weak candidate pools are treated as a worker readiness gap, not as a reason to improvise a fallback lineup.
-- If worktree setup fails for `swarm`, the controller should stop and ask before any downgrade instead of silently reverting to `single-lane`.
+- If `team` prerequisites fail, the controller should stop and ask before any downgrade instead of silently reverting to `single-lane`.
 - If `TaskCreate` is blocked, the controller should repair the plan artifact or task metadata and must not continue by directly executing anyway.

@@ -20,7 +20,7 @@ Use this skill as the shared ruleset behind Spwnr workflow planning and orchestr
 - Keep the work moving with a provisional default when the user has not chosen yet.
 - If the repository is empty or underspecified, propose sensible defaults and label them clearly.
 - During `/spwnr:plan`, a planning-only `Agent` pass is allowed only after a draft plan is visible and only for sequential expert `research`, `draft`, and `review` passes backed by registry preview.
-- Do not call `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `TeamDelete`, `SendMessage`, `EnterWorktree`, or `ExitWorktree` for non-trivial work until a draft plan is visible and the user has clearly approved it.
+- Do not call `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `TeamDelete`, or `SendMessage` for non-trivial work until a draft plan is visible and the user has clearly approved it.
 - Treat plan approval as thread-local and conversational. Clear approval signals include phrases like `continue`, `execute`, and `go ahead`.
 - Treat a material re-plan as any change to the goal, deliverable type, or execution-unit graph. Minor refinements stay in the same active revision; material re-plans create the next revision file and supersede the older revision.
 
@@ -90,7 +90,7 @@ Every execution, integration, and review task created with `TaskCreate` must inc
 
 - `Plan: <path>`
 - `Unit: <unit-id>`
-- `Mode: <single-lane|team|swarm>`
+- `Mode: <single-lane|team>`
 - `Worktree: <required|optional|not-required>`
 - `Blocked: no`
 - `Owner: <agent-name|controller|unassigned>`
