@@ -2,7 +2,7 @@
   <img src="./docs/assets/spwnr.png" alt="Spwnr logo" width="720" />
 </p>
 
-Spwnr is a multi-agent plugin for general tasks, currently supporting Claude Code.
+Spwnr is an open-source toolkit for packaging, injecting, and orchestrating multi-agent workers across coding hosts.Currently supporting Claude Code.
 
 ## Claude Code Quick Start
 
@@ -10,14 +10,24 @@ Spwnr is a multi-agent plugin for general tasks, currently supporting Claude Cod
 # Claude Code plugin install
 /plugin marketplace add Cheong43/spwnr
 /plugin install Cheong43@spwnr
+
 # spwnr cli install
 npm i @spwnr/cli
+
 # Edit Claude Code config on .Claude/setting.json
 "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": 1
 }
 # Or Edit the env
 export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+```
+
+then active the following command in your agent
+```bash
+/using-spwnr-workflow
+/spwnr:plan # write plan
+/spwnr:task # Orchestrate and implement plan in swarm/team/single-line mode
+/spwnr:worker # check subagent templates availability
 ```
 
 A usage walkthrough lives in [docs/guide/getting-started.md](./docs/guide/getting-started.md).
