@@ -59,9 +59,32 @@ Before delegation, build an internal spec containing the plan artifact path, app
 - `team`: this is the default mode. Use multiple bounded execution tasks, explicit ownership, and a shared queue; no-worktree multi-agent writes require explicit `Files:` boundaries.
 - Do not silently downgrade from `team` to `single-lane` when prerequisites fail.
 
+## Team Mode Subagent Obligations
+
+Every subagent invoked in `team` mode must follow these two non-negotiable contracts. Include both contracts verbatim in every agent brief alongside the Failure Recovery Contract.
+
+### Progress Sync Contract
+
+All progress of work must be synced with the team lead via `SendMessage`:
+
+- **On task start**: send the accepted work package, assigned unit, and first planned step.
+- **After each meaningful step**: send the completed step, its outcome, and the next planned step.
+- **On task completion**: send a final status summary listing all completed steps and the resulting outputs or artefacts.
+- **On any block or scope question**: send immediately as described in the Failure Recovery Contract below.
+
+Every sync message must include these fields: `unit`, `step`, `status` (one of `in_progress`, `step_done`, `complete`, or `blocked`), `summary`, and `next_step`. When `status` is `complete` or `blocked`, set `next_step` to `none`; when `status` is `in_progress` or `step_done`, `next_step` must name the upcoming step.
+
+### Local Storage Contract
+
+All work done must be stored locally before proceeding to the next step:
+
+- After every meaningful step, invoke `report_progress` to commit and persist completed changes.
+- Never accumulate multiple steps of uncommitted work; each step's output must be durable before the next step begins.
+- If `report_progress` fails, treat it as a blocking incident: stop all work, report the failure to the team lead via `SendMessage` with `status: blocked`, and do not continue until the team lead explicitly sends a recovery signal (such as `resume` or `retry`) confirming that local storage is stable.
+
 ## Failure Recovery Contract
 
-Every selected agent brief must include this failure contract:
+Every selected agent brief must include the Team Mode Subagent Obligations above and this failure contract:
 
 - if a permission denial, dependency gap, plan contradiction, or worktree failure appears, do not stop silently
 - attempt one plan-consistent fallback when that fallback does not change scope
@@ -93,3 +116,4 @@ The recovery steps must list the missing capabilities or packages, tell the user
 - Treat the plan file as the source of truth; later agents should not reconstruct it from chat alone.
 - Treat the registry candidate pool and per-unit coverage plan as the source of truth for lineup selection.
 - Tailor the output contract to the selected package's job.
+- In `team` mode, every subagent must satisfy both the Progress Sync Contract and the Local Storage Contract before proceeding to the next step; skipping either contract is not permitted.
