@@ -50,7 +50,7 @@ function buildPlanArtifactContents({
     '',
     ...unitIds.flatMap((unitId) => [`- **unit_id**: \`${unitId}\``, '']),
     includeApprovedExecutionSpec
-      ? ['## Approved Execution Spec', '', '- mode: single-lane', ''].join('\n')
+      ? ['## Approved Execution Spec', '', '- mode: pipeline', ''].join('\n')
       : ['## Plan Review Loop', '', '- latest decision: continue', ''].join('\n'),
   ]
     .filter(Boolean)
@@ -67,7 +67,7 @@ afterEach(() => {
 const validTaskDescription = [
   'Plan: .claude/plans/spwnr-demo-2026-04-11.md',
   'Unit: unit-01',
-  'Mode: team',
+  'Mode: pipeline',
   'Worktree: not-required',
   'Blocked: no',
   'Owner: builder',
@@ -114,6 +114,20 @@ describe('TaskCreated guard', () => {
         hook_event_name: 'TaskCreated',
         task_subject: 'Execute unit-01',
         task_description: validTaskDescription,
+        cwd: dir,
+      }),
+    ).toEqual({ exitCode: 0 });
+  });
+
+  it('allows task creation when legacy single-lane metadata is still present', () => {
+    const dir = makeTempDir();
+    writePlanArtifact(dir, buildPlanArtifactContents({}));
+
+    expect(
+      evaluateTaskCreated({
+        hook_event_name: 'TaskCreated',
+        task_subject: 'Execute unit-01',
+        task_description: validTaskDescription.replace('Mode: pipeline', 'Mode: single-lane'),
         cwd: dir,
       }),
     ).toEqual({ exitCode: 0 });
@@ -167,10 +181,9 @@ describe('TaskCreated guard', () => {
     const result = evaluateTaskCreated({
       hook_event_name: 'TaskCreated',
       task_subject: 'Execute unit-01',
-      task_description: validTaskDescription.replace(
-        'Files: src/app.tsx, src/app.test.tsx',
-        'Files: none',
-      ),
+      task_description: validTaskDescription
+        .replace('Mode: pipeline', 'Mode: team')
+        .replace('Files: src/app.tsx, src/app.test.tsx', 'Files: none'),
       cwd: dir,
     });
 
@@ -191,6 +204,7 @@ describe('TaskCreated guard', () => {
         id: '1',
         subject: 'Execute existing-unit',
         description: validTaskDescription
+          .replace('Mode: pipeline', 'Mode: team')
           .replace('Unit: unit-01', 'Unit: existing-unit')
           .replace('Owner: builder', 'Owner: reviewer'),
         status: 'in_progress',
@@ -201,7 +215,7 @@ describe('TaskCreated guard', () => {
       {
         hook_event_name: 'TaskCreated',
         task_subject: 'Execute unit-01',
-        task_description: validTaskDescription,
+        task_description: validTaskDescription.replace('Mode: pipeline', 'Mode: team'),
         session_id: 'session-1',
         cwd: workspace,
       },
@@ -351,6 +365,20 @@ describe('TaskCompleted guard', () => {
         hook_event_name: 'TaskCompleted',
         task_subject: 'Execute unit-01',
         task_description: validTaskDescription,
+        cwd: dir,
+      }),
+    ).toEqual({ exitCode: 0 });
+  });
+
+  it('allows completion when legacy single-lane metadata is still present', () => {
+    const dir = makeTempDir();
+    writePlanArtifact(dir, buildPlanArtifactContents({}));
+
+    expect(
+      evaluateTaskCompleted({
+        hook_event_name: 'TaskCompleted',
+        task_subject: 'Execute unit-01',
+        task_description: validTaskDescription.replace('Mode: pipeline', 'Mode: single-lane'),
         cwd: dir,
       }),
     ).toEqual({ exitCode: 0 });

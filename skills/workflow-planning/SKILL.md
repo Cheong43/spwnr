@@ -9,7 +9,7 @@ Use this skill when the user wants a scoped plan before substantial work begins.
 
 This skill owns the full planning behavior for `/spwnr:plan`.
 
-Use `workflow-foundation` as the shared source of truth for context inspection, plan artifact convention, execution unit schema, execution review loop, worker readiness required pattern, option-based clarification, and approach comparison. Keep planning-specific behavior here; do not duplicate shared controller rules.
+Use `workflow-foundation` as the shared source of truth for context inspection, plan artifact convention, execution strategy recommendation, execution unit schema, execution review loop, worker readiness required pattern, option-based clarification, and approach comparison. Keep planning-specific behavior here; do not duplicate shared controller rules.
 
 ## Planning Tool Protocol
 
@@ -43,6 +43,7 @@ Use `workflow-foundation` as the shared source of truth for context inspection, 
 ## Plan Readiness Gate
 
 Before the plan is ready, it must lock the goal, success criteria, scope boundaries, constraints, open risks, plan artifact path, executable `Execution Units`, environment and preconditions, execution strategy recommendation, agent capability requirements, failure and escalation rules, risky units that require teammate approval, and file ownership boundaries for multi-agent work.
+`Execution Strategy Recommendation` must choose `pipeline` or `team`, explain why, and describe the execution pattern shape. `pipeline` plans must persist the ordered stage pattern. `team` plans must say whether Claude team mode should launch multiple pipelines in parallel or stick to one shared queue.
 
 ## Plan Artifact Protocol
 
@@ -61,10 +62,11 @@ The plan artifact must contain these sections in order:
 9. `Pending Handoff Notes`
 
 `Detailed Plan` must include `Environment And Preconditions`, `Execution Strategy Recommendation`, `Agent Capability Requirements`, `Execution Units`, and `Failure And Escalation Rules`.
+`Execution Strategy Recommendation` must record the selected mode, rationale, and pattern shape. When `pipeline` is selected, include `pattern name`, ordered `stages`, and per-stage role handoff details. When `team` is selected, include whether the team should start multiple pipelines in parallel.
 
 `Expert Planning Round` must include `Retrieval Briefs`, `Selected Templates`, `Expert Role Mapping`, `Research Summary`, `Draft Plan Deltas`, `Review Findings`, and `Controller Synthesis`.
 
-Each `Execution Unit` must include the full schema from `workflow-foundation`, including `risk level`, `file ownership hints`, and `worker plan approval`.
+Each `Execution Unit` must include the full schema from `workflow-foundation`, including `risk level`, `file ownership hints`, `worker plan approval`, and a pipeline pattern reference or override.
 
 ## Planning Expert Loop
 
@@ -87,7 +89,7 @@ Apply the Execution Review Loop from `workflow-foundation` after every write or 
 
 ## Capability Guidance
 
-Recommend capability requirements by execution unit. For each unit, name the primary capability, any optional supporting trait, and why that capability is the best fit. Keep recommendations generic in `/spwnr:plan`; concrete runtime lineup selection belongs to approved `/spwnr:task` execution.
+Recommend capability requirements by execution unit. For each unit, name the primary capability, any optional supporting trait, and why that capability is the best fit. When `pipeline` is selected, also recommend capability requirements by stage. Keep recommendations generic in `/spwnr:plan`; concrete runtime lineup selection belongs to approved `/spwnr:task` execution.
 
 ## Response Shape
 

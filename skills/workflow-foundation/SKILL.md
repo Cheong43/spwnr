@@ -65,6 +65,17 @@ Use this skill as the shared ruleset behind Spwnr workflow planning and orchestr
 - Every plan artifact must include `Revision`, `Revision Status`, `Supersedes`, and `Superseded By`.
 - Superseded revisions and their tasks are audit-only.
 
+## Execution Strategy Recommendation Contract
+
+- Every ready plan must choose exactly one execution mode before approval: `pipeline` or `team`.
+- Record the selected mode, the rationale for that mode, and the execution pattern shape in `Execution Strategy Recommendation`.
+- If the selected mode is `pipeline`, also persist:
+  - `pattern name`
+  - ordered `stages`
+  - per stage: `stage_id`, `role`, `objective`, `inputs`, `expected output`, `acceptance check`, `preferred capability tags`, and `handoff target`
+- If the selected mode is `team`, say whether the plan should launch multiple bounded pipelines in parallel or run one shared queue without pipeline fanout.
+- `pipeline` must remain executable without Claude team features; `team` is the only mode that may require Claude team features.
+
 ## Execution Unit Schema
 
 Every `Execution Unit` in the plan artifact must include:
@@ -83,6 +94,7 @@ Every `Execution Unit` in the plan artifact must include:
 - `claim policy recommendation`
 - `heartbeat expectation`
 - `worker plan approval`
+- `pipeline pattern reference or override`
 
 ## Execution Task Contract
 
@@ -90,7 +102,7 @@ Every execution, integration, and review task created with `TaskCreate` must inc
 
 - `Plan: <path>`
 - `Unit: <unit-id>`
-- `Mode: <single-lane|team>`
+- `Mode: <pipeline|team>`
 - `Worktree: <required|optional|not-required>`
 - `Blocked: no`
 - `Owner: <agent-name|controller|unassigned>`
@@ -116,7 +128,7 @@ Before the first `TaskCreate`, the controller must check every draft task descri
 - `Risk` and `Plan-Approval` satisfy the compatibility matrix
 - multi-agent no-worktree tasks have explicit `Files:` ownership boundaries instead of `none`
 - high-risk units are already marked for worker plan approval before task creation
-- `single-lane` initial graphs default to `Owner: unassigned` plus `Claim-Policy: self-claim` unless the controller intentionally binds the task
+- `pipeline` initial graphs default to `Owner: unassigned` plus `Claim-Policy: self-claim` unless the controller intentionally binds the task
 
 ## Execution Review Loop
 

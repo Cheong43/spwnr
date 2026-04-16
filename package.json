@@ -1,7 +1,7 @@
 {
   "name": "spwnr",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Agent package registry and declarative host injection platform",
   "license": "MIT",
   "scripts": {

@@ -23,6 +23,7 @@ Guardrails:
 - add `Revision`, `Revision Status`, `Supersedes`, and `Superseded By` metadata to the plan artifact
 - include `Expert Planning Round` in the plan artifact and capture retrieval briefs, selected templates, role mapping, expert findings, and controller synthesis
 - include `Environment And Preconditions`, `Execution Strategy Recommendation`, `Agent Capability Requirements`, and `Failure And Escalation Rules` in the plan artifact
+- require `Execution Strategy Recommendation` to choose `pipeline` or `team`, justify that choice, and describe the execution pattern; if `pipeline` is chosen, persist the ordered stage pattern, and if `team` is chosen, note whether the plan should fan out multiple pipelines in parallel
 - include `Plan Review Loop` in the plan artifact and always echo the plan file path in the response so later agents can read the same artifact
 - if planning-time registry lookup cannot provide viable experts for any required role, stop with `Worker Readiness Required`, direct the user to `/spwnr:workers`, and preserve the same active revision
 - after each write or revision, immediately run the execution review loop with `AskUserQuestion`

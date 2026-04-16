@@ -7,7 +7,7 @@ description: Use the Spwnr Claude Code plugin as a controller for non-trivial ge
 
 This plugin is a controller, not the worker itself.
 
-`/spwnr:plan` and `/spwnr:task` rely on Claude-native planning plus Spwnr registry-guided agent selection. `/spwnr:workers` remains the deeper audit and recovery surface for local registry health, vendored template sync, and injected agent visibility.
+`/spwnr:plan` and `/spwnr:task` rely on Claude-native planning plus Spwnr registry-guided agent selection. `/spwnr:task` is a router that dispatches into `team` or `pipeline` execution after the plan locks the mode and pattern. `/spwnr:workers` remains the deeper audit and recovery surface for local registry health, vendored template sync, and injected agent visibility.
 
 These workflows are for general tasks such as research, analysis, writing, operations, and coding, not only software implementation.
 
@@ -30,12 +30,14 @@ Use it when:
 - Load planning behavior with `Skill`, ask structured follow-up questions with `AskUserQuestion`, track blockers with `TodoWrite`, inspect context with `Read`, persist the plan to the latest active revision under `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md` with `Write` or `Edit`, preview planning candidates with `resolve-workers`, and run a sequential planning expert loop with `Agent` for `research`, `draft`, and `review`.
 - If planning-time registry lookup cannot cover those expert roles, stop with `Worker Readiness Required`, direct the user to `/spwnr:workers`, and preserve the same active revision.
 - After every write or revision, `/spwnr:plan` should run the execution review loop with `AskUserQuestion`, using `Execute current plan`, `Continue improving plan`, and `End this round`. `Continue improving plan` keeps the work in the same active revision unless the request becomes a material re-plan, while `Execute current plan` hands off into `workflow-task-orchestration`.
-- Use `workflow-task-orchestration` as the primary skill behind `/spwnr:task`.
-- After the current run receives `Execute current plan`, read the latest active revision with `Read`, append the `Approved Execution Spec` with `Edit`, resolve registry candidates with `resolve-workers`, build per-unit coverage with repeatable `--unit "<unit-id>::<brief>"` inputs when needed, create a fresh task graph with `TaskCreate`, validate it with `TaskGet` and `TaskList`, keep it current with `TaskUpdate`, orchestrate `single-lane` or `team` execution, derive the selected agents with `Agent`, and clean up with `TeamDelete` when a team was created.
+- Use `workflow-task-orchestration` as the routing skill behind `/spwnr:task`.
+- Planning must choose `pipeline` or `team`, explain why, and persist the execution pattern. `pipeline` plans must record ordered stage handoffs. `team` plans may note that Claude team mode should start multiple pipelines in parallel.
+- After the current run receives `Execute current plan`, read the latest active revision with `Read`, append the `Approved Execution Spec` with `Edit`, resolve registry candidates with `resolve-workers`, build per-unit coverage with repeatable `--unit "<unit-id>::<brief>"` inputs when needed, and route to `workflow-task-with-pipeline` or `workflow-task-with-team`.
 - Use `SendMessage` for incident escalation or lead redirection in `team` mode.
 - If registry resolution cannot satisfy the approved capability requirements, stop and direct the user to `/spwnr:workers` before retrying `/spwnr:task`.
 - If `TaskCreate` is blocked, repair the plan artifact or task metadata first and never continue by directly executing anyway.
 - High-risk execution units should carry explicit `Owner`, `Files`, `Claim-Policy`, `Risk`, and `Plan-Approval` metadata so runtime hooks can enforce ownership boundaries and teammate mini-plan approval.
 - Keep superseded plan revisions and their tasks visible for audit, but treat only the latest active revision as eligible for execution or stop-hook blocking.
 - Use `worker-audit` as the primary skill behind `/spwnr:workers`.
-- `TeamCreate`, `TeamDelete`, and `SendMessage` require `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`; if teams are unavailable, `/spwnr:task` must say so explicitly instead of silently downgrading.
+- `pipeline` does not require `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`.
+- `TeamCreate`, `TeamDelete`, and `SendMessage` require `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`; if teams are unavailable, `/spwnr:task` must say so explicitly instead of silently downgrading a `team` plan.
