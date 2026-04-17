@@ -135,6 +135,10 @@ describe('repo-root Claude plugin', () => {
       type: 'git',
       url: 'git+https://github.com/Cheong43/spwnr-registry.git',
     });
+    expect(registryPackage.publishConfig).toMatchObject({
+      access: 'public',
+      provenance: true,
+    });
   });
 
   it('includes the expected plugin structure files', () => {
