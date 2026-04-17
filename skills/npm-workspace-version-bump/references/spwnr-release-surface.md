@@ -29,9 +29,10 @@ At the time this skill was created, the publish script only releases:
 - `@spwnr/core-types`
 - `@spwnr/adapters`
 - `@spwnr/manifest-schema`
-- `@spwnr/registry`
 - `@spwnr/injector`
 - `@spwnr/cli`
+
+`@spwnr/registry` is published from `Cheong43/spwnr-registry`, not from this main repo workflow.
 
 `@spwnr/broker`, `@spwnr/memory`, and `@spwnr/policy` may still be version-aligned in the repo even if they are not part of the current npm publish script.
 

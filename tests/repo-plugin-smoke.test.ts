@@ -112,7 +112,6 @@ describe('repo-root Claude plugin', () => {
       'packages/core-types/package.json',
       'packages/injector/package.json',
       'packages/manifest-schema/package.json',
-      'packages/registry/package.json',
     ];
 
     for (const packageJsonPath of publishedPackagePaths) {
@@ -122,6 +121,14 @@ describe('repo-root Claude plugin', () => {
         url: 'git+https://github.com/Cheong43/spwnr.git',
       });
     }
+  });
+
+  it('keeps the standalone registry package pointed at its own canonical repository', () => {
+    const registryPackage = readJson('packages/registry/package.json');
+    expect(registryPackage.repository).toMatchObject({
+      type: 'git',
+      url: 'git+https://github.com/Cheong43/spwnr-registry.git',
+    });
   });
 
   it('includes the expected plugin structure files', () => {
