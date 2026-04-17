@@ -121,6 +121,7 @@ describe('repo-root Claude plugin', () => {
         type: 'git',
         url: 'git+https://github.com/Cheong43/spwnr.git',
       });
+      expect(packageJson.provenance).toBe(true);
       if (packageJson.publishConfig) {
         expect(packageJson.publishConfig).toMatchObject({
           access: 'public',
@@ -140,12 +141,14 @@ describe('repo-root Claude plugin', () => {
       access: 'public',
       provenance: true,
     });
+    expect(registryPackage.provenance).toBe(true);
 
     const templateRegistryPackagePath = resolve(repoRoot, 'vendor/spwnr-registry/package.json');
     if (existsSync(templateRegistryPackagePath)) {
       const templateRegistryPackage = readJson('vendor/spwnr-registry/package.json');
       expect(templateRegistryPackage).toMatchObject({
         name: 'spwnr-registry',
+        provenance: true,
         repository: {
           type: 'git',
           url: 'git+https://github.com/Cheong43/spwnr-registry.git',

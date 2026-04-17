@@ -12,6 +12,7 @@
   "engines": {
     "node": ">=22.0.0"
   },
+  "provenance": true,
   "scripts": {
     "build": "pnpm -r --workspace-concurrency=1 build",
     "build:registry-portal": "node ./scripts/build-registry-portal.mjs",

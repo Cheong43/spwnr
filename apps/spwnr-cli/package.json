@@ -9,6 +9,7 @@
   "engines": {
     "node": ">=22.0.0"
   },
+  "provenance": true,
   "bin": {
     "spwnr": "./dist/cli.js"
   },
