@@ -4,6 +4,7 @@
   "version": "0.3.0",
   "description": "Agent package registry and declarative host injection platform",
   "license": "MIT",
+  "packageManager": "pnpm@9.15.9",
   "engines": {
     "node": ">=22.0.0"
   },
