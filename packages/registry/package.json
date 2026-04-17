@@ -2,6 +2,10 @@
   "name": "@spwnr/registry",
   "version": "0.3.0",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Cheong43/spwnr.git"
+  },
   "engines": {
     "node": ">=22.0.0"
   },

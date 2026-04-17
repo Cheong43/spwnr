@@ -4,6 +4,10 @@
   "version": "0.3.0",
   "description": "Agent package registry and declarative host injection platform",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Cheong43/spwnr.git"
+  },
   "packageManager": "pnpm@9.15.9",
   "engines": {
     "node": ">=22.0.0"

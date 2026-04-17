@@ -104,6 +104,26 @@ describe('repo-root Claude plugin', () => {
     expect(cliTsconfig.compilerOptions).not.toHaveProperty('ignoreDeprecations');
   });
 
+  it('declares the GitHub repository URL on every published package', () => {
+    const publishedPackagePaths = [
+      'package.json',
+      'apps/spwnr-cli/package.json',
+      'packages/adapters/package.json',
+      'packages/core-types/package.json',
+      'packages/injector/package.json',
+      'packages/manifest-schema/package.json',
+      'packages/registry/package.json',
+    ];
+
+    for (const packageJsonPath of publishedPackagePaths) {
+      const packageJson = readJson(packageJsonPath);
+      expect(packageJson.repository).toMatchObject({
+        type: 'git',
+        url: 'git+https://github.com/Cheong43/spwnr.git',
+      });
+    }
+  });
+
   it('includes the expected plugin structure files', () => {
     const requiredPaths = [
       '.claude-plugin/plugin.json',
