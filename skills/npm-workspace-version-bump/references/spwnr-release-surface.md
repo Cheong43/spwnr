@@ -24,15 +24,16 @@ Read these files before assuming a package will be published:
 - `.github/workflows/publish-npm.yml`
 - `scripts/publish-public-packages.mjs`
 
-At the time this skill was created, the publish script only releases:
+At the time this skill was created, the publish script releases:
 
 - `@spwnr/core-types`
 - `@spwnr/adapters`
 - `@spwnr/manifest-schema`
+- `@spwnr/registry`
 - `@spwnr/injector`
 - `@spwnr/cli`
 
-`@spwnr/registry` is published from `Cheong43/spwnr-registry`, not from this main repo workflow.
+The `vendor/spwnr-registry` submodule is a separate template registry package and should not publish over the runtime `@spwnr/registry` package name.
 
 `@spwnr/broker`, `@spwnr/memory`, and `@spwnr/policy` may still be version-aligned in the repo even if they are not part of the current npm publish script.
 

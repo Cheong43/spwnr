@@ -112,6 +112,7 @@ describe('repo-root Claude plugin', () => {
       'packages/core-types/package.json',
       'packages/injector/package.json',
       'packages/manifest-schema/package.json',
+      'packages/registry/package.json',
     ];
 
     for (const packageJsonPath of publishedPackagePaths) {
@@ -129,16 +130,37 @@ describe('repo-root Claude plugin', () => {
     }
   });
 
-  it('keeps the standalone registry package pointed at its own canonical repository', () => {
+  it('keeps the template registry submodule package distinct from the runtime npm package', () => {
     const registryPackage = readJson('packages/registry/package.json');
     expect(registryPackage.repository).toMatchObject({
       type: 'git',
-      url: 'git+https://github.com/Cheong43/spwnr-registry.git',
+      url: 'git+https://github.com/Cheong43/spwnr.git',
     });
     expect(registryPackage.publishConfig).toMatchObject({
       access: 'public',
       provenance: true,
     });
+
+    const templateRegistryPackage = readJson('vendor/spwnr-registry/package.json');
+    expect(templateRegistryPackage).toMatchObject({
+      name: 'spwnr-registry',
+      repository: {
+        type: 'git',
+        url: 'git+https://github.com/Cheong43/spwnr-registry.git',
+      },
+      publishConfig: {
+        access: 'public',
+        provenance: true,
+      },
+    });
+    expect(templateRegistryPackage.name).not.toBe(registryPackage.name);
+  });
+
+  it('publishes the runtime registry package from the main workspace publish script', () => {
+    const publishScript = readFileSync(resolve(repoRoot, 'scripts/publish-public-packages.mjs'), 'utf-8');
+
+    expect(publishScript).toContain("'packages/registry/package.json'");
+    expect(publishScript).not.toContain("'vendor/spwnr-registry/package.json'");
   });
 
   it('includes the expected plugin structure files', () => {
@@ -543,15 +565,16 @@ describe('workflow docs', () => {
     expect(countLines(taskPipelineSkill)).toBeLessThanOrEqual(200);
   });
 
-  it('keeps npm publishing scoped to the main repo package set and blocks unresolved external workspace deps', () => {
+  it('keeps npm publishing scoped to the main repo runtime package set and blocks unresolved external workspace deps', () => {
     const publishScript = readFileSync(resolve(repoRoot, 'scripts/publish-public-packages.mjs'), 'utf-8');
 
     expect(publishScript).toContain("'packages/core-types/package.json'");
     expect(publishScript).toContain("'packages/adapters/package.json'");
     expect(publishScript).toContain("'packages/manifest-schema/package.json'");
+    expect(publishScript).toContain("'packages/registry/package.json'");
     expect(publishScript).toContain("'packages/injector/package.json'");
     expect(publishScript).toContain("'apps/spwnr-cli/package.json'");
-    expect(publishScript).not.toContain("const publishManifestPaths = [\n  'packages/core-types/package.json',\n  'packages/adapters/package.json',\n  'packages/manifest-schema/package.json',\n  'packages/registry/package.json'");
+    expect(publishScript).not.toContain("'vendor/spwnr-registry/package.json'");
     expect(publishScript).toContain('Refusing to publish because some external workspace dependencies are not published yet.');
     expect(publishScript).toContain('Publishing the dependent packages now would create installable metadata that users cannot resolve from npm.');
   });
