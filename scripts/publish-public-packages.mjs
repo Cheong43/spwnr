@@ -7,7 +7,19 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, '..');
 const dryRun = process.argv.includes('--dry-run');
 
-const manifestPaths = [
+const workspaceManifestPaths = [
+  'packages/core-types/package.json',
+  'packages/adapters/package.json',
+  'packages/manifest-schema/package.json',
+  'packages/registry/package.json',
+  'packages/injector/package.json',
+  'apps/spwnr-cli/package.json',
+  'packages/broker/package.json',
+  'packages/memory/package.json',
+  'packages/policy/package.json',
+];
+
+const publishManifestPaths = [
   'packages/core-types/package.json',
   'packages/adapters/package.json',
   'packages/manifest-schema/package.json',
@@ -78,6 +90,37 @@ function topoSort(packages) {
   return sorted;
 }
 
+function findExternalWorkspaceDeps(pkg, workspacePackages, publishablePackageNames) {
+  return Object.entries(pkg.manifest.dependencies ?? {})
+    .filter(([name, version]) =>
+      typeof version === 'string'
+      && version.startsWith('workspace:')
+      && workspacePackages.has(name)
+      && !publishablePackageNames.has(name),
+    )
+    .map(([name]) => {
+      const dependency = workspacePackages.get(name);
+      return {
+        name,
+        version: dependency.version,
+      };
+    });
+}
+
+function formatExternalDependencyFailure(missingDeps) {
+  const lines = [
+    'Refusing to publish because some external workspace dependencies are not published yet.',
+    'Publishing the dependent packages now would create installable metadata that users cannot resolve from npm.',
+    'Publish these packages first from their canonical repositories, then retry:',
+  ];
+
+  for (const entry of missingDeps) {
+    lines.push(`- ${entry.dependentPackage} requires ${entry.name}@${entry.version}`);
+  }
+
+  return lines.join('\n');
+}
+
 function formatPublishFailure(pkg, error) {
   const stderr = error.stderr?.toString() ?? '';
   const stdout = error.stdout?.toString() ?? '';
@@ -106,10 +149,22 @@ function formatPublishFailure(pkg, error) {
   return `Failed to publish ${pkg.name}@${pkg.version}.\n${stderr || stdout || error.message}`;
 }
 
-const packages = manifestPaths
-  .map((relativePath) => {
+const workspacePackages = new Map(
+  workspaceManifestPaths.map((relativePath) => {
     const manifestPath = join(repoRoot, relativePath);
     const manifest = readJson(manifestPath);
+    return [manifest.name, {
+      name: manifest.name,
+      version: manifest.version,
+      manifest,
+      relativePath,
+    }];
+  })
+);
+
+const packages = publishManifestPaths
+  .map((relativePath) => {
+    const manifest = workspacePackages.get(readJson(join(repoRoot, relativePath)).name).manifest;
     return {
       name: manifest.name,
       version: manifest.version,
@@ -122,9 +177,22 @@ const packages = manifestPaths
 const workspaceNames = new Set(packages.map((pkg) => pkg.name));
 for (const pkg of packages) {
   pkg.workspaceDeps = getWorkspaceDeps(pkg.manifest, workspaceNames);
+  pkg.externalWorkspaceDeps = findExternalWorkspaceDeps(pkg, workspacePackages, workspaceNames);
 }
 
 const publishOrder = topoSort(packages);
+const missingExternalDeps = publishOrder.flatMap((pkg) =>
+  pkg.externalWorkspaceDeps
+    .filter((dependency) => !npmVersionExists(dependency.name, dependency.version))
+    .map((dependency) => ({
+      dependentPackage: pkg.name,
+      ...dependency,
+    }))
+);
+
+if (missingExternalDeps.length > 0) {
+  throw new Error(formatExternalDependencyFailure(missingExternalDeps));
+}
 
 console.log(`Resolved ${publishOrder.length} publishable workspace packages.`);
 for (const pkg of publishOrder) {
