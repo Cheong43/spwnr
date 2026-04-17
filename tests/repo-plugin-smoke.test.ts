@@ -116,6 +116,7 @@ describe('repo-root Claude plugin', () => {
       'hooks/session-start',
       'hooks/runtime-guard.mjs',
       'hooks/lib/runtime-guard.mjs',
+      'skills/npm-workspace-version-bump/SKILL.md',
       'skills/workflow-foundation/SKILL.md',
       'skills/workflow-planning/SKILL.md',
       'skills/workflow-task-orchestration/SKILL.md',
