@@ -79,6 +79,34 @@ function topoSort(packages) {
   return sorted;
 }
 
+function formatPublishFailure(pkg, error) {
+  const stderr = error.stderr?.toString() ?? '';
+  const stdout = error.stdout?.toString() ?? '';
+  const combined = `${stdout}\n${stderr}`;
+
+  if (combined.includes('E404') || combined.includes('is not in this registry')) {
+    return [
+      `Failed to publish ${pkg.name}@${pkg.version}. npm returned E404 during publish.`,
+      'This usually means the npm-side publish relationship is still missing, not that the tarball is malformed.',
+      'Check these items on npm before retrying:',
+      `- Configure Trusted Publisher for ${pkg.name} specifically. Trusted publishing is package-scoped, not repo-scoped.`,
+      `- If ${pkg.name} has never existed on npm, bootstrap the first publish with a traditional npm publisher account or token, then attach Trusted Publisher afterward.`,
+      `- If ${pkg.name} was fully unpublished recently, npm blocks republishing that package name for 24 hours.`,
+      `- Ensure the npm scope for ${pkg.name} exists and is owned by the account or organization that manages the package.`,
+      `- Ensure package.json repository.url exactly matches the GitHub repo configured in Trusted Publisher.`,
+    ].join('\n');
+  }
+
+  if (combined.includes('ENEEDAUTH') || combined.includes('Unable to authenticate')) {
+    return [
+      `Failed to publish ${pkg.name}@${pkg.version}. npm could not authenticate the publish request.`,
+      'For Trusted Publisher, verify the workflow file name, GitHub repo, package-level publisher config, and id-token: write permission.',
+    ].join('\n');
+  }
+
+  return `Failed to publish ${pkg.name}@${pkg.version}.\n${stderr || stdout || error.message}`;
+}
+
 const packages = manifestPaths
   .map((relativePath) => {
     const manifestPath = join(repoRoot, relativePath);
@@ -113,13 +141,17 @@ for (const pkg of publishOrder) {
   }
 
   console.log(`- ${pkg.name}@${pkg.version}: publishing`);
-  execFileSync(
-    'pnpm',
-    ['--filter', pkg.name, 'publish', '--access', pkg.access, '--no-git-checks', '--provenance'],
-    {
-      cwd: repoRoot,
-      stdio: 'inherit',
-      env: process.env,
-    }
-  );
+  try {
+    execFileSync(
+      'pnpm',
+      ['--filter', pkg.name, 'publish', '--access', pkg.access, '--no-git-checks', '--provenance'],
+      {
+        cwd: repoRoot,
+        stdio: 'inherit',
+        env: process.env,
+      }
+    );
+  } catch (error) {
+    throw new Error(formatPublishFailure(pkg, error));
+  }
 }
