@@ -141,19 +141,27 @@ describe('repo-root Claude plugin', () => {
       provenance: true,
     });
 
-    const templateRegistryPackage = readJson('vendor/spwnr-registry/package.json');
-    expect(templateRegistryPackage).toMatchObject({
-      name: 'spwnr-registry',
-      repository: {
-        type: 'git',
-        url: 'git+https://github.com/Cheong43/spwnr-registry.git',
-      },
-      publishConfig: {
-        access: 'public',
-        provenance: true,
-      },
-    });
-    expect(templateRegistryPackage.name).not.toBe(registryPackage.name);
+    const templateRegistryPackagePath = resolve(repoRoot, 'vendor/spwnr-registry/package.json');
+    if (existsSync(templateRegistryPackagePath)) {
+      const templateRegistryPackage = readJson('vendor/spwnr-registry/package.json');
+      expect(templateRegistryPackage).toMatchObject({
+        name: 'spwnr-registry',
+        repository: {
+          type: 'git',
+          url: 'git+https://github.com/Cheong43/spwnr-registry.git',
+        },
+        publishConfig: {
+          access: 'public',
+          provenance: true,
+        },
+      });
+      expect(templateRegistryPackage.name).not.toBe(registryPackage.name);
+      return;
+    }
+
+    const gitmodules = readFileSync(resolve(repoRoot, '.gitmodules'), 'utf-8');
+    expect(gitmodules).toContain('[submodule "vendor/spwnr-registry"]');
+    expect(gitmodules).toContain('url = https://github.com/Cheong43/spwnr-registry.git');
   });
 
   it('publishes the runtime registry package from the main workspace publish script', () => {
