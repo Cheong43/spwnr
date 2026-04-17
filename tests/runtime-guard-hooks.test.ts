@@ -34,10 +34,12 @@ function buildPlanArtifactContents({
   revisionStatus,
   unitIds = ['unit-01'],
   includeApprovedExecutionSpec = true,
+  approvedExecutionSpecHeading = '## Approved Execution Spec',
 }: {
   revisionStatus?: 'active' | 'superseded';
   unitIds?: string[];
   includeApprovedExecutionSpec?: boolean;
+  approvedExecutionSpecHeading?: string;
 }) {
   return [
     '# Metadata',
@@ -50,7 +52,7 @@ function buildPlanArtifactContents({
     '',
     ...unitIds.flatMap((unitId) => [`- **unit_id**: \`${unitId}\``, '']),
     includeApprovedExecutionSpec
-      ? ['## Approved Execution Spec', '', '- mode: pipeline', ''].join('\n')
+      ? [approvedExecutionSpecHeading, '', '- mode: pipeline', ''].join('\n')
       : ['## Plan Review Loop', '', '- latest decision: continue', ''].join('\n'),
   ]
     .filter(Boolean)
@@ -260,6 +262,25 @@ describe('TaskCreated guard', () => {
     expect(result.exitCode).toBe(2);
     expect(result.stderr).toContain('Approved Execution Spec');
     expect(result.stderr).toContain('referenced plan artifact');
+  });
+
+  it('allows task creation when Approved Execution Spec uses a numbered heading', () => {
+    const dir = makeTempDir();
+    writePlanArtifact(
+      dir,
+      buildPlanArtifactContents({
+        approvedExecutionSpecHeading: '## 10. Approved Execution Spec',
+      }),
+    );
+
+    expect(
+      evaluateTaskCreated({
+        hook_event_name: 'TaskCreated',
+        task_subject: 'Execute unit-01',
+        task_description: validTaskDescription,
+        cwd: dir,
+      }),
+    ).toEqual({ exitCode: 0 });
   });
 
   it('blocks task creation when the referenced plan revision is superseded', () => {

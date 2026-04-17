@@ -97,6 +97,19 @@ function deriveSelectionFromCoverage(coverage: WorkerCoveragePlanResult | null):
   return coverage.recommendedSelection.map((entry) => entry.agentName)
 }
 
+function deriveSelectionFromCandidates(
+  candidates: Array<{ agentName: string }>,
+  options: {
+    minAgents: number
+    maxAgents: number
+  },
+): string[] {
+  const limit = Math.max(options.minAgents, 1)
+  return candidates
+    .slice(0, Math.min(limit, options.maxAgents))
+    .map((candidate) => candidate.agentName)
+}
+
 async function ensureSelectedPackages(
   registry: RegistryService,
   selected: string[],
@@ -187,15 +200,26 @@ export function makeResolveWorkersCommand(): Command {
             })
           : null
         const explicitSelection = parseSelectedPackages(options.select)
+        const coverageSelection = deriveSelectionFromCoverage(unitCoverage)
+        const candidateSelection = options.ensure
+          ? deriveSelectionFromCandidates(candidates, {
+              minAgents: policy.lineup.minAgents,
+              maxAgents: policy.lineup.maxAgents,
+            })
+          : []
         const selected = explicitSelection.length > 0
           ? explicitSelection
-          : options.ensure
-            ? deriveSelectionFromCoverage(unitCoverage)
+          : coverageSelection.length > 0
+            ? coverageSelection
+            : options.ensure
+              ? candidateSelection
             : []
         const selectionSource = explicitSelection.length > 0
           ? 'explicit'
-          : selected.length > 0
+          : coverageSelection.length > 0
             ? 'coverage-recommendation'
+            : selected.length > 0
+              ? 'candidate-pool'
             : 'none'
 
         if (selected.length > policy.lineup.maxAgents) {

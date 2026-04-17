@@ -205,7 +205,7 @@ function resolvePlanArtifactPathFromValue(planPathValue, input = {}) {
 }
 
 function planContainsApprovedExecutionSpec(planContents) {
-  return /^#+\s+Approved Execution Spec\b/m.test(planContents);
+  return /^#+\s+(?:\d+(?:\.\d+)*\.?\s+)?Approved Execution Spec\b/m.test(planContents);
 }
 
 function extractTaskUnits(description) {

@@ -241,6 +241,40 @@ describe('resolve-workers command', () => {
     expect(payload.selectionSource).toBe('explicit')
   })
 
+  it('auto-selects the top candidate for --ensure when no explicit or coverage selection is provided', async () => {
+    const stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    const program = new Command()
+    program.addCommand(makeResolveWorkersCommand())
+
+    await program.parseAsync([
+      'node',
+      'spwnr',
+      'resolve-workers',
+      '--search',
+      'Build a backend API',
+      '--host',
+      'claude_code',
+      '--format',
+      'json',
+      '--ensure',
+    ])
+
+    expect(injectStaticMock).toHaveBeenCalledTimes(1)
+    expect(injectStaticMock).toHaveBeenCalledWith(expect.objectContaining({
+      packageName: 'api-architect',
+      host: 'claude_code',
+      scope: 'project',
+    }))
+
+    const payload = JSON.parse(stdoutSpy.mock.calls.map(([value]) => String(value)).join(''))
+    expect(payload.selected).toEqual(['api-architect'])
+    expect(payload.ensured).toEqual([
+      expect.objectContaining({ name: 'api-architect', status: 'injected' }),
+    ])
+    expect(payload.selectionSource).toBe('candidate-pool')
+    expect(payload.missingMinimumSelection).toBe(false)
+  })
+
   it('builds a per-unit coverage plan and can auto-select that recommendation for --ensure', async () => {
     const stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
     buildCoveragePlanMock.mockReturnValue({
