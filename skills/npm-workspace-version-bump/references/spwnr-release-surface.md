@@ -34,7 +34,7 @@ At the time this skill was created, the publish script releases:
 
 `@spwnr/registry` is published from `Cheong43/spwnr-registry`, not from this main repo workflow.
 
-The `vendor/spwnr-registry` submodule is a separate template registry package and should not publish over the runtime `@spwnr/registry` package name.
+The `vendor/spwnr-registry` submodule tracks that canonical external registry package and may also carry template-site assets used by the repo.
 
 `@spwnr/broker`, `@spwnr/memory`, and `@spwnr/policy` may still be version-aligned in the repo even if they are not part of the current npm publish script.
 

@@ -130,7 +130,7 @@ describe('repo-root Claude plugin', () => {
     }
   });
 
-  it('keeps the template registry submodule package distinct from the runtime npm package', () => {
+  it('keeps the external registry submodule aligned with the canonical runtime package', () => {
     const registryPackage = readJson('packages/registry/package.json');
     expect(registryPackage.repository).toMatchObject({
       type: 'git',
@@ -146,7 +146,7 @@ describe('repo-root Claude plugin', () => {
     if (existsSync(templateRegistryPackagePath)) {
       const templateRegistryPackage = readJson('vendor/spwnr-registry/package.json');
       expect(templateRegistryPackage).toMatchObject({
-        name: 'spwnr-registry',
+        name: '@spwnr/registry',
         provenance: true,
         repository: {
           type: 'git',
@@ -157,7 +157,7 @@ describe('repo-root Claude plugin', () => {
           provenance: true,
         },
       });
-      expect(templateRegistryPackage.name).not.toBe(registryPackage.name);
+      expect(templateRegistryPackage.name).toBe(registryPackage.name);
       return;
     }
 
