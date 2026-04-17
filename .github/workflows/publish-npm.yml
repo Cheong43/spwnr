@@ -38,7 +38,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: 22.14.0
+          node-version: 24.x
           registry-url: https://registry.npmjs.org
 
       - name: Setup pnpm
@@ -57,3 +57,5 @@ jobs:
 
       - name: Publish missing versions
         run: node ./scripts/publish-public-packages.mjs
+        env:
+          NPM_CONFIG_PROVENANCE: true

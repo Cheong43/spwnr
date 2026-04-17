@@ -120,6 +120,12 @@ describe('repo-root Claude plugin', () => {
         type: 'git',
         url: 'git+https://github.com/Cheong43/spwnr.git',
       });
+      if (packageJson.publishConfig) {
+        expect(packageJson.publishConfig).toMatchObject({
+          access: 'public',
+          provenance: true,
+        });
+      }
     }
   });
 
