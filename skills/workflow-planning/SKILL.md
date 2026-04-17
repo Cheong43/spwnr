@@ -44,6 +44,7 @@ Use `workflow-foundation` as the shared source of truth for context inspection, 
 
 Before the plan is ready, it must lock the goal, success criteria, scope boundaries, constraints, open risks, plan artifact path, executable `Execution Units`, environment and preconditions, execution strategy recommendation, agent capability requirements, failure and escalation rules, risky units that require teammate approval, and file ownership boundaries for multi-agent work.
 `Execution Strategy Recommendation` must choose `pipeline` or `team`, explain why, and describe the execution pattern shape. `pipeline` plans must persist the ordered stage pattern. `team` plans must say whether Claude team mode should launch multiple pipelines in parallel or stick to one shared queue.
+When `team` is selected, default the plan toward units that do not edit the same file in parallel. If shared-file collaboration is truly required, record that as an exception and state the isolation or serialization strategy explicitly.
 
 ## Plan Artifact Protocol
 
@@ -63,6 +64,7 @@ The plan artifact must contain these sections in order:
 
 `Detailed Plan` must include `Environment And Preconditions`, `Execution Strategy Recommendation`, `Agent Capability Requirements`, `Execution Units`, and `Failure And Escalation Rules`.
 `Execution Strategy Recommendation` must record the selected mode, rationale, and pattern shape. When `pipeline` is selected, include `pattern name`, ordered `stages`, and per-stage role handoff details. When `team` is selected, include whether the team should start multiple pipelines in parallel.
+When `team` is selected, also state whether parallel units have disjoint file ownership by default, or whether a shared-file exception is intentionally required.
 
 `Expert Planning Round` must include `Retrieval Briefs`, `Selected Templates`, `Expert Role Mapping`, `Research Summary`, `Draft Plan Deltas`, `Review Findings`, and `Controller Synthesis`.
 

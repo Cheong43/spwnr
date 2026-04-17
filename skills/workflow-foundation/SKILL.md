@@ -74,6 +74,8 @@ Use this skill as the shared ruleset behind Spwnr workflow planning and orchestr
   - ordered `stages`
   - per stage: `stage_id`, `role`, `objective`, `inputs`, `expected output`, `acceptance check`, `preferred capability tags`, and `handoff target`
 - If the selected mode is `team`, say whether the plan should launch multiple bounded pipelines in parallel or run one shared queue without pipeline fanout.
+- `team` plans should default to parallel units that own disjoint files or disjoint worktree roots; do not default to multiple teammates editing the same file in parallel.
+- Preserve shared-file team execution as an explicit exception only when the plan records why file-level decomposition is not viable and how ownership will be isolated or serialized.
 - `pipeline` must remain executable without Claude team features; `team` is the only mode that may require Claude team features.
 
 ## Execution Unit Schema
@@ -126,7 +128,9 @@ Before the first `TaskCreate`, the controller must check every draft task descri
 - every required marker is present exactly once with a concrete value
 - `Owner` and `Claim-Policy` satisfy the compatibility matrix
 - `Risk` and `Plan-Approval` satisfy the compatibility matrix
+- `team` graphs default to disjoint `Files:` ownership across concurrent tasks instead of overlapping claims on one file
 - multi-agent no-worktree tasks have explicit `Files:` ownership boundaries instead of `none`
+- any shared-file exception is documented in the plan and uses either worktree isolation or one concrete owner controlling the shared file
 - high-risk units are already marked for worker plan approval before task creation
 - `pipeline` initial graphs default to `Owner: unassigned` plus `Claim-Policy: self-claim` unless the controller intentionally binds the task
 

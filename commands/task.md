@@ -23,6 +23,7 @@ Guardrails:
 - after the current-run execute choice, a successful registry resolution, and a persisted `Approved Execution Spec`, route to `workflow-task-with-pipeline` or `workflow-task-with-team` based on the selected mode in the active revision
 - the routed execution skill is responsible for creating the fresh task graph with `TaskCreate`, validating it with `TaskGet` and `TaskList`, and keeping it current with `TaskUpdate`
 - every task description must include `Plan`, `Unit`, `Mode`, `Worktree`, `Blocked`, `Owner`, `Files`, `Claim-Policy`, `Risk`, and `Plan-Approval`
+- in `team` mode, prefer task graphs where parallel tasks do not edit the same file; keep shared-file execution only as an explicit exception with documented isolation or serialization
 - use `pipeline` or `team` execution only after the current run has received `Execute current plan`
 - derive only the selected registry-backed agents with `Agent`
 - use `TeamCreate`, `SendMessage`, and `TeamDelete` only when the routed execution skill requires Claude team features

@@ -358,4 +358,45 @@ describe('resolve-workers command', () => {
       uncoveredUnitIds: [],
     })
   })
+
+  it('forwards preferredDomain from workers.json into search and coverage planning', async () => {
+    writeFileSync(
+      resolve(tempDir, '.claude-plugin', 'workers.json'),
+      JSON.stringify({
+        selectionMode: 'dynamic',
+        registrySource: 'local',
+        selectionMethod: 'llm_choose',
+        missingPolicy: 'auto_install_local',
+        preferredDomain: 'Develop',
+        lineup: {
+          minAgents: 1,
+          maxAgents: 4,
+        },
+      }),
+    )
+
+    const program = new Command()
+    program.addCommand(makeResolveWorkersCommand())
+
+    await program.parseAsync([
+      'node',
+      'spwnr',
+      'resolve-workers',
+      '--search',
+      'Implement and validate a backend API',
+      '--host',
+      'claude_code',
+      '--format',
+      'json',
+      '--unit',
+      'build-api::Implement the backend API',
+    ])
+
+    expect(searchPackagesMock).toHaveBeenCalledWith(expect.objectContaining({
+      domain: 'Develop',
+    }))
+    expect(buildCoveragePlanMock).toHaveBeenCalledWith(expect.objectContaining({
+      preferredDomain: 'Develop',
+    }))
+  })
 })

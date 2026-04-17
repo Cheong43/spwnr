@@ -1,5 +1,6 @@
 export {
   validateManifest,
+  parseManifest,
   SubagentManifestSchema,
   type ValidationResult,
   type ValidationError,

@@ -32,11 +32,12 @@ Use it when:
 - After every write or revision, `/spwnr:plan` should run the execution review loop with `AskUserQuestion`, using `Execute current plan`, `Continue improving plan`, and `End this round`. `Continue improving plan` keeps the work in the same active revision unless the request becomes a material re-plan, while `Execute current plan` hands off into `workflow-task-orchestration`.
 - Use `workflow-task-orchestration` as the routing skill behind `/spwnr:task`.
 - Planning must choose `pipeline` or `team`, explain why, and persist the execution pattern. `pipeline` plans must record ordered stage handoffs. `team` plans may note that Claude team mode should start multiple pipelines in parallel.
+- In `team` mode, naturally prefer plans where parallel units do not edit the same file. Keep shared-file execution available only as an explicit exception with a documented isolation or serialization strategy.
 - After the current run receives `Execute current plan`, read the latest active revision with `Read`, append the `Approved Execution Spec` with `Edit`, resolve registry candidates with `resolve-workers`, build per-unit coverage with repeatable `--unit "<unit-id>::<brief>"` inputs when needed, and route to `workflow-task-with-pipeline` or `workflow-task-with-team`.
 - Use `SendMessage` for incident escalation or lead redirection in `team` mode.
 - If registry resolution cannot satisfy the approved capability requirements, stop and direct the user to `/spwnr:workers` before retrying `/spwnr:task`.
 - If `TaskCreate` is blocked, repair the plan artifact or task metadata first and never continue by directly executing anyway.
-- High-risk execution units should carry explicit `Owner`, `Files`, `Claim-Policy`, `Risk`, and `Plan-Approval` metadata so runtime hooks can enforce ownership boundaries and teammate mini-plan approval.
+- Every execution task should carry explicit `Plan`, `Unit`, `Mode`, `Worktree`, `Blocked`, `Owner`, `Files`, `Claim-Policy`, `Risk`, and `Plan-Approval` metadata because runtime hooks require those exact fields.
 - Keep superseded plan revisions and their tasks visible for audit, but treat only the latest active revision as eligible for execution or stop-hook blocking.
 - Use `worker-audit` as the primary skill behind `/spwnr:workers`.
 - `pipeline` does not require `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`.

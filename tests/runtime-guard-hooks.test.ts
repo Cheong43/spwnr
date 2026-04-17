@@ -231,6 +231,40 @@ describe('TaskCreated guard', () => {
     expect(result.stderr).toContain('src/app.tsx');
   });
 
+  it('ignores the current task mirror when conflict detection reads session task state', () => {
+    const claudeHome = makeTempDir();
+    const taskDir = join(claudeHome, 'tasks', 'session-1');
+    const workspace = makeTempDir();
+    const currentTaskDescription = validTaskDescription.replace('Mode: pipeline', 'Mode: team');
+
+    mkdirSync(taskDir, { recursive: true });
+    writePlanArtifact(workspace, buildPlanArtifactContents({}));
+    writeFileSync(
+      join(taskDir, '6.json'),
+      JSON.stringify({
+        id: '6',
+        subject: 'Execute unit-01',
+        description: currentTaskDescription,
+        status: 'pending',
+      }),
+    );
+
+    expect(
+      evaluateTaskCreated(
+        {
+          hook_event_name: 'TaskCreated',
+          task_subject: 'Execute unit-01',
+          task_description: currentTaskDescription,
+          session_id: 'session-1',
+          cwd: workspace,
+        },
+        {
+          CLAUDE_HOME: claudeHome,
+        },
+      ),
+    ).toEqual({ exitCode: 0 });
+  });
+
   it('accepts backtick-wrapped relative plan paths in task metadata', () => {
     const dir = makeTempDir();
     writePlanArtifact(dir, buildPlanArtifactContents({}));

@@ -2,6 +2,9 @@
   "name": "@spwnr/registry",
   "version": "0.1.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -31,7 +34,7 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.8",
     "@types/tar": "^6.1.13",
-    "typescript": "^5.4.0",
+    "typescript": "^5.9.3",
     "vitest": "^2.0.0"
   }
 }

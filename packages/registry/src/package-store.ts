@@ -2,6 +2,7 @@ import type Database from 'better-sqlite3'
 import { randomUUID } from 'crypto'
 import { SpwnrError, ErrorCodes } from '@spwnr/core-types'
 import type { SubagentManifest } from '@spwnr/core-types'
+import { parseManifest } from '@spwnr/manifest-schema'
 
 export interface PackageRow {
   id: string
@@ -41,6 +42,10 @@ export interface PackageSearchRow {
 interface LatestPackageVersionRecord {
   packageName: string
   versionRow: PackageVersionRow
+}
+
+function parseStoredManifest(manifestJson: string): SubagentManifest {
+  return parseManifest(JSON.parse(manifestJson))
 }
 
 export class PackageStore {
@@ -283,7 +288,7 @@ export class PackageStore {
     versionRow: PackageVersionRow,
     packageName?: string,
   ): void {
-    const manifest = JSON.parse(versionRow.manifest_json) as SubagentManifest
+    const manifest = parseStoredManifest(versionRow.manifest_json)
     const agentName = packageName ?? manifest.metadata.name
     const instruction = manifest.metadata.instruction
     const description = manifest.metadata.description ?? ''

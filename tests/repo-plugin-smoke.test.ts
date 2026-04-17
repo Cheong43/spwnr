@@ -37,6 +37,9 @@ describe('repo-root Claude plugin', () => {
     expect(repoPackage).toMatchObject({
       name: 'spwnr',
       version: '0.3.0',
+      engines: {
+        node: '>=22.0.0',
+      },
     });
     expect(workers).toMatchObject({
       selectionMode: 'dynamic',
@@ -62,6 +65,43 @@ describe('repo-root Claude plugin', () => {
         Stop: [expect.any(Object)],
       },
     });
+  });
+
+  it('pins the workspace TypeScript and package engines to the Node 22 / TS 5.9 baseline', () => {
+    const packageJsonPaths = [
+      'package.json',
+      'apps/spwnr-cli/package.json',
+      'packages/adapters/package.json',
+      'packages/broker/package.json',
+      'packages/core-types/package.json',
+      'packages/injector/package.json',
+      'packages/manifest-schema/package.json',
+      'packages/memory/package.json',
+      'packages/policy/package.json',
+      'packages/registry/package.json',
+    ];
+
+    for (const packageJsonPath of packageJsonPaths) {
+      const packageJson = readJson(packageJsonPath);
+      expect(packageJson.engines).toMatchObject({
+        node: '>=22.0.0',
+      });
+
+      if (packageJson.devDependencies?.typescript) {
+        expect(packageJson.devDependencies.typescript).toBe('^5.9.3');
+      }
+    }
+
+    const baseTsconfig = readJson('tsconfig.base.json');
+    expect(baseTsconfig.compilerOptions).toMatchObject({
+      verbatimModuleSyntax: true,
+      noUncheckedIndexedAccess: true,
+      exactOptionalPropertyTypes: true,
+      skipLibCheck: true,
+    });
+
+    const cliTsconfig = readJson('apps/spwnr-cli/tsconfig.json');
+    expect(cliTsconfig.compilerOptions).not.toHaveProperty('ignoreDeprecations');
   });
 
   it('includes the expected plugin structure files', () => {
@@ -325,6 +365,7 @@ describe('workflow docs', () => {
     expect(taskTeamSkill).toContain('TeamDelete');
     expect(taskTeamSkill).toContain('multiple bounded pipelines in parallel');
     expect(taskTeamSkill).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
+    expect(taskTeamSkill).toContain('parallel teammates do not edit the same file');
     expect(taskTeamSkill).toContain('High-risk tasks must not complete while `Plan-Approval:` is still `required`.');
     expect(taskTeamSkill).not.toContain('`parallel`');
 
@@ -344,6 +385,7 @@ describe('workflow docs', () => {
     expect(foundationSkill).toContain('## Execution Strategy Recommendation Contract');
     expect(foundationSkill).toContain('pattern name');
     expect(foundationSkill).toContain('multiple bounded pipelines in parallel');
+    expect(foundationSkill).toContain('do not default to multiple teammates editing the same file in parallel');
     expect(foundationSkill).toContain('Owner: <agent-name|controller|unassigned>');
     expect(foundationSkill).toContain('Files: <csv scope or none>');
     expect(foundationSkill).toContain('Claim-Policy: <assigned|self-claim>');
@@ -379,6 +421,7 @@ describe('workflow docs', () => {
     expect(workflowSkill).toContain('Execute current plan');
     expect(workflowSkill).toContain('Owner');
     expect(workflowSkill).toContain('Plan-Approval');
+    expect(workflowSkill).toContain('Every execution task should carry explicit `Plan`, `Unit`, `Mode`, `Worktree`, `Blocked`, `Owner`, `Files`, `Claim-Policy`, `Risk`, and `Plan-Approval` metadata');
     expect(workflowSkill).not.toContain('`parallel`');
 
     expect(sessionStartHook).toContain('/spwnr:plan');
@@ -403,9 +446,10 @@ describe('workflow docs', () => {
     expect(sessionStartHook).toContain('workflow-task-with-team');
     expect(sessionStartHook).toContain('pipeline');
     expect(sessionStartHook).toContain('multiple pipelines in parallel');
+    expect(sessionStartHook).toContain('parallel units do not edit the same file');
     expect(sessionStartHook).toContain('worker-readiness recovery message');
     expect(sessionStartHook).toContain('Approved Execution Spec');
-    expect(sessionStartHook).toContain('Owner, Files, Claim-Policy, Risk, and Plan-Approval');
+    expect(sessionStartHook).toContain('Plan, Unit, Mode, Worktree, Blocked, Owner, Files, Claim-Policy, Risk, and Plan-Approval');
     expect(sessionStartHook).toContain('--unit briefs');
     expect(sessionStartHook).toContain('latest active revision');
     expect(sessionStartHook).toContain('Execute current plan');

@@ -1,6 +1,7 @@
 import { Command, Option } from 'commander';
 import { HostScope, HostType } from '@spwnr/core-types';
 import { injectStatic } from '@spwnr/injector';
+import { parseHostScope, parseHostType } from './host-options.js';
 
 export function makeInjectCommand(): Command {
   const command = new Command('inject')
@@ -13,9 +14,9 @@ export function makeInjectCommand(): Command {
         const result = await injectStatic({
           packageName: name,
           version,
-          host: options.host as typeof HostType[keyof typeof HostType],
-          scope: options.scope as typeof HostScope[keyof typeof HostScope],
-          targetDir: options.target,
+          host: parseHostType(options.host),
+          scope: parseHostScope(options.scope),
+          ...(options.target ? { targetDir: options.target } : {}),
         });
 
         console.log(`✓ Injected ${name}@${result.version} into ${result.host}`);

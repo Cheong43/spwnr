@@ -100,6 +100,47 @@ function readTaskContract(description) {
   };
 }
 
+function normalizeTaskFingerprintValue(value) {
+  return normalizeText(value).trim();
+}
+
+function sameTaskFingerprint(task, input) {
+  const inputSubject = normalizeTaskFingerprintValue(input.task_subject);
+  const inputDescription = normalizeTaskFingerprintValue(input.task_description);
+
+  if (!inputSubject || !inputDescription) {
+    return false;
+  }
+
+  return (
+    normalizeTaskFingerprintValue(task.subject) === inputSubject &&
+    normalizeTaskFingerprintValue(task.description) === inputDescription
+  );
+}
+
+function compareTaskIdsDescending(left, right) {
+  const leftNumber = Number(left);
+  const rightNumber = Number(right);
+  const leftNumeric = Number.isFinite(leftNumber);
+  const rightNumeric = Number.isFinite(rightNumber);
+
+  if (leftNumeric && rightNumeric && leftNumber !== rightNumber) {
+    return rightNumber - leftNumber;
+  }
+
+  return String(right).localeCompare(String(left));
+}
+
+function resolveCurrentTaskMirrorId(openTasks, input) {
+  const matches = openTasks.filter((task) => sameTaskFingerprint(task, input));
+  if (matches.length === 0) {
+    return null;
+  }
+
+  matches.sort((left, right) => compareTaskIdsDescending(left.id, right.id));
+  return matches[0]?.id ?? null;
+}
+
 function hasExplicitFileScope(files) {
   return (
     Array.isArray(files) &&
@@ -232,7 +273,12 @@ function findFileOwnershipConflict(input, contract, env = process.env) {
 
   const currentOwner = contract.owner.trim().toLowerCase();
   const openTasks = readOpenTasks(input.session_id, input, env);
+  const currentTaskMirrorId = resolveCurrentTaskMirrorId(openTasks, input);
   for (const task of openTasks) {
+    if (currentTaskMirrorId && task.id === currentTaskMirrorId) {
+      continue;
+    }
+
     if (
       !MULTI_AGENT_MODES.has(task.mode) ||
       task.worktree !== 'not-required' ||

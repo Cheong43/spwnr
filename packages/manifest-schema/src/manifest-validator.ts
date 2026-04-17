@@ -239,3 +239,7 @@ export function validateManifest(input: unknown): ValidationResult {
   
   return { success: false, errors };
 }
+
+export function parseManifest(input: unknown): SubagentManifest {
+  return SubagentManifestSchema.parse(input);
+}

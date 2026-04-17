@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateManifest } from './manifest-validator.js';
+import { parseManifest, validateManifest } from './manifest-validator.js';
 
 const minimalManifest = {
   apiVersion: 'spwnr/v1',
@@ -22,6 +22,20 @@ describe('ManifestValidator', () => {
   it('validates a prompt-first minimal manifest', () => {
     const result = validateManifest(minimalManifest);
     expect(result.success).toBe(true);
+  });
+
+  it('parseManifest() returns a strongly typed manifest for valid input', () => {
+    expect(parseManifest(minimalManifest)).toMatchObject({
+      metadata: {
+        name: 'test-agent',
+        version: '0.1.0',
+      },
+      spec: {
+        agent: {
+          path: './agent.md',
+        },
+      },
+    });
   });
 
   it('validates a full manifest with injection metadata', () => {
@@ -110,6 +124,16 @@ describe('ManifestValidator', () => {
     if (!result.success) {
       expect(result.errors.some((error) => error.path.includes('instruction'))).toBe(true);
     }
+  });
+
+  it('parseManifest() throws for invalid input', () => {
+    expect(() => parseManifest({
+      ...minimalManifest,
+      metadata: {
+        ...minimalManifest.metadata,
+        version: 'not-semver',
+      },
+    })).toThrow(/Version must be in semver format/);
   });
 
   it('fails when spec.agent.path is missing', () => {

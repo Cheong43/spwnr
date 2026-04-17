@@ -2,6 +2,9 @@
   "name": "@spwnr/broker",
   "version": "0.1.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "main": "src/index.ts",
   "exports": { ".": "./src/index.ts" },
   "scripts": { "test": "vitest run" },
@@ -14,7 +17,7 @@
   },
   "devDependencies": {
     "@spwnr/adapters": "workspace:*",
-    "typescript": "^5.4.0",
+    "typescript": "^5.9.3",
     "vitest": "^2.0.0"
   }
 }

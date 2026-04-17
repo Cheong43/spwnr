@@ -4,9 +4,9 @@ import { PackageStore } from './package-store.js'
 import { SignatureService } from './signature-service.js'
 import { TarballService } from './tarball-service.js'
 import { getTarballPath, getInstalledPackageDir } from './artifact-paths.js'
-import { loadPackage } from '@spwnr/manifest-schema'
-import { SpwnrError, ErrorCodes } from '@spwnr/core-types'
-import type { HostType, SubagentManifest } from '@spwnr/core-types'
+import { loadPackage, parseManifest } from '@spwnr/manifest-schema'
+import { SpwnrError, ErrorCodes, HostType } from '@spwnr/core-types'
+import type { SubagentManifest } from '@spwnr/core-types'
 
 export interface PublishResult {
   name: string
@@ -37,10 +37,10 @@ export interface InfoResult {
 }
 
 export interface SearchPackagesOptions {
-  query?: string
-  host?: HostType
-  domain?: string
-  limit?: number
+  query?: string | undefined
+  host?: HostType | undefined
+  domain?: string | undefined
+  limit?: number | undefined
 }
 
 export interface SearchPackageResult {
@@ -57,9 +57,9 @@ export type WorkerRole = 'research' | 'execute' | 'review'
 export interface ShortlistWorkersOptions {
   taskBrief: string
   host: HostType
-  preferredDomain?: string
+  preferredDomain?: string | undefined
   role: WorkerRole
-  limit?: number
+  limit?: number | undefined
 }
 
 export interface WorkerShortlistResult {
@@ -72,8 +72,8 @@ export interface WorkerShortlistResult {
 export interface WorkerCoverageUnitOptions {
   unitId: string
   taskBrief: string
-  preferredDomain?: string
-  limit?: number
+  preferredDomain?: string | undefined
+  limit?: number | undefined
 }
 
 export interface WorkerCoverageUnitResult {
@@ -90,9 +90,9 @@ export interface WorkerCoverageSelectionEntry {
 
 export interface WorkerCoveragePlanOptions {
   host: HostType
-  preferredDomain?: string
+  preferredDomain?: string | undefined
   units: WorkerCoverageUnitOptions[]
-  limit?: number
+  limit?: number | undefined
 }
 
 export interface WorkerCoveragePlanResult {
@@ -133,6 +133,16 @@ function toDisplayScore(rawScore: number): number {
   }
 
   return Number((-rawScore).toFixed(6))
+}
+
+function isHostType(value: string): value is HostType {
+  return Object.values(HostType).some((hostType) => hostType === value)
+}
+
+function parseHostTypes(value: string): HostType[] {
+  return value
+    .split(/\s+/u)
+    .filter(isHostType)
 }
 
 function buildCoverageSelection(
@@ -208,6 +218,10 @@ function buildCoverageSelection(
   }
 }
 
+function parseStoredManifest(manifestJson: string): SubagentManifest {
+  return parseManifest(JSON.parse(manifestJson))
+}
+
 export class RegistryService {
   private readonly db: Database.Database
   private readonly store: PackageStore
@@ -266,7 +280,7 @@ export class RegistryService {
     const installedDir = getInstalledPackageDir(packageName, versionRow.version)
     await this.tarball.extract(versionRow.tarball_path, installedDir)
 
-    const manifest = JSON.parse(versionRow.manifest_json) as SubagentManifest
+    const manifest = parseStoredManifest(versionRow.manifest_json)
     const isValid = this.signer.verify(manifest, versionRow.signature)
     if (!isValid) {
       throw new SpwnrError(
@@ -304,7 +318,7 @@ export class RegistryService {
     return {
       name: packageName,
       version: versionRow.version,
-      manifest: JSON.parse(versionRow.manifest_json) as SubagentManifest,
+      manifest: parseStoredManifest(versionRow.manifest_json),
       signature: versionRow.signature,
       tarballPath: versionRow.tarball_path,
       publishedAt: versionRow.published_at,
@@ -315,16 +329,17 @@ export class RegistryService {
     const limit = options.limit ?? 8
     const normalizedDomain = options.domain ? normalizeText(options.domain) : null
     const ftsQuery = options.query ? buildFtsQuery(options.query) : ''
-
-    const ranked = this.store.listSearchRows({
-      query: ftsQuery || undefined,
-      host: options.host,
+    const searchRowOptions = {
+      ...(ftsQuery ? { query: ftsQuery } : {}),
+      ...(options.host ? { host: options.host } : {}),
       limit,
-    })
+    }
+
+    const ranked = this.store.listSearchRows(searchRowOptions)
       .map((row) => {
         const domains = row.domains ? row.domains.split(/\s+/u).filter(Boolean) : []
         const hosts = row.compatibility_hosts
-          ? row.compatibility_hosts.split(/\s+/u).filter(Boolean) as HostType[]
+          ? parseHostTypes(row.compatibility_hosts)
           : []
         const domainMatch = normalizedDomain
           ? domains.some((domain) => normalizeText(domain) === normalizedDomain)

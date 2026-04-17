@@ -27,16 +27,19 @@ Use `workflow-foundation` as the shared source of truth for task metadata, risky
 - Every execution task, integration task, and review task must carry `Plan`, `Unit`, `Mode`, `Worktree`, `Blocked`, `Owner`, `Files`, `Claim-Policy`, `Risk`, and `Plan-Approval`.
 - Use multiple bounded execution tasks, explicit ownership, and a shared queue.
 - When the approved plan says so, the team may start multiple bounded pipelines in parallel; each pipeline must still preserve its stage order and handoff checks.
-- Multi-agent no-worktree writes require explicit `Files:` boundaries.
+- Default the graph so parallel teammates do not edit the same file.
+- Preserve shared-file team execution only as an explicit exception; prefer worktree isolation or one concrete owner controlling that file instead of overlapping no-worktree claims.
+- Multi-agent no-worktree writes require explicit `Files:` boundaries and should not overlap by default.
 
 ## Execution Flow
 
 1. Confirm the selected lineup and why each package was chosen.
-2. Create the task graph with one execution task per unit, plus integration and review tasks when needed.
-3. Validate the queue with `TaskGet` and `TaskList`.
-4. Create the team, derive only the selected registry-backed agents, and brief them from the active revision instead of chat reconstruction.
-5. Keep the queue current with `TaskUpdate`, enforce risky-unit approval gates, and escalate incidents with `SendMessage`.
-6. Close the lifecycle with `TeamDelete`.
+2. Before `TaskCreate`, verify that concurrent tasks have disjoint `Files:` ownership by default; if a shared-file exception exists, verify the plan defines worktree isolation or one concrete owner for that file.
+3. Create the task graph with one execution task per unit, plus integration and review tasks when needed.
+4. Validate the queue with `TaskGet` and `TaskList`.
+5. Create the team, derive only the selected registry-backed agents, and brief them from the active revision instead of chat reconstruction.
+6. Keep the queue current with `TaskUpdate`, enforce risky-unit approval gates, and escalate incidents with `SendMessage`.
+7. Close the lifecycle with `TeamDelete`.
 
 ## Failure Recovery Contract
 

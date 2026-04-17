@@ -2,6 +2,9 @@
   "name": "@spwnr/policy",
   "version": "0.1.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "exports": { ".": { "default": "./src/index.ts" } },
   "scripts": { "build": "tsc", "test": "vitest run" },
   "dependencies": {
@@ -9,7 +12,7 @@
     "yaml": "^2.4.0"
   },
   "devDependencies": {
-    "typescript": "^5.4.0",
+    "typescript": "^5.9.3",
     "vitest": "^2.0.0"
   }
 }

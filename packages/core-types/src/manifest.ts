@@ -3,39 +3,39 @@ import type { HostScope, HostType, PolicyDecision } from './enums.js';
 export interface PolicyRule {
   pattern: string;
   decision: PolicyDecision;
-  reason?: string;
+  reason?: string | undefined;
 }
 
 export interface ToolPolicy {
-  allow?: string[];
-  ask?: string[];
-  deny?: string[];
+  allow?: string[] | undefined;
+  ask?: string[] | undefined;
+  deny?: string[] | undefined;
 }
 
 export interface PermissionPolicy {
-  filesystem?: PolicyRule[];
-  shell?: PolicyRule[];
-  network?: PolicyRule[];
-  browser?: PolicyRule[];
-  tools?: PolicyRule[];
+  filesystem?: PolicyRule[] | undefined;
+  shell?: PolicyRule[] | undefined;
+  network?: PolicyRule[] | undefined;
+  browser?: PolicyRule[] | undefined;
+  tools?: PolicyRule[] | undefined;
 }
 
 export interface SkillRef {
   name: string;
-  path?: string;
-  version?: string;
+  path?: string | undefined;
+  version?: string | undefined;
 }
 
 export interface LayeredSkills {
-  universal?: SkillRef[];
-  hosts?: Partial<Record<HostType, SkillRef[]>>;
+  universal?: SkillRef[] | undefined;
+  hosts?: Partial<Record<HostType, SkillRef[] | undefined>> | undefined;
 }
 
 export interface ManifestAuthor {
   name: string;
-  github?: string;
-  url?: string;
-  email?: string;
+  github?: string | undefined;
+  url?: string | undefined;
+  email?: string | undefined;
 }
 
 export type DependencyEcosystem =
@@ -51,23 +51,23 @@ export type DependencyEcosystem =
 export interface PackageDependency {
   ecosystem: DependencyEcosystem;
   name: string;
-  versionRange?: string;
-  optional?: boolean;
-  reason?: string;
-  installHint?: string;
+  versionRange?: string | undefined;
+  optional?: boolean | undefined;
+  reason?: string | undefined;
+  installHint?: string | undefined;
 }
 
 export interface ModelBinding {
   mode: 'injectable' | 'fixed' | 'platform_managed';
-  defaultProvider?: string | null;
-  defaultModel?: string | null;
-  allowOverride?: boolean;
-  endpointRef?: string | null;
-  authRef?: string | null;
+  defaultProvider?: string | null | undefined;
+  defaultModel?: string | null | undefined;
+  allowOverride?: boolean | undefined;
+  endpointRef?: string | null | undefined;
+  authRef?: string | null | undefined;
   billing?: {
     mode: 'passthrough' | 'bundled' | 'metered';
-    sku?: string;
-  };
+    sku?: string | undefined;
+  } | undefined;
 }
 
 export interface AgentDefinition {
@@ -75,26 +75,26 @@ export interface AgentDefinition {
 }
 
 export interface ManifestSchemas {
-  input?: string;
-  output?: string;
-  memory?: string;
+  input?: string | undefined;
+  output?: string | undefined;
+  memory?: string | undefined;
 }
 
 export interface InjectionModeConfig {
   enabled: boolean;
-  defaultScope?: HostScope;
+  defaultScope?: HostScope | undefined;
 }
 
 export interface HostInjectionConfig {
-  static?: InjectionModeConfig;
-  session?: InjectionModeConfig;
+  static?: InjectionModeConfig | undefined;
+  session?: InjectionModeConfig | undefined;
 }
 
 export interface InjectionHosts {
-  claude_code?: HostInjectionConfig;
-  codex?: HostInjectionConfig;
-  copilot?: HostInjectionConfig;
-  opencode?: HostInjectionConfig;
+  claude_code?: HostInjectionConfig | undefined;
+  codex?: HostInjectionConfig | undefined;
+  copilot?: HostInjectionConfig | undefined;
+  opencode?: HostInjectionConfig | undefined;
 }
 
 export interface SubagentManifest {
@@ -104,42 +104,42 @@ export interface SubagentManifest {
     name: string;
     version: string;
     instruction: string;
-    description?: string;
-    domains?: string[];
-    tags?: string[];
-    authors?: ManifestAuthor[];
-    license?: string;
-    homepage?: string;
-    repository?: string;
+    description?: string | undefined;
+    domains?: string[] | undefined;
+    tags?: string[] | undefined;
+    authors?: ManifestAuthor[] | undefined;
+    license?: string | undefined;
+    homepage?: string | undefined;
+    repository?: string | undefined;
   };
   spec: {
     persona?: {
-      role?: string;
-      tone?: string;
-      style?: string;
-    };
+      role?: string | undefined;
+      tone?: string | undefined;
+      style?: string | undefined;
+    } | undefined;
     agent: AgentDefinition;
-    schemas?: ManifestSchemas;
+    schemas?: ManifestSchemas | undefined;
     injection?: {
-      hosts?: InjectionHosts;
-    };
-    skills?: LayeredSkills;
-    tools?: ToolPolicy;
-    permissions?: PermissionPolicy;
+      hosts?: InjectionHosts | undefined;
+    } | undefined;
+    skills?: LayeredSkills | undefined;
+    tools?: ToolPolicy | undefined;
+    permissions?: PermissionPolicy | undefined;
     memory?: {
       scope: 'run' | 'repo' | 'project' | 'workspace';
-    };
+    } | undefined;
     compatibility?: {
       hosts: HostType[];
-      mode?: 'single_host' | 'cross_host';
-      minVersions?: Record<string, string>;
-      badges?: string[];
-    };
-    artifacts?: string[];
-    modelBinding?: ModelBinding;
+      mode?: 'single_host' | 'cross_host' | undefined;
+      minVersions?: Record<string, string> | undefined;
+      badges?: string[] | undefined;
+    } | undefined;
+    artifacts?: string[] | undefined;
+    modelBinding?: ModelBinding | undefined;
     dependencies?: {
       packages: PackageDependency[];
-    };
+    } | undefined;
   };
 }
 

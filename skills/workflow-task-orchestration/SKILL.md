@@ -39,8 +39,9 @@ Before any `TaskCreate`:
 4. Read the selected mode and execution pattern from `Execution Strategy Recommendation` instead of inventing them at execution time.
 5. If the selected mode is `pipeline`, validate that the pattern name, ordered stages, and stage handoffs are present.
 6. If the selected mode is `team`, validate whether the plan expects one shared queue or multiple pipelines launched in parallel.
-7. If `team` is required but `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is unavailable, stop and say so explicitly instead of silently downgrading.
-8. Append `Approved Execution Spec` to the active revision with `Edit`, including the selected mode, routing target, normalized registry lookup brief, and per-unit coverage summary.
+7. In `team` mode, default the task graph toward parallel tasks with disjoint `Files:` ownership. If the plan needs shared-file collaboration, validate that the exception is explicit and that the plan defines worktree isolation or one concrete owner for that file.
+8. If `team` is required but `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is unavailable, stop and say so explicitly instead of silently downgrading.
+9. Append `Approved Execution Spec` to the active revision with `Edit`, including the selected mode, routing target, normalized registry lookup brief, and per-unit coverage summary.
 
 ## Routing Decision
 
@@ -48,6 +49,7 @@ Before any `TaskCreate`:
 - Route to `workflow-task-with-team` when the approved mode is `team`.
 - `pipeline` must remain available without Claude team features.
 - `team` may launch multiple bounded pipelines in parallel when the approved plan says so.
+- `team` should not default to multiple parallel tasks editing the same file unless the approved plan explicitly marks that as an exception.
 - Do not silently reroute a `team` plan into `pipeline` when team prerequisites fail.
 
 ## Team Mode Subagent Obligations

@@ -38,11 +38,11 @@ function rowToRecord(row: RunRow): RunRecord {
     traceId: row.trace_id,
     backend: (row.backend ?? 'simulated') as BackendType,
     input: JSON.parse(row.input_json),
-    output: row.output_json ? JSON.parse(row.output_json) : undefined,
-    errorCode: row.error_code ?? undefined,
     createdAt: row.created_at,
-    startedAt: row.started_at ?? undefined,
-    endedAt: row.ended_at ?? undefined,
+    ...(row.output_json ? { output: JSON.parse(row.output_json) } : {}),
+    ...(row.error_code ? { errorCode: row.error_code } : {}),
+    ...(row.started_at ? { startedAt: row.started_at } : {}),
+    ...(row.ended_at ? { endedAt: row.ended_at } : {}),
   }
 }
 
@@ -106,4 +106,3 @@ export class RunStore {
     return this.db.prepare<[], RunRow>('SELECT * FROM runs ORDER BY created_at DESC').all().map(rowToRecord)
   }
 }
-

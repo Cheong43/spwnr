@@ -4,6 +4,7 @@ import { Command, Option } from 'commander'
 import { HostScope, HostType } from '@spwnr/core-types'
 import { injectStatic, resolveDefaultStaticTarget } from '@spwnr/injector'
 import { RegistryService, type WorkerCoveragePlanResult } from '@spwnr/registry'
+import { parseHostScope, parseHostType } from './host-options.js'
 import { loadWorkerPolicy } from './worker-policy.js'
 
 interface ResolveWorkersActionOptions {
@@ -150,7 +151,7 @@ async function ensureSelectedPackages(
       version: 'latest',
       host: options.host,
       scope: options.scope,
-      targetDir: options.targetDir,
+      ...(options.targetDir ? { targetDir: options.targetDir } : {}),
       registry,
     })
 
@@ -181,20 +182,20 @@ export function makeResolveWorkersCommand(): Command {
 
       try {
         const { path: policyPath, source: policySource, policy } = loadWorkerPolicy()
-        const host = options.host as HostType
-        const scope = options.scope as HostScope
+        const host = parseHostType(options.host)
+        const scope = parseHostScope(options.scope)
         const limit = Math.max(1, Number.parseInt(options.limit, 10) || 8)
         const candidates = registry.searchPackages({
           query: options.search,
           host,
-          domain: policy.preferredDomain,
+          ...(policy.preferredDomain ? { domain: policy.preferredDomain } : {}),
           limit,
         })
         const coverageUnits = parseCoverageUnits(options.unit)
         const unitCoverage = coverageUnits.length > 0
           ? registry.buildCoveragePlan({
               host,
-              preferredDomain: policy.preferredDomain,
+              ...(policy.preferredDomain ? { preferredDomain: policy.preferredDomain } : {}),
               units: coverageUnits,
               limit,
             })
@@ -236,7 +237,7 @@ export function makeResolveWorkersCommand(): Command {
           ? await ensureSelectedPackages(registry, selected, {
               host,
               scope,
-              targetDir: options.target,
+              ...(options.target ? { targetDir: options.target } : {}),
             })
           : []
 

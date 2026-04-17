@@ -11,7 +11,7 @@ export interface DynamicWorkerPolicy {
   registrySource: 'local'
   selectionMethod: 'llm_choose'
   missingPolicy: 'auto_install_local'
-  preferredDomain?: string
+  preferredDomain?: string | undefined
   lineup: DynamicWorkerLineupPolicy
 }
 
@@ -30,6 +30,32 @@ const DEFAULT_POLICY: DynamicWorkerPolicy = {
     minAgents: 1,
     maxAgents: 4,
   },
+} satisfies DynamicWorkerPolicy
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function normalizePreferredDomain(input: unknown): string | undefined {
+  return typeof input === 'string' && input.trim().length > 0
+    ? input
+    : undefined
+}
+
+function normalizeDynamicWorkerPolicy(input: unknown): DynamicWorkerPolicy {
+  const raw = isRecord(input) ? input : {}
+  const lineupInput = isRecord(raw.lineup) ? raw.lineup : undefined
+
+  return {
+    selectionMode: 'dynamic',
+    registrySource: 'local',
+    selectionMethod: 'llm_choose',
+    missingPolicy: 'auto_install_local',
+    ...(normalizePreferredDomain(raw.preferredDomain)
+      ? { preferredDomain: normalizePreferredDomain(raw.preferredDomain) }
+      : {}),
+    lineup: sanitizeLineupPolicy(lineupInput, DEFAULT_POLICY.lineup),
+  }
 }
 
 function sanitizeLineupPolicy(
@@ -56,20 +82,11 @@ export function loadWorkerPolicy(cwd: string = process.cwd()): LoadedWorkerPolic
     }
   }
 
-  const raw = JSON.parse(readFileSync(policyPath, 'utf-8')) as Partial<DynamicWorkerPolicy>
+  const raw = JSON.parse(readFileSync(policyPath, 'utf-8'))
 
   return {
     path: policyPath,
     source: 'file',
-    policy: {
-      selectionMode: 'dynamic',
-      registrySource: 'local',
-      selectionMethod: 'llm_choose',
-      missingPolicy: 'auto_install_local',
-      preferredDomain: typeof raw.preferredDomain === 'string' && raw.preferredDomain.trim().length > 0
-        ? raw.preferredDomain
-        : DEFAULT_POLICY.preferredDomain,
-      lineup: sanitizeLineupPolicy(raw.lineup, DEFAULT_POLICY.lineup),
-    },
+    policy: normalizeDynamicWorkerPolicy(raw),
   }
 }
