@@ -29,9 +29,10 @@ At the time this skill was created, the publish script releases:
 - `@spwnr/core-types`
 - `@spwnr/adapters`
 - `@spwnr/manifest-schema`
-- `@spwnr/registry`
 - `@spwnr/injector`
 - `@spwnr/cli`
+
+`@spwnr/registry` is published from `Cheong43/spwnr-registry`, not from this main repo workflow.
 
 The `vendor/spwnr-registry` submodule is a separate template registry package and should not publish over the runtime `@spwnr/registry` package name.
 

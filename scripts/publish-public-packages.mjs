@@ -23,7 +23,6 @@ const publishManifestPaths = [
   'packages/core-types/package.json',
   'packages/adapters/package.json',
   'packages/manifest-schema/package.json',
-  'packages/registry/package.json',
   'packages/injector/package.json',
   'apps/spwnr-cli/package.json',
 ];
