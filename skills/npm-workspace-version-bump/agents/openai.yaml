@@ -1,4 +1,0 @@
-interface:
-  display_name: "NPM Workspace Bump"
-  short_description: "Bump pnpm workspace package versions safely"
-  default_prompt: "Use $npm-workspace-version-bump to bump this pnpm workspace version and prepare npm publishing."
