@@ -1,16 +1,15 @@
-import type Database from 'better-sqlite3'
-import { openDatabase, getSpwnrHome, getDbPath } from '@spwnr/registry'
+import { openDatabase, getSpwnrHome, getDbPath, type SqliteDatabase } from '@spwnr/registry'
 
 export { getSpwnrHome }
 export { getDbPath as getMemoryDbPath }
 
-export function openRunDatabase(dbPath?: string): Database.Database {
+export function openRunDatabase(dbPath?: string): SqliteDatabase {
   const db = openDatabase(dbPath)
   runMemoryMigrations(db)
   return db
 }
 
-function runMemoryMigrations(db: Database.Database): void {
+function runMemoryMigrations(db: SqliteDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS runs (
       id TEXT PRIMARY KEY,
@@ -50,4 +49,3 @@ function runMemoryMigrations(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_memory_package ON agent_memory(package_name);
   `)
 }
-

@@ -1,7 +1,7 @@
-import type Database from 'better-sqlite3'
 import { randomUUID } from 'crypto'
 import { SpwnrError, ErrorCodes } from '@spwnr/core-types'
 import type { RunRecord, RunStatus, BackendType } from '@spwnr/core-types'
+import type { SqliteDatabase } from '@spwnr/registry'
 
 export interface RunRow {
   id: string
@@ -47,7 +47,7 @@ function rowToRecord(row: RunRow): RunRecord {
 }
 
 export class RunStore {
-  constructor(private readonly db: Database.Database) {}
+  constructor(private readonly db: SqliteDatabase) {}
 
   create(opts: CreateRunOpts): RunRecord {
     const id = randomUUID()

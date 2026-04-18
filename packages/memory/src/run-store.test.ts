@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { openRunDatabase } from './db.js'
 import { RunStore } from './run-store.js'
 import { SpwnrError } from '@spwnr/core-types'
-import type Database from 'better-sqlite3'
+import type { SqliteDatabase } from '@spwnr/registry'
 
-let db: Database.Database
+let db: SqliteDatabase
 let store: RunStore
 
 beforeEach(() => {
@@ -78,4 +78,3 @@ describe('RunStore', () => {
     expect(store.list('pkg-c')).toHaveLength(0)
   })
 })
-

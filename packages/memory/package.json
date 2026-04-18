@@ -9,11 +9,9 @@
   "scripts": { "build": "tsc", "test": "vitest run" },
   "dependencies": {
     "@spwnr/core-types": "workspace:*",
-    "@spwnr/registry": "workspace:*",
-    "better-sqlite3": "^12.8.0"
+    "@spwnr/registry": "workspace:*"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.8",
     "typescript": "^5.9.3",
     "vitest": "^2.0.0"
   }

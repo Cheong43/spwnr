@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { openRunDatabase } from './db.js'
 import { RunStore } from './run-store.js'
 import { CheckpointStore } from './checkpoint-store.js'
-import type Database from 'better-sqlite3'
+import type { SqliteDatabase } from '@spwnr/registry'
 
-let db: Database.Database
+let db: SqliteDatabase
 let runStore: RunStore
 let store: CheckpointStore
 let runId: string
@@ -52,4 +52,3 @@ describe('CheckpointStore', () => {
     expect(store.listForRun(other.runId)).toEqual([])
   })
 })
-

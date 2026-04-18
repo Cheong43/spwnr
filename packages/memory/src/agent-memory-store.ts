@@ -1,5 +1,5 @@
-import type Database from 'better-sqlite3'
 import { randomUUID } from 'crypto'
+import type { SqliteDatabase } from '@spwnr/registry'
 
 export interface AgentMemoryRow {
   id: string
@@ -10,7 +10,7 @@ export interface AgentMemoryRow {
 }
 
 export class AgentMemoryStore {
-  constructor(private readonly db: Database.Database) {}
+  constructor(private readonly db: SqliteDatabase) {}
 
   set(packageName: string, key: string, value: unknown): void {
     this.db.prepare(
