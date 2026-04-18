@@ -1,8 +1,8 @@
 # Claude Plugin Workflow
 
-This repository includes a repo-root Claude Code plugin named `spwnr` that acts as a workflow controller for executable planning plus registry-guided agent, task, and team orchestration.
+This repository includes a repo-root Claude Code plugin named `spwnr` that acts as a workflow controller for direct small-task execution plus executable planning and registry-guided agent, task, and team orchestration.
 
-The plugin is a dogfood asset for this repository. It is not a published Spwnr package. `/spwnr:plan` and `/spwnr:task` rely on Claude-native planning tools plus the local `spwnr` registry for runtime agent selection, while `/spwnr:workers` provides the deeper audit and recovery path. In `0.3.0`, planning must choose `pipeline` or `team`, persist the execution pattern, and let `/spwnr:task` route into the matching execution skill. The shared workflow artifact is the latest active revision under `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md`. These workflows are for general tasks such as research, analysis, writing, operations, and coding, not only software implementation.
+The plugin is a dogfood asset for this repository. It is not a published Spwnr package. `/spwnr:do` is the bounded small-task lane: it uses Claude-native `Skill`, `Read`, `Write`, `Edit`, `Agent`, and the local `spwnr` registry for direct worker selection, writes a lightweight note under `.claude/do/spwnr-do-<project-folder-name>-<YYYY-MM-DD-HHMMSS>-<slug>.md`, caps direct worker selection at 1-3, and redirects to `/spwnr:workers` or `/spwnr:plan` when the fit is wrong. `/spwnr:plan` and `/spwnr:task` remain the heavier plan-first lane, while `/spwnr:workers` provides the deeper audit and recovery path. In `0.3.0`, planning must choose `pipeline` or `team`, persist the execution pattern, and let `/spwnr:task` route into the matching execution skill. The shared workflow artifact is the latest active revision under `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md`. These workflows are for general tasks such as research, analysis, writing, operations, and coding, not only software implementation.
 
 ## What The Plugin Does
 
@@ -26,6 +26,14 @@ The plugin coordinates a plan-first workflow:
 16. execute in `pipeline` or `team` mode
 17. use `TeamCreate`, `SendMessage`, and `TeamDelete` only when the approved plan requires `team` execution
 18. integrate the final answer
+
+For small direct work, `/spwnr:do` bypasses the plan artifact flow and instead:
+
+1. checks that the task is still bounded and suitable for direct execution
+2. writes a lightweight runtime note under `.claude/do/`
+3. selects at most 3 registry-backed workers with `resolve-workers`, or uses an explicit named template when the user provides one
+4. redirects to `/spwnr:workers` when worker coverage is weak
+5. redirects to `/spwnr:plan` when the task grows beyond a bounded small task
 
 The controller lives in the repo root under:
 
@@ -63,6 +71,7 @@ claude --plugin-dir /absolute/path/to/spwnr
 
 2. Use the workflow commands inside Claude:
 
+- `/spwnr:do`
 - `/spwnr:plan`
 - `/spwnr:task`
 - `/spwnr:workers`
@@ -95,6 +104,9 @@ export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 
 ## Command Intent
 
+`/spwnr:do`
+- handle a bounded small task directly, write a lightweight note under `.claude/do/`, use `resolve-workers` plus `Agent` only for up to 3 direct workers, redirect to `/spwnr:workers` when worker coverage is weak, and redirect to `/spwnr:plan` when the task becomes broad, multi-stage, risky, or planning-sensitive
+
 `/spwnr:plan`
 - align a general task, load `workflow-foundation` plus `workflow-planning` with `Skill`, ask only material decisions with `AskUserQuestion`, track blockers with `TodoWrite`, write the plan to revision 1 at `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md`, or the next `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md` file when a material re-plan occurs, upgrade `Detailed Plan` into orchestration-ready `Execution Units`, run a planning expert sequence `research -> draft -> review` with `resolve-workers` plus planning-only `Agent`, record `Expert Planning Round` and `Plan Review Loop`, and immediately ask whether to `Execute current plan`, `Continue improving plan`, or `End this round`; if the planning expert loop cannot form a viable lineup, stop with `Worker Readiness Required` and send the user to `/spwnr:workers`
 
@@ -122,6 +134,7 @@ After approval, `/spwnr:task` routes based on the plan:
 ## Notes
 
 - The marketplace config is committed as static JSON in `.claude-plugin/marketplace.json`.
+- `.claude/do/` is the runtime artifact directory for lightweight `/spwnr:do` notes and should not be committed.
 - `.claude/plans/` is the runtime artifact directory for persisted workflow plan revisions and should not be committed.
 - `/spwnr:task` now routes on Claude-native `Read`, `Write`, `Edit`, `Agent`, `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `SendMessage`, and `TeamDelete`, with runtime agent selection coming from `resolve-workers`.
 - execution tasks should now carry `Owner`, `Files`, `Claim-Policy`, `Risk`, and `Plan-Approval` fields so runtime hooks can enforce teammate boundaries and risky-unit approval gates.

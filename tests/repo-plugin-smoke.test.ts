@@ -188,6 +188,7 @@ describe('repo-root Claude plugin', () => {
       '.claude-plugin/plugin.json',
       '.claude-plugin/marketplace.json',
       '.claude-plugin/workers.json',
+      'commands/do.md',
       'commands/plan.md',
       'commands/task.md',
       'commands/workers.md',
@@ -196,6 +197,7 @@ describe('repo-root Claude plugin', () => {
       'hooks/runtime-guard.mjs',
       'hooks/lib/runtime-guard.mjs',
       'skills/npm-workspace-version-bump/SKILL.md',
+      'skills/workflow-do/SKILL.md',
       'skills/workflow-foundation/SKILL.md',
       'skills/workflow-planning/SKILL.md',
       'skills/workflow-task-orchestration/SKILL.md',
@@ -249,9 +251,11 @@ describe('workflow docs', () => {
 
     for (const expectedSnippet of [
       'spwnr',
+      '/spwnr:do',
       '/spwnr:plan',
       '/spwnr:task',
       '/spwnr:workers',
+      '.claude/do/',
       '.claude/plans/spwnr-',
       '-r2.md',
       'registry-guided',
@@ -319,11 +323,13 @@ describe('workflow docs', () => {
 
   it('encode plan-first execution guards, worker recovery, and team contracts', () => {
     const gitignore = readFileSync(resolve(repoRoot, '.gitignore'), 'utf-8');
+    const doCommand = readFileSync(resolve(repoRoot, 'commands/do.md'), 'utf-8');
     const planCommand = readFileSync(resolve(repoRoot, 'commands/plan.md'), 'utf-8');
     const taskCommand = readFileSync(resolve(repoRoot, 'commands/task.md'), 'utf-8');
     const workersCommand = readFileSync(resolve(repoRoot, 'commands/workers.md'), 'utf-8');
     const sessionStartHook = readFileSync(resolve(repoRoot, 'hooks/session-start'), 'utf-8');
     const hooksJson = readFileSync(resolve(repoRoot, 'hooks/hooks.json'), 'utf-8');
+    const doSkill = readFileSync(resolve(repoRoot, 'skills/workflow-do/SKILL.md'), 'utf-8');
     const foundationSkill = readFileSync(resolve(repoRoot, 'skills/workflow-foundation/SKILL.md'), 'utf-8');
     const planningSkill = readFileSync(resolve(repoRoot, 'skills/workflow-planning/SKILL.md'), 'utf-8');
     const taskRouterSkill = readFileSync(resolve(repoRoot, 'skills/workflow-task-orchestration/SKILL.md'), 'utf-8');
@@ -333,6 +339,19 @@ describe('workflow docs', () => {
     const workflowSkill = readFileSync(resolve(repoRoot, 'skills/using-spwnr-workflow/SKILL.md'), 'utf-8');
 
     expect(gitignore).toContain('.claude/plans/');
+    expect(gitignore).toContain('.claude/do/');
+
+    expect(doCommand).toContain('workflow-do');
+    expect(doCommand).toContain('thin entrypoint');
+    expect(doCommand).toContain('Read');
+    expect(doCommand).toContain('Write');
+    expect(doCommand).toContain('Edit');
+    expect(doCommand).toContain('spwnr resolve-workers');
+    expect(doCommand).toContain('/spwnr:workers');
+    expect(doCommand).toContain('/spwnr:plan');
+    expect(doCommand).toContain('3 agents');
+    expect(doCommand).toContain('never call `TaskCreate`');
+    expect(doCommand).not.toContain('TaskCreateTool');
 
     expect(planCommand).toContain('Skill');
     expect(planCommand).toContain('AskUserQuestion');
@@ -484,26 +503,40 @@ describe('workflow docs', () => {
     expect(workerAuditSkill).toContain('return to the same active revision');
     expect(workerAuditSkill).toContain('Do not silently invent a fallback agent lineup');
 
-    expect(workflowSkill).toContain('Use `workflow-planning` as the primary skill');
-    expect(workflowSkill).toContain('align and lock the plan before any execution');
-    expect(workflowSkill).toContain('planning expert loop');
-    expect(workflowSkill).toContain('Worker Readiness Required');
-    expect(workflowSkill).toContain('`research`, `draft`, and `review`');
-    expect(workflowSkill).toContain('active revision');
-    expect(workflowSkill).toContain('Read');
-    expect(workflowSkill).toContain('Edit');
+    expect(doSkill).toContain('Agent');
+    expect(doSkill).toContain('Read');
+    expect(doSkill).toContain('Write');
+    expect(doSkill).toContain('Edit');
+    expect(doSkill).toContain('spwnr resolve-workers');
+    expect(doSkill).toContain('at most 3 direct workers');
+    expect(doSkill).toContain('/spwnr:workers');
+    expect(doSkill).toContain('/spwnr:plan');
+    expect(doSkill).toContain('.claude/do/spwnr-do-');
+    expect(doSkill).toContain('Do Readiness');
+    expect(doSkill).not.toContain('TaskCreate');
+    expect(doSkill).not.toContain('TaskGet');
+    expect(doSkill).not.toContain('TaskList');
+    expect(doSkill).not.toContain('TaskUpdate');
+    expect(doSkill).not.toContain('TeamCreate');
+    expect(doSkill).not.toContain('SendMessage');
+    expect(doSkill).not.toContain('TeamDelete');
+
+    expect(workflowSkill).toContain('/spwnr:do');
+    expect(workflowSkill).toContain('bounded small tasks');
+    expect(workflowSkill).toContain('.claude/do/spwnr-do-');
+    expect(workflowSkill).toContain('at most 3 direct workers');
+    expect(workflowSkill).toContain('/spwnr:plan');
+    expect(workflowSkill).toContain('/spwnr:task');
+    expect(workflowSkill).toContain('/spwnr:workers');
     expect(workflowSkill).toContain('workflow-task-with-pipeline');
     expect(workflowSkill).toContain('workflow-task-with-team');
     expect(workflowSkill).toContain('pipeline');
-    expect(workflowSkill).toContain('TeamCreate');
-    expect(workflowSkill).toContain('SendMessage');
+    expect(workflowSkill).toContain('workflow-planning');
+    expect(workflowSkill).toContain('worker-audit');
     expect(workflowSkill).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
-    expect(workflowSkill).toContain('Execute current plan');
-    expect(workflowSkill).toContain('Owner');
-    expect(workflowSkill).toContain('Plan-Approval');
-    expect(workflowSkill).toContain('Every execution task should carry explicit `Plan`, `Unit`, `Mode`, `Worktree`, `Blocked`, `Owner`, `Files`, `Claim-Policy`, `Risk`, and `Plan-Approval` metadata');
     expect(workflowSkill).not.toContain('`parallel`');
 
+    expect(sessionStartHook).toContain('/spwnr:do');
     expect(sessionStartHook).toContain('/spwnr:plan');
     expect(sessionStartHook).toContain('Skill');
     expect(sessionStartHook).toContain('AskUserQuestion');
@@ -511,6 +544,8 @@ describe('workflow docs', () => {
     expect(sessionStartHook).toContain('Read');
     expect(sessionStartHook).toContain('Write');
     expect(sessionStartHook).toContain('Edit');
+    expect(sessionStartHook).toContain('.claude/do/spwnr-do-');
+    expect(sessionStartHook).toContain('1-3');
     expect(sessionStartHook).toContain('planning expert loop');
     expect(sessionStartHook).toContain('spwnr resolve-workers');
     expect(sessionStartHook).toContain('Worker Readiness Required');
@@ -572,12 +607,14 @@ describe('workflow docs', () => {
   it('keep workflow skills within the 200-line host budget', () => {
     const countLines = (value: string): number => value.split('\n').length;
 
+    const doSkill = readFileSync(resolve(repoRoot, 'skills/workflow-do/SKILL.md'), 'utf-8');
     const foundationSkill = readFileSync(resolve(repoRoot, 'skills/workflow-foundation/SKILL.md'), 'utf-8');
     const planningSkill = readFileSync(resolve(repoRoot, 'skills/workflow-planning/SKILL.md'), 'utf-8');
     const taskRouterSkill = readFileSync(resolve(repoRoot, 'skills/workflow-task-orchestration/SKILL.md'), 'utf-8');
     const taskTeamSkill = readFileSync(resolve(repoRoot, 'skills/workflow-task-with-team/SKILL.md'), 'utf-8');
     const taskPipelineSkill = readFileSync(resolve(repoRoot, 'skills/workflow-task-with-pipeline/SKILL.md'), 'utf-8');
 
+    expect(countLines(doSkill)).toBeLessThanOrEqual(200);
     expect(countLines(foundationSkill)).toBeLessThanOrEqual(200);
     expect(countLines(planningSkill)).toBeLessThanOrEqual(200);
     expect(countLines(taskRouterSkill)).toBeLessThanOrEqual(200);

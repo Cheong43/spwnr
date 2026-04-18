@@ -9,4 +9,5 @@ coverage/
 site-dist/
 tmp/
 .claude/plans/
+.claude/do/
 UsefulRepo.md

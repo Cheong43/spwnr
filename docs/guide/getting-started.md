@@ -121,12 +121,14 @@ export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 
 After the plugin is installed, you can use these commands inside Claude Code:
 
+- `/spwnr:do`
 - `/spwnr:plan`
 - `/spwnr:task`
 - `/spwnr:workers`
 
 What they are for:
 
+- `/spwnr:do` handles a bounded small task directly and writes a lightweight note under `.claude/do/`.
 - `/spwnr:plan` helps you turn a request into a clear execution plan before doing the work.
 - `/spwnr:task` routes the approved work into `pipeline` or `team` execution using the available Spwnr agents.
 - `/spwnr:workers` checks whether the local agent setup is healthy and helps recover when worker selection fails.
@@ -134,10 +136,11 @@ What they are for:
 Recommended usage inside Claude Code:
 
 1. Open your project in Claude Code.
-2. Run `/spwnr:plan` to clarify the goal and generate a plan.
-3. If the plan looks good, continue with `/spwnr:task`.
-4. Use Claude team features only when the approved plan selects `team`; `pipeline` can run without them.
-4. If Claude cannot find suitable workers or your local setup looks incomplete, run `/spwnr:workers`.
+2. Use `/spwnr:do` when the request is a bounded follow-up fix, one-off operation, or single-goal edit that does not need full planning.
+3. Run `/spwnr:plan` to clarify the goal and generate a plan when the work is broader or needs approval-gated execution.
+4. If the plan looks good, continue with `/spwnr:task`.
+5. Use Claude team features only when the approved plan selects `team`; `pipeline` can run without them.
+6. If Claude cannot find suitable workers or your local setup looks incomplete, run `/spwnr:workers`.
 
 If you want fixed agents to be available in the current project right away, inject them first:
 
