@@ -5,6 +5,6 @@
   "missingPolicy": "auto_install_local",
   "lineup": {
     "minAgents": 1,
-    "maxAgents": 4
+    "maxAgents": 20
   }
 }
