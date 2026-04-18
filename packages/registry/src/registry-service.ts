@@ -1,4 +1,3 @@
-import Database from 'better-sqlite3'
 import { openDatabase } from './db.js'
 import { PackageStore } from './package-store.js'
 import { SignatureService } from './signature-service.js'
@@ -7,6 +6,7 @@ import { getTarballPath, getInstalledPackageDir } from './artifact-paths.js'
 import { loadPackage, parseManifest } from '@spwnr/manifest-schema'
 import { SpwnrError, ErrorCodes, HostType } from '@spwnr/core-types'
 import type { SubagentManifest } from '@spwnr/core-types'
+import type { SqliteDatabase } from './sqlite.js'
 
 export interface PublishResult {
   name: string
@@ -223,7 +223,7 @@ function parseStoredManifest(manifestJson: string): SubagentManifest {
 }
 
 export class RegistryService {
-  private readonly db: Database.Database
+  private readonly db: SqliteDatabase
   private readonly store: PackageStore
   private readonly signer: SignatureService
   private readonly tarball: TarballService

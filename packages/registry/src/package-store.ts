@@ -1,8 +1,8 @@
-import type Database from 'better-sqlite3'
 import { randomUUID } from 'crypto'
 import { SpwnrError, ErrorCodes } from '@spwnr/core-types'
 import type { SubagentManifest } from '@spwnr/core-types'
 import { parseManifest } from '@spwnr/manifest-schema'
+import type { SqliteDatabase } from './sqlite.js'
 
 export interface PackageRow {
   id: string
@@ -49,7 +49,7 @@ function parseStoredManifest(manifestJson: string): SubagentManifest {
 }
 
 export class PackageStore {
-  constructor(private readonly db: Database.Database) {}
+  constructor(private readonly db: SqliteDatabase) {}
 
   /** Insert or get a package by name. Returns the package id. */
   upsertPackage(name: string, description?: string): string {

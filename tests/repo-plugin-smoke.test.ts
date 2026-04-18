@@ -132,6 +132,8 @@ describe('repo-root Claude plugin', () => {
 
   it('keeps the external registry submodule aligned with the canonical runtime package', () => {
     const registryPackage = readJson('packages/registry/package.json');
+    expect(registryPackage.dependencies).not.toHaveProperty('better-sqlite3');
+    expect(registryPackage.devDependencies).not.toHaveProperty('@types/better-sqlite3');
     expect(registryPackage.repository).toMatchObject({
       type: 'git',
       url: 'git+https://github.com/Cheong43/spwnr-registry.git',
@@ -145,6 +147,8 @@ describe('repo-root Claude plugin', () => {
     const templateRegistryPackagePath = resolve(repoRoot, 'vendor/spwnr-registry/package.json');
     if (existsSync(templateRegistryPackagePath)) {
       const templateRegistryPackage = readJson('vendor/spwnr-registry/package.json');
+      expect(templateRegistryPackage.dependencies).not.toHaveProperty('better-sqlite3');
+      expect(templateRegistryPackage.devDependencies).not.toHaveProperty('@types/better-sqlite3');
       expect(templateRegistryPackage).toMatchObject({
         name: '@spwnr/registry',
         provenance: true,

@@ -6,8 +6,8 @@ import { join } from 'path'
 import { openDatabase } from './db.js'
 import { PackageStore } from './package-store.js'
 import { SpwnrError, ErrorCodes } from '@spwnr/core-types'
-import type Database from 'better-sqlite3'
 import type { SubagentManifest } from '@spwnr/core-types'
+import type { SqliteDatabase } from './sqlite.js'
 
 function tempDbPath(): string {
   return join(tmpdir(), `${randomUUID()}.db`)
@@ -31,7 +31,7 @@ function makeManifest(name: string, version: string, description?: string): Suba
 
 describe('PackageStore', () => {
   let dbPath: string
-  let db: Database.Database
+  let db: SqliteDatabase
   let store: PackageStore
 
   beforeEach(() => {

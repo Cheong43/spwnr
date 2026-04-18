@@ -1,6 +1,6 @@
-import Database from 'better-sqlite3'
 import { join } from 'path'
 import { mkdirSync } from 'fs'
+import { createSqliteDatabase, type SqliteDatabase } from './sqlite.js'
 
 export function getSpwnrHome(): string {
   return process.env.SPWNR_HOME ?? join(process.env.HOME ?? '~', '.spwnr')
@@ -10,17 +10,17 @@ export function getDbPath(): string {
   return join(getSpwnrHome(), 'sqlite', 'spwnr.db')
 }
 
-export function openDatabase(dbPath?: string): Database.Database {
+export function openDatabase(dbPath?: string): SqliteDatabase {
   const path = dbPath ?? getDbPath()
   mkdirSync(join(path, '..'), { recursive: true })
-  const db = new Database(path)
-  db.pragma('journal_mode = WAL')
-  db.pragma('foreign_keys = ON')
+  const db = createSqliteDatabase(path)
+  db.exec('PRAGMA journal_mode = WAL;')
+  db.exec('PRAGMA foreign_keys = ON;')
   runMigrations(db)
   return db
 }
 
-function runMigrations(db: Database.Database): void {
+function runMigrations(db: SqliteDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS packages (
       id TEXT PRIMARY KEY,

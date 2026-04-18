@@ -4,14 +4,14 @@ import { tmpdir } from 'os'
 import { existsSync, rmSync } from 'fs'
 import { join } from 'path'
 import { openDatabase, getSpwnrHome } from './db.js'
-import type Database from 'better-sqlite3'
+import type { SqliteDatabase } from './sqlite.js'
 
 function tempDbPath(): string {
   return join(tmpdir(), `${randomUUID()}.db`)
 }
 
 describe('db', () => {
-  const openedDbs: Array<{ db: Database.Database; path: string }> = []
+  const openedDbs: Array<{ db: SqliteDatabase; path: string }> = []
 
   afterEach(() => {
     for (const { db, path } of openedDbs) {
