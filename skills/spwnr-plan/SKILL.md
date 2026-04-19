@@ -1,19 +1,19 @@
 ---
-name: workflow-planning
-description: Use for /spwnr:plan. Produce an orchestration-ready plan for non-trivial general tasks, then hand off into execution only after an explicit AskUserQuestion execute choice.
+name: spwnr-plan
+description: Use for /spwnr-plan. Produce an orchestration-ready plan for non-trivial general tasks, then hand off into execution only after an explicit AskUserQuestion execute choice.
 ---
 
-# Workflow Planning
+# Spwnr Plan
 
 Use this skill when the user wants a scoped plan before substantial work begins.
 
-This skill owns the full planning behavior for `/spwnr:plan`.
+This skill owns the full planning behavior for `/spwnr-plan`.
 
-Use `workflow-foundation` as the shared source of truth for context inspection, plan artifact convention, execution strategy recommendation, execution unit schema, execution review loop, worker readiness required pattern, option-based clarification, and approach comparison. Keep planning-specific behavior here; do not duplicate shared controller rules.
+Use `spwnr-principle` as the shared source of truth for context inspection, plan artifact convention, execution strategy recommendation, execution unit schema, execution review loop, worker readiness required pattern, option-based clarification, and approach comparison. Keep planning-specific behavior here; do not duplicate shared controller rules.
 
 ## Planning Tool Protocol
 
-- Use `Skill` to load `workflow-foundation` and `workflow-planning`.
+- Use `Skill` to load `spwnr-principle` and `spwnr-plan`.
 - Use `Read` before asking for clarification.
 - Use `TodoWrite` to keep readiness fields, blockers, and the latest active revision visible.
 - Use `Write` or `Edit` to persist the plan artifact; do not leave the durable plan only in chat state.
@@ -48,7 +48,7 @@ When `team` is selected, default the plan toward units that do not edit the same
 
 ## Plan Artifact Protocol
 
-Apply the Plan Artifact Convention from `workflow-foundation` for path, revision lifecycle, `Revision Status`, `Superseded By`, and the latest active revision rules.
+Apply the Plan Artifact Convention from `spwnr-principle` for path, revision lifecycle, `Revision Status`, `Superseded By`, and the latest active revision rules.
 
 The plan artifact must contain these sections in order:
 
@@ -68,7 +68,7 @@ When `team` is selected, also state whether parallel units have disjoint file ow
 
 `Expert Planning Round` must include `Retrieval Briefs`, `Selected Templates`, `Expert Role Mapping`, `Research Summary`, `Draft Plan Deltas`, `Review Findings`, and `Controller Synthesis`.
 
-Each `Execution Unit` must include the full schema from `workflow-foundation`, including `risk level`, `file ownership hints`, `worker plan approval`, and a pipeline pattern reference or override.
+Each `Execution Unit` must include the full schema from `spwnr-principle`, including `risk level`, `file ownership hints`, `worker plan approval`, and a pipeline pattern reference or override.
 
 ## Planning Expert Loop
 
@@ -77,11 +77,11 @@ Each `Execution Unit` must include the full schema from `workflow-foundation`, i
 3. Select one viable template per role and keep role assignments distinct.
 4. Derive planning-only experts with `Agent` against the active revision instead of raw thread context.
 5. Synthesize their outputs back into `Detailed Plan` and `Expert Planning Round`.
-6. If distinct role coverage fails, stop with the `Worker Readiness Required` pattern from `workflow-foundation`.
+6. If distinct role coverage fails, stop with the `Worker Readiness Required` pattern from `spwnr-principle`.
 
 ## Execution Review Loop
 
-Apply the Execution Review Loop from `workflow-foundation` after every write or revision.
+Apply the Execution Review Loop from `spwnr-principle` after every write or revision.
 
 - Update `Plan Review Loop` with execution confirmation time, user feedback summary, and revision summary.
 - `Continue improving plan` revises the same latest active revision unless the request becomes a material re-plan.
@@ -91,7 +91,7 @@ Apply the Execution Review Loop from `workflow-foundation` after every write or 
 
 ## Capability Guidance
 
-Recommend capability requirements by execution unit. For each unit, name the primary capability, any optional supporting trait, and why that capability is the best fit. When `pipeline` is selected, also recommend capability requirements by stage. Keep recommendations generic in `/spwnr:plan`; concrete runtime lineup selection belongs to approved `/spwnr:task` execution.
+Recommend capability requirements by execution unit. For each unit, name the primary capability, any optional supporting trait, and why that capability is the best fit. When `pipeline` is selected, also recommend capability requirements by stage. Keep recommendations generic in `/spwnr-plan`; concrete runtime lineup selection belongs to approved `/spwnr-task` execution.
 
 ## Response Shape
 

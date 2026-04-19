@@ -1,7 +1,7 @@
 {
   "name": "spwnr",
   "description": "Repo-level Claude Code plugin for structured planning plus registry-guided agent, task, team, and pipeline orchestration.",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "author": {
     "name": "Cheong43"
   },

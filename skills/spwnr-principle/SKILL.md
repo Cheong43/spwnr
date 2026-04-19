@@ -1,9 +1,9 @@
 ---
-name: workflow-foundation
+name: spwnr-principle
 description: Shared controller rules for executable planning, approval-gated orchestration, registry-guided agent selection, and runtime guardrails.
 ---
 
-# Workflow Foundation
+# Spwnr Principle
 
 Use this skill as the shared ruleset behind Spwnr workflow planning and orchestration.
 
@@ -19,7 +19,7 @@ Use this skill as the shared ruleset behind Spwnr workflow planning and orchestr
 - Convert blocking uncertainty into 2 to 4 concrete options, mark one as recommended, and give a one-line tradeoff for each option.
 - Keep the work moving with a provisional default when the user has not chosen yet.
 - If the repository is empty or underspecified, propose sensible defaults and label them clearly.
-- During `/spwnr:plan`, a planning-only `Agent` pass is allowed only after a draft plan is visible and only for sequential expert `research`, `draft`, and `review` passes backed by registry preview.
+- During `/spwnr-plan`, a planning-only `Agent` pass is allowed only after a draft plan is visible and only for sequential expert `research`, `draft`, and `review` passes backed by registry preview.
 - Do not call `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `TeamDelete`, or `SendMessage` for non-trivial work until a draft plan is visible and the user has clearly approved it.
 - Treat plan approval as thread-local and conversational. Clear approval signals include phrases like `continue`, `execute`, and `go ahead`.
 - Treat a material re-plan as any change to the goal, deliverable type, or execution-unit graph. Minor refinements stay in the same active revision; material re-plans create the next revision file and supersede the older revision.
@@ -138,7 +138,7 @@ Before the first `TaskCreate`, the controller must check every draft task descri
 
 Every time a plan artifact is written or revised, immediately run the execution review loop with `AskUserQuestion`. The three options are fixed:
 
-- `Execute current plan` — the only execution permission signal; hands off into `workflow-task-orchestration`
+- `Execute current plan` — the only execution permission signal; hands off into `spwnr-task`
 - `Continue improving plan` — do not execute; collect feedback; revise the same active revision when the execution shape still fits, or create the next revision when the request becomes a material re-plan; then repeat the loop
 - `End this round` — preserve the artifact, stop cleanly, and do not continue asking
 
@@ -161,5 +161,5 @@ Use this pattern whenever a registry or capability gap blocks forward progress. 
 1. `Plan Artifact` — state the current artifact path
 2. `Readiness Gap` — name the specific missing capabilities or packages
 3. `Missing <Capability Type>` — list exactly what is needed
-4. `Recovery Steps` — direct the user to `/spwnr:workers`, preserve the same active revision, state that work should resume from the same active revision after readiness is restored, and never silently downgrade
+4. `Recovery Steps` — direct the user to `/spwnr-worker-audit`, preserve the same active revision, state that work should resume from the same active revision after readiness is restored, and never silently downgrade
 5. `Next Step` — confirm the handoff path

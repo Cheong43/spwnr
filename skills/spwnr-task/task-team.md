@@ -1,13 +1,8 @@
----
-name: workflow-task-with-team
-description: Use for approved /spwnr:task execution when the active plan selects team mode.
----
+# Task Team Helper
 
-# Workflow Task With Team
+Use this helper when `/spwnr-task` has already validated the active revision and the approved mode is `team`.
 
-Use this skill when `/spwnr:task` has already validated the active revision and the approved mode is `team`.
-
-Use `workflow-foundation` as the shared source of truth for task metadata, risky-unit approval, and worker readiness recovery.
+Use `spwnr-principle` as the shared source of truth for task metadata, risky-unit approval, and worker readiness recovery.
 
 ## Execution Tool Protocol
 
@@ -30,6 +25,29 @@ Use `workflow-foundation` as the shared source of truth for task metadata, risky
 - Default the graph so parallel teammates do not edit the same file.
 - Preserve shared-file team execution only as an explicit exception; prefer worktree isolation or one concrete owner controlling that file instead of overlapping no-worktree claims.
 - Multi-agent no-worktree writes require explicit `Files:` boundaries and should not overlap by default.
+
+## Team Mode Subagent Obligations
+
+Every subagent invoked in `team` mode must follow these two non-negotiable contracts. Include both contracts verbatim in every agent brief alongside the Failure Recovery Contract.
+
+### Progress Sync Contract
+
+All progress of work must be synced with the team lead via `SendMessage`:
+
+- **On task start**: send the accepted work package, assigned unit, and first planned step.
+- **After each meaningful step**: send the completed step, its outcome, and the next planned step.
+- **On task completion**: send a final status summary listing all completed steps and the resulting outputs or artefacts.
+- **On any block or scope question**: send immediately as described in the Failure Recovery Contract below.
+
+Every sync message must include these fields: `unit`, `step`, `status` (one of `in_progress`, `step_done`, `complete`, or `blocked`), `summary`, and `next_step`. When `status` is `complete` or `blocked`, set `next_step` to `none`; when `status` is `in_progress` or `step_done`, `next_step` must name the upcoming step.
+
+### Local Storage Contract
+
+All work done must be stored locally before proceeding to the next step:
+
+- After every meaningful step, invoke `report_progress` to commit and persist completed changes.
+- Never accumulate multiple steps of uncommitted work; each step's output must be durable before the next step begins.
+- If `report_progress` fails, treat it as a blocking incident: stop all work, report the failure to the team lead via `SendMessage` with `status: blocked`, and do not continue until the team lead explicitly sends a recovery signal (such as `resume` or `retry`) confirming that local storage is stable.
 
 ## Execution Flow
 

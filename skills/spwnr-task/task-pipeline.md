@@ -1,13 +1,8 @@
----
-name: workflow-task-with-pipeline
-description: Use for approved /spwnr:task execution when the active plan selects pipeline mode.
----
+# Task Pipeline Helper
 
-# Workflow Task With Pipeline
+Use this helper when `/spwnr-task` has already validated the active revision and the approved mode is `pipeline`.
 
-Use this skill when `/spwnr:task` has already validated the active revision and the approved mode is `pipeline`.
-
-Use `workflow-foundation` as the shared source of truth for task metadata, risky-unit approval, and worker readiness recovery.
+Use `spwnr-principle` as the shared source of truth for task metadata, risky-unit approval, and worker readiness recovery.
 
 ## Execution Tool Protocol
 

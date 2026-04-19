@@ -11,6 +11,10 @@ function readJson(relativePath: string) {
   return JSON.parse(readFileSync(resolve(repoRoot, relativePath), 'utf-8'));
 }
 
+function readText(relativePath: string) {
+  return readFileSync(resolve(repoRoot, relativePath), 'utf-8');
+}
+
 describe('repo-root Claude plugin', () => {
   it('ships valid plugin, marketplace, worker, and hook JSON files', () => {
     const plugin = readJson('.claude-plugin/plugin.json');
@@ -21,7 +25,7 @@ describe('repo-root Claude plugin', () => {
 
     expect(plugin).toMatchObject({
       name: 'spwnr',
-      version: '0.3.0',
+      version: '0.3.3',
     });
     expect(plugin).not.toHaveProperty('hooks');
     expect(marketplace).toMatchObject({
@@ -30,7 +34,7 @@ describe('repo-root Claude plugin', () => {
         expect.objectContaining({
           name: 'spwnr',
           source: './',
-          version: '0.3.0',
+          version: '0.3.3',
         }),
       ],
     });
@@ -48,7 +52,7 @@ describe('repo-root Claude plugin', () => {
       missingPolicy: 'auto_install_local',
       lineup: {
         minAgents: 1,
-        maxAgents: 4,
+        maxAgents: 20,
       },
     });
     expect(hooks).toMatchObject({
@@ -188,15 +192,29 @@ describe('repo-root Claude plugin', () => {
       '.claude-plugin/plugin.json',
       '.claude-plugin/marketplace.json',
       '.claude-plugin/workers.json',
-      'commands/do.md',
-      'commands/plan.md',
-      'commands/task.md',
-      'commands/workers.md',
       'hooks/hooks.json',
       'hooks/session-start',
       'hooks/runtime-guard.mjs',
       'hooks/lib/runtime-guard.mjs',
-      'skills/npm-workspace-version-bump/SKILL.md',
+      'skills/spwnr-do/SKILL.md',
+      'skills/spwnr-principle/SKILL.md',
+      'skills/spwnr-plan/SKILL.md',
+      'skills/spwnr-task/SKILL.md',
+      'skills/spwnr-task/task-pipeline.md',
+      'skills/spwnr-task/task-team.md',
+      'skills/spwnr-worker-audit/SKILL.md',
+      'skills/using-spwnr/SKILL.md',
+    ];
+
+    for (const requiredPath of requiredPaths) {
+      expect(existsSync(resolve(repoRoot, requiredPath)), requiredPath).toBe(true);
+    }
+
+    for (const removedPath of [
+      'commands/do.md',
+      'commands/plan.md',
+      'commands/task.md',
+      'commands/workers.md',
       'skills/workflow-do/SKILL.md',
       'skills/workflow-foundation/SKILL.md',
       'skills/workflow-planning/SKILL.md',
@@ -205,13 +223,6 @@ describe('repo-root Claude plugin', () => {
       'skills/workflow-task-with-pipeline/SKILL.md',
       'skills/worker-audit/SKILL.md',
       'skills/using-spwnr-workflow/SKILL.md',
-    ];
-
-    for (const requiredPath of requiredPaths) {
-      expect(existsSync(resolve(repoRoot, requiredPath)), requiredPath).toBe(true);
-    }
-
-    for (const removedPath of [
       'skills/worker-selection/SKILL.md',
       'skills/task-decomposition/SKILL.md',
       'skills/handoff-review/SKILL.md',
@@ -245,16 +256,18 @@ describe('workflow worker examples', () => {
 describe('workflow docs', () => {
   it('reference the plugin commands, marketplace, and exact Claude tool names', () => {
     const combinedDocs = [
-      readFileSync(resolve(repoRoot, 'README.md'), 'utf-8'),
-      readFileSync(resolve(repoRoot, 'docs/guide/claude-plugin-workflow.md'), 'utf-8'),
+      readText('README.md'),
+      readText('docs/guide/claude-plugin-workflow.md'),
+      readText('docs/guide/getting-started.md'),
     ].join('\n');
 
     for (const expectedSnippet of [
       'spwnr',
-      '/spwnr:do',
-      '/spwnr:plan',
-      '/spwnr:task',
-      '/spwnr:workers',
+      '/using-spwnr',
+      '/spwnr-do',
+      '/spwnr-plan',
+      '/spwnr-task',
+      '/spwnr-worker-audit',
       '.claude/do/',
       '.claude/plans/spwnr-',
       '-r2.md',
@@ -290,8 +303,8 @@ describe('workflow docs', () => {
       'current run',
       'pipeline',
       'team',
-      'workflow-task-with-pipeline',
-      'workflow-task-with-team',
+      'task-pipeline.md',
+      'task-team.md',
       'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1',
       '/plugin install spwnr@spwnr',
       'claude --plugin-dir /absolute/path/to/spwnr',
@@ -316,90 +329,77 @@ describe('workflow docs', () => {
       'EnterWorktreeTool',
       'ExitWorktreeTool',
       '`parallel`',
+      'commands/',
+      '/spwnr:do',
+      '/spwnr:plan',
+      '/spwnr:task',
+      '/spwnr:workers',
+      'workflow-task-with-pipeline',
+      'workflow-task-with-team',
+      'workflow-foundation',
+      'workflow-planning',
+      'workflow-do',
+      '`worker-audit`',
     ]) {
       expect(combinedDocs).not.toContain(removedSnippet);
     }
   });
 
-  it('encode plan-first execution guards, worker recovery, and team contracts', () => {
-    const gitignore = readFileSync(resolve(repoRoot, '.gitignore'), 'utf-8');
-    const doCommand = readFileSync(resolve(repoRoot, 'commands/do.md'), 'utf-8');
-    const planCommand = readFileSync(resolve(repoRoot, 'commands/plan.md'), 'utf-8');
-    const taskCommand = readFileSync(resolve(repoRoot, 'commands/task.md'), 'utf-8');
-    const workersCommand = readFileSync(resolve(repoRoot, 'commands/workers.md'), 'utf-8');
-    const sessionStartHook = readFileSync(resolve(repoRoot, 'hooks/session-start'), 'utf-8');
-    const hooksJson = readFileSync(resolve(repoRoot, 'hooks/hooks.json'), 'utf-8');
-    const doSkill = readFileSync(resolve(repoRoot, 'skills/workflow-do/SKILL.md'), 'utf-8');
-    const foundationSkill = readFileSync(resolve(repoRoot, 'skills/workflow-foundation/SKILL.md'), 'utf-8');
-    const planningSkill = readFileSync(resolve(repoRoot, 'skills/workflow-planning/SKILL.md'), 'utf-8');
-    const taskRouterSkill = readFileSync(resolve(repoRoot, 'skills/workflow-task-orchestration/SKILL.md'), 'utf-8');
-    const taskTeamSkill = readFileSync(resolve(repoRoot, 'skills/workflow-task-with-team/SKILL.md'), 'utf-8');
-    const taskPipelineSkill = readFileSync(resolve(repoRoot, 'skills/workflow-task-with-pipeline/SKILL.md'), 'utf-8');
-    const workerAuditSkill = readFileSync(resolve(repoRoot, 'skills/worker-audit/SKILL.md'), 'utf-8');
-    const workflowSkill = readFileSync(resolve(repoRoot, 'skills/using-spwnr-workflow/SKILL.md'), 'utf-8');
+  it('encode plan-first execution guards, worker recovery, and helper-doc routing', () => {
+    const gitignore = readText('.gitignore');
+    const sessionStartHook = readText('hooks/session-start');
+    const hooksJson = readText('hooks/hooks.json');
+    const doSkill = readText('skills/spwnr-do/SKILL.md');
+    const principleSkill = readText('skills/spwnr-principle/SKILL.md');
+    const planningSkill = readText('skills/spwnr-plan/SKILL.md');
+    const taskSkill = readText('skills/spwnr-task/SKILL.md');
+    const taskTeamHelper = readText('skills/spwnr-task/task-team.md');
+    const taskPipelineHelper = readText('skills/spwnr-task/task-pipeline.md');
+    const workerAuditSkill = readText('skills/spwnr-worker-audit/SKILL.md');
+    const workflowSkill = readText('skills/using-spwnr/SKILL.md');
 
     expect(gitignore).toContain('.claude/plans/');
     expect(gitignore).toContain('.claude/do/');
 
-    expect(doCommand).toContain('workflow-do');
-    expect(doCommand).toContain('thin entrypoint');
-    expect(doCommand).toContain('Read');
-    expect(doCommand).toContain('Write');
-    expect(doCommand).toContain('Edit');
-    expect(doCommand).toContain('spwnr resolve-workers');
-    expect(doCommand).toContain('/spwnr:workers');
-    expect(doCommand).toContain('/spwnr:plan');
-    expect(doCommand).toContain('3 agents');
-    expect(doCommand).toContain('never call `TaskCreate`');
-    expect(doCommand).not.toContain('TaskCreateTool');
+    expect(doSkill).toContain('/spwnr-do');
+    expect(doSkill).toContain('Agent');
+    expect(doSkill).toContain('Read');
+    expect(doSkill).toContain('Write');
+    expect(doSkill).toContain('Edit');
+    expect(doSkill).toContain('spwnr resolve-workers');
+    expect(doSkill).toContain('at most 3 direct workers');
+    expect(doSkill).toContain('/spwnr-worker-audit');
+    expect(doSkill).toContain('/spwnr-plan');
+    expect(doSkill).toContain('.claude/do/spwnr-do-');
+    expect(doSkill).toContain('Do Readiness');
+    expect(doSkill).not.toContain('TaskCreate');
+    expect(doSkill).not.toContain('TaskGet');
+    expect(doSkill).not.toContain('TaskList');
+    expect(doSkill).not.toContain('TaskUpdate');
+    expect(doSkill).not.toContain('TeamCreate');
+    expect(doSkill).not.toContain('SendMessage');
+    expect(doSkill).not.toContain('TeamDelete');
 
-    expect(planCommand).toContain('Skill');
-    expect(planCommand).toContain('AskUserQuestion');
-    expect(planCommand).toContain('TodoWrite');
-    expect(planCommand).toContain('Read');
-    expect(planCommand).toContain('Write');
-    expect(planCommand).toContain('Edit');
-    expect(planCommand).toContain('resolve-workers');
-    expect(planCommand).toContain('planning-only experts');
-    expect(planCommand).toContain('`research`, `draft`, and `review`');
-    expect(planCommand).toContain('Expert Planning Round');
-    expect(planCommand).toContain('Worker Readiness Required');
-    expect(planCommand).toContain('Execution Units');
-    expect(planCommand).toContain('never call `TaskCreate`');
-    expect(planCommand).toContain('never call `SendMessage`');
-    expect(planCommand).toContain('never create tasks or teams from this command');
-    expect(planCommand).not.toContain('TaskCreateTool');
-
-    expect(taskCommand).toContain('Read');
-    expect(taskCommand).toContain('Edit');
-    expect(taskCommand).toContain('TaskCreate');
-    expect(taskCommand).toContain('TaskGet');
-    expect(taskCommand).toContain('TaskList');
-    expect(taskCommand).toContain('TaskUpdate');
-    expect(taskCommand).toContain('TeamCreate');
-    expect(taskCommand).toContain('SendMessage');
-    expect(taskCommand).toContain('Agent');
-    expect(taskCommand).toContain('TeamDelete');
-    expect(taskCommand).toContain('pipeline');
-    expect(taskCommand).toContain('team');
-    expect(taskCommand).toContain('workflow-task-with-pipeline');
-    expect(taskCommand).toContain('workflow-task-with-team');
-    expect(taskCommand).toContain('/spwnr:workers');
-    expect(taskCommand).toContain('install or inject');
-    expect(taskCommand).toContain('active revision');
-    expect(taskCommand).not.toContain('`parallel`');
-
-    expect(workersCommand).toContain('registry health and readiness audit');
-    expect(workersCommand).toContain('install or inject recovery surface');
-    expect(workersCommand).toContain('/spwnr:task');
-
-    expect(foundationSkill).toContain('Load the primary workflow skill with `Skill`');
-    expect(foundationSkill).toContain('Use `AskUserQuestion`');
-    expect(foundationSkill).toContain('Use `TodoWrite`');
-    expect(foundationSkill).toContain('Persist the shared plan artifact');
-    expect(foundationSkill).toContain('latest active plan revision');
-    expect(foundationSkill).toContain('planning-only `Agent` pass is allowed only after a draft plan is visible');
-    expect(foundationSkill).toContain('Do not call `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `TeamDelete`, or `SendMessage`');
+    expect(principleSkill).toContain('Load the primary workflow skill with `Skill`');
+    expect(principleSkill).toContain('Use `AskUserQuestion`');
+    expect(principleSkill).toContain('Use `TodoWrite`');
+    expect(principleSkill).toContain('Persist the shared plan artifact');
+    expect(principleSkill).toContain('latest active plan revision');
+    expect(principleSkill).toContain('planning-only `Agent` pass is allowed only after a draft plan is visible');
+    expect(principleSkill).toContain('Do not call `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `TeamDelete`, or `SendMessage`');
+    expect(principleSkill).toContain('## Execution Task Contract');
+    expect(principleSkill).toContain('## Execution Strategy Recommendation Contract');
+    expect(principleSkill).toContain('pattern name');
+    expect(principleSkill).toContain('multiple bounded pipelines in parallel');
+    expect(principleSkill).toContain('do not default to multiple teammates editing the same file in parallel');
+    expect(principleSkill).toContain('Owner: <agent-name|controller|unassigned>');
+    expect(principleSkill).toContain('Files: <csv scope or none>');
+    expect(principleSkill).toContain('Claim-Policy: <assigned|self-claim>');
+    expect(principleSkill).toContain('Risk: <low|medium|high>');
+    expect(principleSkill).toContain('Plan-Approval: <not-required|required|approved>');
+    expect(principleSkill).toContain('Mode: <pipeline|team>');
+    expect(principleSkill).toContain('### Compatibility Matrix');
+    expect(principleSkill).toContain('### TaskCreate Preflight');
 
     expect(planningSkill).toContain('## Planning Tool Protocol');
     expect(planningSkill).toContain('## <HARD-GATE>');
@@ -432,112 +432,77 @@ describe('workflow docs', () => {
     expect(planningSkill).toContain('`Execute current plan`');
     expect(planningSkill).not.toContain('Do NOT derive any agent.');
 
-    expect(taskRouterSkill).toContain('## Planning Gate');
-    expect(taskRouterSkill).toContain('## Approved Execution Spec');
-    expect(taskRouterSkill).toContain('## Routing Decision');
-    expect(taskRouterSkill).toContain('## Worker Readiness Required');
-    expect(taskRouterSkill).toContain('## Failure Recovery Contract');
-    expect(taskRouterSkill).toContain('TaskCreate');
-    expect(taskRouterSkill).toContain('TaskGet');
-    expect(taskRouterSkill).toContain('TaskList');
-    expect(taskRouterSkill).toContain('TaskUpdate');
-    expect(taskRouterSkill).toContain('TeamCreate');
-    expect(taskRouterSkill).toContain('SendMessage');
-    expect(taskRouterSkill).toContain('TeamDelete');
-    expect(taskRouterSkill).toContain('pipeline');
-    expect(taskRouterSkill).toContain('team');
-    expect(taskRouterSkill).toContain('workflow-task-with-pipeline');
-    expect(taskRouterSkill).toContain('workflow-task-with-team');
-    expect(taskRouterSkill).toContain('latest active revision');
-    expect(taskRouterSkill).toContain('superseded');
-    expect(taskRouterSkill).toContain('install or inject the missing agents');
-    expect(taskRouterSkill).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
-    expect(taskRouterSkill).toContain('current run');
-    expect(taskRouterSkill).toContain('Approved Execution Spec');
-    expect(taskRouterSkill).toContain('per-unit coverage');
-    expect(taskRouterSkill).not.toContain('`parallel`');
+    expect(taskSkill).toContain('## Planning Gate');
+    expect(taskSkill).toContain('## Approved Execution Spec');
+    expect(taskSkill).toContain('## Routing Decision');
+    expect(taskSkill).toContain('## Worker Readiness Required');
+    expect(taskSkill).toContain('TaskCreate');
+    expect(taskSkill).toContain('TaskGet');
+    expect(taskSkill).toContain('TaskList');
+    expect(taskSkill).toContain('TaskUpdate');
+    expect(taskSkill).toContain('TeamCreate');
+    expect(taskSkill).toContain('SendMessage');
+    expect(taskSkill).toContain('TeamDelete');
+    expect(taskSkill).toContain('pipeline');
+    expect(taskSkill).toContain('team');
+    expect(taskSkill).toContain('task-pipeline.md');
+    expect(taskSkill).toContain('task-team.md');
+    expect(taskSkill).toContain('latest active revision');
+    expect(taskSkill).toContain('superseded');
+    expect(taskSkill).toContain('install or inject the missing agents');
+    expect(taskSkill).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
+    expect(taskSkill).toContain('current run');
+    expect(taskSkill).toContain('Approved Execution Spec');
+    expect(taskSkill).toContain('per-unit coverage');
+    expect(taskSkill).not.toContain('workflow-task-with-pipeline');
+    expect(taskSkill).not.toContain('workflow-task-with-team');
 
-    expect(taskTeamSkill).toContain('## Team Topology');
-    expect(taskTeamSkill).toContain('TaskCreate');
-    expect(taskTeamSkill).toContain('TeamCreate');
-    expect(taskTeamSkill).toContain('SendMessage');
-    expect(taskTeamSkill).toContain('TeamDelete');
-    expect(taskTeamSkill).toContain('multiple bounded pipelines in parallel');
-    expect(taskTeamSkill).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
-    expect(taskTeamSkill).toContain('parallel teammates do not edit the same file');
-    expect(taskTeamSkill).toContain('High-risk tasks must not complete while `Plan-Approval:` is still `required`.');
-    expect(taskTeamSkill).not.toContain('`parallel`');
+    expect(taskTeamHelper).toContain('## Team Topology');
+    expect(taskTeamHelper).toContain('TaskCreate');
+    expect(taskTeamHelper).toContain('TeamCreate');
+    expect(taskTeamHelper).toContain('SendMessage');
+    expect(taskTeamHelper).toContain('TeamDelete');
+    expect(taskTeamHelper).toContain('multiple bounded pipelines in parallel');
+    expect(taskTeamHelper).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
+    expect(taskTeamHelper).toContain('parallel teammates do not edit the same file');
+    expect(taskTeamHelper).toContain('## Team Mode Subagent Obligations');
+    expect(taskTeamHelper).toContain('### Progress Sync Contract');
+    expect(taskTeamHelper).toContain('### Local Storage Contract');
+    expect(taskTeamHelper).toContain('High-risk tasks must not complete while `Plan-Approval:` is still `required`.');
 
-    expect(taskPipelineSkill).toContain('## Pipeline Topology');
-    expect(taskPipelineSkill).toContain('TaskCreate');
-    expect(taskPipelineSkill).toContain('TaskGet');
-    expect(taskPipelineSkill).toContain('TaskList');
-    expect(taskPipelineSkill).toContain('TaskUpdate');
-    expect(taskPipelineSkill).toContain('pipeline pattern');
-    expect(taskPipelineSkill).toContain('stage-to-capability mapping');
-    expect(taskPipelineSkill).toContain('handoff artifact');
-    expect(taskPipelineSkill).toContain('pipeline');
-    expect(taskPipelineSkill).not.toContain('TeamCreate');
-    expect(taskPipelineSkill).not.toContain('`parallel`');
-
-    expect(foundationSkill).toContain('## Execution Task Contract');
-    expect(foundationSkill).toContain('## Execution Strategy Recommendation Contract');
-    expect(foundationSkill).toContain('pattern name');
-    expect(foundationSkill).toContain('multiple bounded pipelines in parallel');
-    expect(foundationSkill).toContain('do not default to multiple teammates editing the same file in parallel');
-    expect(foundationSkill).toContain('Owner: <agent-name|controller|unassigned>');
-    expect(foundationSkill).toContain('Files: <csv scope or none>');
-    expect(foundationSkill).toContain('Claim-Policy: <assigned|self-claim>');
-    expect(foundationSkill).toContain('Risk: <low|medium|high>');
-    expect(foundationSkill).toContain('Plan-Approval: <not-required|required|approved>');
-    expect(foundationSkill).toContain('Mode: <pipeline|team>');
-    expect(foundationSkill).toContain('### Compatibility Matrix');
-    expect(foundationSkill).toContain('`Claim-Policy: assigned` -> `Owner` must be a concrete owner');
-    expect(foundationSkill).toContain('`Claim-Policy: self-claim` -> `Owner` must start as exactly `unassigned`');
-    expect(foundationSkill).toContain('`Risk: high` -> `Plan-Approval` must be `required` or `approved`; never use `not-required`');
-    expect(foundationSkill).toContain('### TaskCreate Preflight');
-    expect(foundationSkill).toContain('Before the first `TaskCreate`, the controller must check every draft task description against this exact checklist:');
+    expect(taskPipelineHelper).toContain('## Pipeline Topology');
+    expect(taskPipelineHelper).toContain('TaskCreate');
+    expect(taskPipelineHelper).toContain('TaskGet');
+    expect(taskPipelineHelper).toContain('TaskList');
+    expect(taskPipelineHelper).toContain('TaskUpdate');
+    expect(taskPipelineHelper).toContain('pipeline pattern');
+    expect(taskPipelineHelper).toContain('stage-to-capability mapping');
+    expect(taskPipelineHelper).toContain('handoff artifact');
+    expect(taskPipelineHelper).toContain('pipeline');
+    expect(taskPipelineHelper).not.toContain('TeamCreate');
 
     expect(workerAuditSkill).toContain('health-check and recovery surface');
     expect(workerAuditSkill).toContain('install or inject');
     expect(workerAuditSkill).toContain('return to the same active revision');
     expect(workerAuditSkill).toContain('Do not silently invent a fallback agent lineup');
 
-    expect(doSkill).toContain('Agent');
-    expect(doSkill).toContain('Read');
-    expect(doSkill).toContain('Write');
-    expect(doSkill).toContain('Edit');
-    expect(doSkill).toContain('spwnr resolve-workers');
-    expect(doSkill).toContain('at most 3 direct workers');
-    expect(doSkill).toContain('/spwnr:workers');
-    expect(doSkill).toContain('/spwnr:plan');
-    expect(doSkill).toContain('.claude/do/spwnr-do-');
-    expect(doSkill).toContain('Do Readiness');
-    expect(doSkill).not.toContain('TaskCreate');
-    expect(doSkill).not.toContain('TaskGet');
-    expect(doSkill).not.toContain('TaskList');
-    expect(doSkill).not.toContain('TaskUpdate');
-    expect(doSkill).not.toContain('TeamCreate');
-    expect(doSkill).not.toContain('SendMessage');
-    expect(doSkill).not.toContain('TeamDelete');
-
-    expect(workflowSkill).toContain('/spwnr:do');
-    expect(workflowSkill).toContain('bounded small tasks');
-    expect(workflowSkill).toContain('.claude/do/spwnr-do-');
-    expect(workflowSkill).toContain('at most 3 direct workers');
-    expect(workflowSkill).toContain('/spwnr:plan');
-    expect(workflowSkill).toContain('/spwnr:task');
-    expect(workflowSkill).toContain('/spwnr:workers');
-    expect(workflowSkill).toContain('workflow-task-with-pipeline');
-    expect(workflowSkill).toContain('workflow-task-with-team');
-    expect(workflowSkill).toContain('pipeline');
-    expect(workflowSkill).toContain('workflow-planning');
-    expect(workflowSkill).toContain('worker-audit');
+    expect(workflowSkill).toContain('/using-spwnr');
+    expect(workflowSkill).toContain('/spwnr-plan');
+    expect(workflowSkill).toContain('/spwnr-task');
+    expect(workflowSkill).toContain('implement');
+    expect(workflowSkill).toContain('/spwnr-do');
+    expect(workflowSkill).toContain('/spwnr-worker-audit');
+    expect(workflowSkill).toContain('task-pipeline.md');
+    expect(workflowSkill).toContain('task-team.md');
+    expect(workflowSkill).toContain('spwnr-principle');
+    expect(workflowSkill).toContain('spwnr-plan');
     expect(workflowSkill).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
-    expect(workflowSkill).not.toContain('`parallel`');
 
-    expect(sessionStartHook).toContain('/spwnr:do');
-    expect(sessionStartHook).toContain('/spwnr:plan');
+    expect(sessionStartHook).toContain('/using-spwnr');
+    expect(sessionStartHook).toContain('/spwnr-do');
+    expect(sessionStartHook).toContain('/spwnr-plan');
+    expect(sessionStartHook).toContain('/spwnr-task');
+    expect(sessionStartHook).toContain('/spwnr-worker-audit');
     expect(sessionStartHook).toContain('Skill');
     expect(sessionStartHook).toContain('AskUserQuestion');
     expect(sessionStartHook).toContain('TodoWrite');
@@ -557,8 +522,9 @@ describe('workflow docs', () => {
     expect(sessionStartHook).toContain('TeamCreate');
     expect(sessionStartHook).toContain('SendMessage');
     expect(sessionStartHook).toContain('TeamDelete');
-    expect(sessionStartHook).toContain('workflow-task-with-pipeline');
-    expect(sessionStartHook).toContain('workflow-task-with-team');
+    expect(sessionStartHook).toContain('spwnr-principle');
+    expect(sessionStartHook).toContain('task-pipeline.md');
+    expect(sessionStartHook).toContain('task-team.md');
     expect(sessionStartHook).toContain('pipeline');
     expect(sessionStartHook).toContain('multiple pipelines in parallel');
     expect(sessionStartHook).toContain('parallel units do not edit the same file');
@@ -568,7 +534,6 @@ describe('workflow docs', () => {
     expect(sessionStartHook).toContain('--unit briefs');
     expect(sessionStartHook).toContain('latest active revision');
     expect(sessionStartHook).toContain('Execute current plan');
-    expect(sessionStartHook).not.toContain('`parallel`');
 
     expect(hooksJson).toContain('TaskCreated');
     expect(hooksJson).toContain('TaskCompleted');
@@ -576,60 +541,91 @@ describe('workflow docs', () => {
     expect(hooksJson).toContain('PermissionDenied');
     expect(hooksJson).toContain('Stop');
     expect(hooksJson).toContain('runtime-guard.mjs');
+
+    const renamedSurface = [
+      doSkill,
+      principleSkill,
+      planningSkill,
+      taskSkill,
+      taskTeamHelper,
+      taskPipelineHelper,
+      workerAuditSkill,
+      workflowSkill,
+      sessionStartHook,
+    ].join('\n');
+
+    for (const removedSnippet of [
+      '/spwnr:do',
+      '/spwnr:plan',
+      '/spwnr:task',
+      '/spwnr:workers',
+      'workflow-task-with-pipeline',
+      'workflow-task-with-team',
+      'workflow-foundation',
+      'workflow-planning',
+      'workflow-do',
+      '`worker-audit`',
+    ]) {
+      expect(renamedSurface).not.toContain(removedSnippet);
+    }
   });
 
   it('encode request normalization and implementation-oriented execution standards in controller prompts', () => {
-    const foundationSkill = readFileSync(resolve(repoRoot, 'skills/workflow-foundation/SKILL.md'), 'utf-8');
-    const taskRouterSkill = readFileSync(resolve(repoRoot, 'skills/workflow-task-orchestration/SKILL.md'), 'utf-8');
-    const taskTeamSkill = readFileSync(resolve(repoRoot, 'skills/workflow-task-with-team/SKILL.md'), 'utf-8');
-    const taskPipelineSkill = readFileSync(resolve(repoRoot, 'skills/workflow-task-with-pipeline/SKILL.md'), 'utf-8');
+    const principleSkill = readText('skills/spwnr-principle/SKILL.md');
+    const taskSkill = readText('skills/spwnr-task/SKILL.md');
+    const taskTeamHelper = readText('skills/spwnr-task/task-team.md');
+    const taskPipelineHelper = readText('skills/spwnr-task/task-pipeline.md');
 
-    expect(foundationSkill).toContain("Translate the user's raw wording into a structured task brief");
-    expect(foundationSkill).toContain('Do not require the user to rewrite the prompt');
-    expect(foundationSkill).toContain('decision-support materials');
-    expect(foundationSkill).toContain('2 to 4 concrete options');
+    expect(principleSkill).toContain("Translate the user's raw wording into a structured task brief");
+    expect(principleSkill).toContain('Do not require the user to rewrite the prompt');
+    expect(principleSkill).toContain('decision-support materials');
+    expect(principleSkill).toContain('2 to 4 concrete options');
 
-    expect(taskRouterSkill).toContain('normalized registry lookup brief');
-    expect(taskRouterSkill).toContain('per-unit coverage brief');
-    expect(taskRouterSkill).toContain('lineup that covers every execution unit');
-    expect(taskRouterSkill).toContain('workflow-task-with-pipeline');
-    expect(taskRouterSkill).toContain('workflow-task-with-team');
-    expect(taskRouterSkill).toContain('pipeline');
-    expect(taskRouterSkill).toContain('team');
-    expect(taskRouterSkill).not.toContain('swarm');
+    expect(taskSkill).toContain('normalized registry lookup brief');
+    expect(taskSkill).toContain('per-unit coverage brief');
+    expect(taskSkill).toContain('lineup that covers every execution unit');
+    expect(taskSkill).toContain('task-pipeline.md');
+    expect(taskSkill).toContain('task-team.md');
+    expect(taskSkill).toContain('pipeline');
+    expect(taskSkill).toContain('team');
+    expect(taskSkill).not.toContain('swarm');
 
-    expect(taskTeamSkill).toContain('selected lineup and why each package was chosen');
-    expect(taskTeamSkill).toContain('multiple bounded pipelines in parallel');
-    expect(taskPipelineSkill).toContain('stage-to-capability mapping');
-    expect(taskPipelineSkill).toContain('handoff artifact');
+    expect(taskTeamHelper).toContain('selected lineup and why each package was chosen');
+    expect(taskTeamHelper).toContain('multiple bounded pipelines in parallel');
+    expect(taskPipelineHelper).toContain('stage-to-capability mapping');
+    expect(taskPipelineHelper).toContain('handoff artifact');
   });
 
-  it('keep workflow skills within the 200-line host budget', () => {
+  it('keep workflow skills and task helpers within the 200-line host budget', () => {
     const countLines = (value: string): number => value.split('\n').length;
 
-    const doSkill = readFileSync(resolve(repoRoot, 'skills/workflow-do/SKILL.md'), 'utf-8');
-    const foundationSkill = readFileSync(resolve(repoRoot, 'skills/workflow-foundation/SKILL.md'), 'utf-8');
-    const planningSkill = readFileSync(resolve(repoRoot, 'skills/workflow-planning/SKILL.md'), 'utf-8');
-    const taskRouterSkill = readFileSync(resolve(repoRoot, 'skills/workflow-task-orchestration/SKILL.md'), 'utf-8');
-    const taskTeamSkill = readFileSync(resolve(repoRoot, 'skills/workflow-task-with-team/SKILL.md'), 'utf-8');
-    const taskPipelineSkill = readFileSync(resolve(repoRoot, 'skills/workflow-task-with-pipeline/SKILL.md'), 'utf-8');
+    const doSkill = readText('skills/spwnr-do/SKILL.md');
+    const principleSkill = readText('skills/spwnr-principle/SKILL.md');
+    const planningSkill = readText('skills/spwnr-plan/SKILL.md');
+    const taskSkill = readText('skills/spwnr-task/SKILL.md');
+    const taskTeamHelper = readText('skills/spwnr-task/task-team.md');
+    const taskPipelineHelper = readText('skills/spwnr-task/task-pipeline.md');
 
     expect(countLines(doSkill)).toBeLessThanOrEqual(200);
-    expect(countLines(foundationSkill)).toBeLessThanOrEqual(200);
+    expect(countLines(principleSkill)).toBeLessThanOrEqual(200);
     expect(countLines(planningSkill)).toBeLessThanOrEqual(200);
-    expect(countLines(taskRouterSkill)).toBeLessThanOrEqual(200);
-    expect(countLines(taskTeamSkill)).toBeLessThanOrEqual(200);
-    expect(countLines(taskPipelineSkill)).toBeLessThanOrEqual(200);
+    expect(countLines(taskSkill)).toBeLessThanOrEqual(200);
+    expect(countLines(taskTeamHelper)).toBeLessThanOrEqual(200);
+    expect(countLines(taskPipelineHelper)).toBeLessThanOrEqual(200);
   });
 
-  it('documents that the standalone registry package is published outside the main repo workflow', () => {
-    const releaseSurface = readFileSync(
-      resolve(repoRoot, 'skills/npm-workspace-version-bump/references/spwnr-release-surface.md'),
-      'utf-8',
-    );
-    const publishScript = readFileSync(resolve(repoRoot, 'scripts/publish-public-packages.mjs'), 'utf-8');
+  it('makes spwnr-task invoke the split helper markdown files', () => {
+    const taskSkill = readText('skills/spwnr-task/SKILL.md');
 
-    expect(releaseSurface).toContain('`@spwnr/registry` is published from `Cheong43/spwnr-registry`, not from this main repo workflow.');
+    expect(taskSkill).toContain('task-pipeline.md');
+    expect(taskSkill).toContain('task-team.md');
+    expect(existsSync(resolve(repoRoot, 'skills/workflow-task-with-pipeline/SKILL.md'))).toBe(false);
+    expect(existsSync(resolve(repoRoot, 'skills/workflow-task-with-team/SKILL.md'))).toBe(false);
+  });
+
+  it('documents publish-script safeguards for the standalone registry package', () => {
+    const publishScript = readText('scripts/publish-public-packages.mjs');
+
     expect(publishScript).toContain('Publishing the dependent packages now would create installable metadata that users cannot resolve from npm.');
   });
 });
