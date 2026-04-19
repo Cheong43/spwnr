@@ -20,6 +20,7 @@ Use `spwnr-principle` as the shared source of truth for task metadata, risky-uni
 
 - Build a fresh task graph from the latest active revision; keep prior superseded tasks visible only for audit.
 - Every execution task, integration task, and review task must carry `Plan`, `Unit`, `Mode`, `Worktree`, `Blocked`, `Owner`, `Files`, `Claim-Policy`, `Risk`, and `Plan-Approval`.
+- Keep `Blocked:` reserved for current block state only. Record sequencing through plan `dependencies`, task graph relations, or an optional `Depends-On:` note instead of putting prerequisite unit ids in `Blocked:`.
 - Treat each execution unit as a staged handoff through the approved pipeline pattern.
 - Keep stages sequential inside each pipeline. Do not advance a unit until the current stage has produced its required handoff artifact and passed its acceptance check.
 - `pipeline` must remain executable without Claude team features.
@@ -30,7 +31,7 @@ Use `spwnr-principle` as the shared source of truth for task metadata, risky-uni
 2. Create the task graph with one staged execution task per unit and stage, plus integration and review tasks when needed.
 3. Validate the queue with `TaskGet` and `TaskList`.
 4. Derive only the selected registry-backed agents and brief each stage from the active revision instead of chat reconstruction.
-5. Use `TaskUpdate` to record stage completion, handoff artifacts, blocked status, and the next stage owner.
+5. Use `TaskUpdate` to record stage completion, handoff artifacts, actual blocking incidents, and the next stage owner.
 6. Repeat until every pipeline stage and review step is complete.
 
 ## Failure Recovery Contract
@@ -44,5 +45,6 @@ Use `spwnr-principle` as the shared source of truth for task metadata, risky-uni
 
 - Do not silently convert a `pipeline` plan into `team`.
 - Do not skip stage acceptance checks or handoff artifacts.
+- Do not encode sequencing or dependencies in `Blocked:`; use plan `dependencies`, `Depends-On:`, or task graph relations instead.
 - High-risk tasks must not complete while `Plan-Approval:` is still `required`.
 - If `TaskCreate` fails, repair the plan artifact or task metadata first and never execute anyway.

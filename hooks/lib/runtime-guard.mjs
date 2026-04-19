@@ -39,6 +39,18 @@ function normalizeText(value) {
   return typeof value === 'string' ? value : '';
 }
 
+function hasClearBlockedMarker(description) {
+  return /\bBlocked:\s*(no|false|none)\b/i.test(normalizeText(description));
+}
+
+function buildBlockedMarkerError(phase) {
+  if (phase === 'creation') {
+    return 'Task creation blocked. `Blocked:` is reserved for current block state and must start as `Blocked: no`. Put sequencing in `Depends-On:` or task graph relations instead.';
+  }
+
+  return 'Task completion blocked. Update the task metadata so `Blocked: no` before completing it. Put sequencing in `Depends-On:` or task graph relations instead.';
+}
+
 export function missingTaskMarkers(description) {
   const text = normalizeText(description);
   return REQUIRED_TASK_MARKERS.filter((marker) => !text.includes(marker));
@@ -432,6 +444,13 @@ export function evaluateTaskCreated(input, env = process.env) {
     };
   }
 
+  if (!hasClearBlockedMarker(input.task_description)) {
+    return {
+      exitCode: 2,
+      stderr: buildBlockedMarkerError('creation'),
+    };
+  }
+
   const validation = validateReferencedPlan(input, { requireApprovedExecutionSpec: true });
   if (validation.exitCode !== 0) {
     return {
@@ -463,10 +482,10 @@ export function evaluateTaskCompleted(input, env = process.env) {
     };
   }
 
-  if (!/\bBlocked:\s*(no|false|none)\b/i.test(description)) {
+  if (!hasClearBlockedMarker(description)) {
     return {
       exitCode: 2,
-      stderr: 'Task completion blocked. Update the task metadata so `Blocked: no` before completing it.',
+      stderr: buildBlockedMarkerError('completion'),
     };
   }
 

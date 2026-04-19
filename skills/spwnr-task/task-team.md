@@ -20,6 +20,7 @@ Use `spwnr-principle` as the shared source of truth for task metadata, risky-uni
 
 - Build a fresh task graph from the latest active revision; keep prior superseded tasks visible only for audit.
 - Every execution task, integration task, and review task must carry `Plan`, `Unit`, `Mode`, `Worktree`, `Blocked`, `Owner`, `Files`, `Claim-Policy`, `Risk`, and `Plan-Approval`.
+- Keep `Blocked:` reserved for current block state only. Record sequencing through plan `dependencies`, task graph relations, or an optional `Depends-On:` note instead of putting prerequisite unit ids in `Blocked:`.
 - Use multiple bounded execution tasks, explicit ownership, and a shared queue.
 - When the approved plan says so, the team may start multiple bounded pipelines in parallel; each pipeline must still preserve its stage order and handoff checks.
 - Default the graph so parallel teammates do not edit the same file.
@@ -70,5 +71,6 @@ All work done must be stored locally before proceeding to the next step:
 
 - Do not silently downgrade a `team` plan into `pipeline`.
 - Do not let teammates invent new scope.
+- Do not encode sequencing or dependencies in `Blocked:`; use plan `dependencies`, `Depends-On:`, or task graph relations instead.
 - High-risk tasks must not complete while `Plan-Approval:` is still `required`.
 - If `TaskCreate` fails, repair the plan artifact or task metadata first and never execute anyway.

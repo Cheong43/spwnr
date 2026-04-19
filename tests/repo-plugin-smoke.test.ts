@@ -25,7 +25,7 @@ describe('repo-root Claude plugin', () => {
 
     expect(plugin).toMatchObject({
       name: 'spwnr',
-      version: '0.3.3',
+      version: '0.3.4',
     });
     expect(plugin).not.toHaveProperty('hooks');
     expect(marketplace).toMatchObject({
@@ -34,7 +34,7 @@ describe('repo-root Claude plugin', () => {
         expect.objectContaining({
           name: 'spwnr',
           source: './',
-          version: '0.3.3',
+          version: '0.3.4',
         }),
       ],
     });
@@ -398,6 +398,8 @@ describe('workflow docs', () => {
     expect(principleSkill).toContain('Risk: <low|medium|high>');
     expect(principleSkill).toContain('Plan-Approval: <not-required|required|approved>');
     expect(principleSkill).toContain('Mode: <pipeline|team>');
+    expect(principleSkill).toContain('`Blocked:` is reserved for current block state only');
+    expect(principleSkill).toContain('`Depends-On:`');
     expect(principleSkill).toContain('### Compatibility Matrix');
     expect(principleSkill).toContain('### TaskCreate Preflight');
 
@@ -465,6 +467,7 @@ describe('workflow docs', () => {
     expect(taskTeamHelper).toContain('multiple bounded pipelines in parallel');
     expect(taskTeamHelper).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
     expect(taskTeamHelper).toContain('parallel teammates do not edit the same file');
+    expect(taskTeamHelper).toContain('Do not encode sequencing or dependencies in `Blocked:`');
     expect(taskTeamHelper).toContain('## Team Mode Subagent Obligations');
     expect(taskTeamHelper).toContain('### Progress Sync Contract');
     expect(taskTeamHelper).toContain('### Local Storage Contract');
@@ -479,6 +482,7 @@ describe('workflow docs', () => {
     expect(taskPipelineHelper).toContain('stage-to-capability mapping');
     expect(taskPipelineHelper).toContain('handoff artifact');
     expect(taskPipelineHelper).toContain('pipeline');
+    expect(taskPipelineHelper).toContain('Do not encode sequencing or dependencies in `Blocked:`');
     expect(taskPipelineHelper).not.toContain('TeamCreate');
 
     expect(workerAuditSkill).toContain('health-check and recovery surface');
@@ -531,6 +535,8 @@ describe('workflow docs', () => {
     expect(sessionStartHook).toContain('worker-readiness recovery message');
     expect(sessionStartHook).toContain('Approved Execution Spec');
     expect(sessionStartHook).toContain('Plan, Unit, Mode, Worktree, Blocked, Owner, Files, Claim-Policy, Risk, and Plan-Approval');
+    expect(sessionStartHook).toContain('`Blocked:` is reserved for current block state only');
+    expect(sessionStartHook).toContain('`Depends-On:` or task graph relations');
     expect(sessionStartHook).toContain('--unit briefs');
     expect(sessionStartHook).toContain('latest active revision');
     expect(sessionStartHook).toContain('Execute current plan');

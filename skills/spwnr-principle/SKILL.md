@@ -115,6 +115,8 @@ Every execution, integration, and review task created with `TaskCreate` must inc
 
 These fields are mandatory because runtime hooks use them as the minimum contract for task creation and completion. The plan file referenced by `Plan:` must contain an `Approved Execution Spec` section before task creation is allowed. High-risk tasks must not complete while `Plan-Approval:` is still `required`.
 
+`Blocked:` is reserved for current block state only. Never place unit ids, stage ids, prerequisites, or dependency labels in `Blocked:`. New tasks should start with `Blocked: no`; keep sequencing in plan `dependencies`, `Depends-On:`, or task graph relations instead.
+
 ### Compatibility Matrix
 
 - `Claim-Policy: assigned` -> `Owner` must be a concrete owner such as an agent name or `controller`; never use `unassigned`
@@ -128,6 +130,7 @@ Before the first `TaskCreate`, the controller must check every draft task descri
 - every required marker is present exactly once with a concrete value
 - `Owner` and `Claim-Policy` satisfy the compatibility matrix
 - `Risk` and `Plan-Approval` satisfy the compatibility matrix
+- `Blocked:` starts as `no`; sequencing lives in `Depends-On:`, task graph relations, or plan `dependencies`, never in `Blocked:`
 - `team` graphs default to disjoint `Files:` ownership across concurrent tasks instead of overlapping claims on one file
 - multi-agent no-worktree tasks have explicit `Files:` ownership boundaries instead of `none`
 - any shared-file exception is documented in the plan and uses either worktree isolation or one concrete owner controlling the shared file

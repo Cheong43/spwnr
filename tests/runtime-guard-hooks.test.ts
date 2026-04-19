@@ -121,6 +121,20 @@ describe('TaskCreated guard', () => {
     ).toEqual({ exitCode: 0 });
   });
 
+  it('allows task creation when sequencing is recorded in Depends-On while Blocked stays clear', () => {
+    const dir = makeTempDir();
+    writePlanArtifact(dir, buildPlanArtifactContents({}));
+
+    expect(
+      evaluateTaskCreated({
+        hook_event_name: 'TaskCreated',
+        task_subject: 'Execute unit-01',
+        task_description: [validTaskDescription, 'Depends-On: unit-00'].join('\n'),
+        cwd: dir,
+      }),
+    ).toEqual({ exitCode: 0 });
+  });
+
   it('allows task creation when legacy single-lane metadata is still present', () => {
     const dir = makeTempDir();
     writePlanArtifact(dir, buildPlanArtifactContents({}));
@@ -156,6 +170,22 @@ describe('TaskCreated guard', () => {
         cwd: dir,
       }),
     ).toEqual({ exitCode: 0 });
+  });
+
+  it('blocks task creation when sequencing is encoded in Blocked metadata', () => {
+    const dir = makeTempDir();
+    writePlanArtifact(dir, buildPlanArtifactContents({}));
+
+    const result = evaluateTaskCreated({
+      hook_event_name: 'TaskCreated',
+      task_subject: 'Execute unit-01',
+      task_description: validTaskDescription.replace('Blocked: no', 'Blocked: unit-00'),
+      cwd: dir,
+    });
+
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('Blocked: no');
+    expect(result.stderr).toContain('Depends-On:');
   });
 
   it('blocks task creation when a high-risk unit skips worker plan approval', () => {
@@ -409,6 +439,7 @@ describe('TaskCompleted guard', () => {
 
     expect(result.exitCode).toBe(2);
     expect(result.stderr).toContain('Blocked: no');
+    expect(result.stderr).toContain('Depends-On:');
   });
 
   it('allows completion when metadata is complete and unblocked', () => {
