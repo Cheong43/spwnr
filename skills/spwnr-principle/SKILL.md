@@ -98,6 +98,12 @@ Every `Execution Unit` in the plan artifact must include:
 - `worker plan approval`
 - `pipeline pattern reference or override`
 
+Render execution-unit field labels as single-line bullet markers so runtime hooks can parse them reliably. Preferred exact format:
+
+- `- **unit_id**: unit-1`
+
+Compatible fallbacks such as `- **unit_id:** unit-1`, `- unit_id: unit-1`, or a full-width colon variant are allowed, but do not invent alternate casing, table-only encodings, or bury `unit_id` inside prose.
+
 ## Execution Task Contract
 
 Every execution, integration, and review task created with `TaskCreate` must include these exact fields in the task description:
@@ -113,7 +119,13 @@ Every execution, integration, and review task created with `TaskCreate` must inc
 - `Risk: <low|medium|high>`
 - `Plan-Approval: <not-required|required|approved>`
 
+New tasks must write `Blocked: no` literally. Put prerequisites in `Depends-On:`, plan `dependencies`, or task graph relations instead of encoding them in `Blocked:`.
+
 These fields are mandatory because runtime hooks use them as the minimum contract for task creation and completion. The plan file referenced by `Plan:` must contain an `Approved Execution Spec` section before task creation is allowed. High-risk tasks must not complete while `Plan-Approval:` is still `required`.
+
+When the active repo launch policy targets Claude Code with worktree-required mutation isolation, any mutating execution task must declare `Worktree: required`. Reserve `Worktree: not-required` for read-only review or audit tasks only.
+
+For Claude mutating work, the execution contract is: discover runtime tools with `ToolSearchTool`, enter isolation with `EnterWorktreeTool`, perform the work inside the git worktree, generate a closing summary with `BriefTool`, and exit cleanly with `ExitWorktreeTool` before the task is considered complete.
 
 `Blocked:` is reserved for current block state only. Never place unit ids, stage ids, prerequisites, or dependency labels in `Blocked:`. New tasks should start with `Blocked: no`; keep sequencing in plan `dependencies`, `Depends-On:`, or task graph relations instead.
 
@@ -134,6 +146,7 @@ Before the first `TaskCreate`, the controller must check every draft task descri
 - `team` graphs default to disjoint `Files:` ownership across concurrent tasks instead of overlapping claims on one file
 - multi-agent no-worktree tasks have explicit `Files:` ownership boundaries instead of `none`
 - any shared-file exception is documented in the plan and uses either worktree isolation or one concrete owner controlling the shared file
+- Claude mutating tasks default to `Worktree: required`; only read-only review or audit tasks may use `Worktree: not-required`
 - high-risk units are already marked for worker plan approval before task creation
 - `pipeline` initial graphs default to `Owner: unassigned` plus `Claim-Policy: self-claim` unless the controller intentionally binds the task
 

@@ -54,6 +54,18 @@ describe('repo-root Claude plugin', () => {
         minAgents: 1,
         maxAgents: 20,
       },
+      launchPolicy: {
+        claude_code: {
+          permissionModel: 'explicit_allow_all',
+          writeIsolation: {
+            mode: 'worktree_required_for_mutation',
+            autoEnter: true,
+            autoExit: true,
+            summaryTool: 'BriefTool',
+            discoveryTool: 'ToolSearchTool',
+          },
+        },
+      },
     });
     expect(hooks).toMatchObject({
       hooks: {
@@ -305,7 +317,6 @@ describe('workflow docs', () => {
       'team',
       'task-pipeline.md',
       'task-team.md',
-      'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1',
       '/plugin install spwnr@spwnr',
       'claude --plugin-dir /absolute/path/to/spwnr',
     ]) {
@@ -389,9 +400,15 @@ describe('workflow docs', () => {
     expect(principleSkill).toContain('Do not call `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `TeamDelete`, or `SendMessage`');
     expect(principleSkill).toContain('## Execution Task Contract');
     expect(principleSkill).toContain('## Execution Strategy Recommendation Contract');
+    expect(principleSkill).toContain('`- **unit_id**: unit-1`');
     expect(principleSkill).toContain('pattern name');
     expect(principleSkill).toContain('multiple bounded pipelines in parallel');
     expect(principleSkill).toContain('do not default to multiple teammates editing the same file in parallel');
+    expect(principleSkill).toContain('Claude Code with worktree-required mutation isolation');
+    expect(principleSkill).toContain('ToolSearchTool');
+    expect(principleSkill).toContain('EnterWorktreeTool');
+    expect(principleSkill).toContain('BriefTool');
+    expect(principleSkill).toContain('ExitWorktreeTool');
     expect(principleSkill).toContain('Owner: <agent-name|controller|unassigned>');
     expect(principleSkill).toContain('Files: <csv scope or none>');
     expect(principleSkill).toContain('Claim-Policy: <assigned|self-claim>');
@@ -422,6 +439,7 @@ describe('workflow docs', () => {
     expect(planningSkill).toContain('risk level');
     expect(planningSkill).toContain('file ownership hints');
     expect(planningSkill).toContain('worker plan approval');
+    expect(planningSkill).toContain('Prefer `- **unit_id**: unit-1`');
     expect(planningSkill).toContain('pattern name');
     expect(planningSkill).toContain('multiple pipelines in parallel');
     expect(planningSkill).toContain('## Execution Review Loop');
@@ -452,10 +470,16 @@ describe('workflow docs', () => {
     expect(taskSkill).toContain('latest active revision');
     expect(taskSkill).toContain('superseded');
     expect(taskSkill).toContain('install or inject the missing agents');
-    expect(taskSkill).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
     expect(taskSkill).toContain('current run');
     expect(taskSkill).toContain('Approved Execution Spec');
     expect(taskSkill).toContain('per-unit coverage');
+    expect(taskSkill).toContain('Prefer `- **unit_id**: unit-1`');
+    expect(taskSkill).toContain('`Blocked: no`');
+    expect(taskSkill).toContain('Worktree: required');
+    expect(taskSkill).toContain('ToolSearchTool');
+    expect(taskSkill).toContain('EnterWorktreeTool');
+    expect(taskSkill).toContain('BriefTool');
+    expect(taskSkill).toContain('ExitWorktreeTool');
     expect(taskSkill).not.toContain('workflow-task-with-pipeline');
     expect(taskSkill).not.toContain('workflow-task-with-team');
 
@@ -465,9 +489,14 @@ describe('workflow docs', () => {
     expect(taskTeamHelper).toContain('SendMessage');
     expect(taskTeamHelper).toContain('TeamDelete');
     expect(taskTeamHelper).toContain('multiple bounded pipelines in parallel');
-    expect(taskTeamHelper).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
     expect(taskTeamHelper).toContain('parallel teammates do not edit the same file');
     expect(taskTeamHelper).toContain('Do not encode sequencing or dependencies in `Blocked:`');
+    expect(taskTeamHelper).toContain('Every new task must start with the literal line `Blocked: no`.');
+    expect(taskTeamHelper).toContain('Worktree: required');
+    expect(taskTeamHelper).toContain('ToolSearchTool');
+    expect(taskTeamHelper).toContain('EnterWorktreeTool');
+    expect(taskTeamHelper).toContain('BriefTool');
+    expect(taskTeamHelper).toContain('ExitWorktreeTool');
     expect(taskTeamHelper).toContain('## Team Mode Subagent Obligations');
     expect(taskTeamHelper).toContain('### Progress Sync Contract');
     expect(taskTeamHelper).toContain('### Local Storage Contract');
@@ -483,6 +512,12 @@ describe('workflow docs', () => {
     expect(taskPipelineHelper).toContain('handoff artifact');
     expect(taskPipelineHelper).toContain('pipeline');
     expect(taskPipelineHelper).toContain('Do not encode sequencing or dependencies in `Blocked:`');
+    expect(taskPipelineHelper).toContain('Every new task must start with the literal line `Blocked: no`.');
+    expect(taskPipelineHelper).toContain('Worktree: required');
+    expect(taskPipelineHelper).toContain('ToolSearchTool');
+    expect(taskPipelineHelper).toContain('EnterWorktreeTool');
+    expect(taskPipelineHelper).toContain('BriefTool');
+    expect(taskPipelineHelper).toContain('ExitWorktreeTool');
     expect(taskPipelineHelper).not.toContain('TeamCreate');
 
     expect(workerAuditSkill).toContain('health-check and recovery surface');
@@ -500,8 +535,6 @@ describe('workflow docs', () => {
     expect(workflowSkill).toContain('task-team.md');
     expect(workflowSkill).toContain('spwnr-principle');
     expect(workflowSkill).toContain('spwnr-plan');
-    expect(workflowSkill).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
-
     expect(sessionStartHook).toContain('/using-spwnr');
     expect(sessionStartHook).toContain('/spwnr-do');
     expect(sessionStartHook).toContain('/spwnr-plan');
@@ -540,6 +573,8 @@ describe('workflow docs', () => {
     expect(sessionStartHook).toContain('--unit briefs');
     expect(sessionStartHook).toContain('latest active revision');
     expect(sessionStartHook).toContain('Execute current plan');
+    expect(sessionStartHook).toContain('preferably `- **unit_id**: unit-1`');
+    expect(sessionStartHook).toContain('`Blocked: no` literally');
 
     expect(hooksJson).toContain('TaskCreated');
     expect(hooksJson).toContain('TaskCompleted');

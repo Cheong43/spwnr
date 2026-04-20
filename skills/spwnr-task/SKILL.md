@@ -40,8 +40,11 @@ Before any `TaskCreate`:
 5. If the selected mode is `pipeline`, validate that the pattern name, ordered stages, and stage handoffs are present.
 6. If the selected mode is `team`, validate whether the plan expects one shared queue or multiple pipelines launched in parallel.
 7. In `team` mode, default the task graph toward parallel tasks with disjoint `Files:` ownership. If the plan needs shared-file collaboration, validate that the exception is explicit and that the plan defines worktree isolation or one concrete owner for that file.
-8. If `team` is required but `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is unavailable, stop and say so explicitly instead of silently downgrading.
-9. Append `Approved Execution Spec` to the active revision with `Edit`, including the selected mode, routing target, normalized registry lookup brief, and per-unit coverage summary.
+8. Append `Approved Execution Spec` to the active revision with `Edit`, including the selected mode, routing target, normalized registry lookup brief, and per-unit coverage summary.
+9. Before any `TaskCreate`, normalize every referenced execution-unit marker to a runtime-guard-safe one-line label. Prefer `- **unit_id**: unit-1`.
+10. Before any `TaskCreate`, ensure every new task starts with the literal marker `Blocked: no`; place sequencing in `Depends-On:`, plan `dependencies`, or task graph relations instead.
+11. For Claude Code mutating tasks, default every execution task to `Worktree: required`. Keep `Worktree: not-required` only for read-only review or audit tasks.
+12. For Claude Code mutating tasks, execution must follow this lifecycle: use `ToolSearchTool`, then `EnterWorktreeTool`, run inside the worktree, finish with `BriefTool`, and only then call `ExitWorktreeTool`.
 
 ## Routing Decision
 
@@ -51,6 +54,7 @@ Before any `TaskCreate`:
 - `pipeline` must remain available without Claude team features.
 - `team` may launch multiple bounded pipelines in parallel when the approved plan says so.
 - `team` should not default to multiple parallel tasks editing the same file unless the approved plan explicitly marks that as an exception.
+- Mutating Claude child-agent work should not run in the main tree; route it through automatic worktree isolation instead.
 - Do not silently reroute a `team` plan into `pipeline` when team prerequisites fail.
 
 ## Worker Readiness Required

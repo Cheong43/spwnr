@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -6,6 +6,24 @@ import { ClaudeAdapter } from './claude-adapter.js';
 
 function createPackageDir(): string {
   const dir = mkdtempSync(join(tmpdir(), 'spwnr-claude-adapter-'));
+  mkdirSync(join(dir, '.claude-plugin'), { recursive: true });
+  writeFileSync(
+    join(dir, '.claude-plugin', 'workers.json'),
+    JSON.stringify({
+      launchPolicy: {
+        claude_code: {
+          permissionModel: 'explicit_allow_all',
+          writeIsolation: {
+            mode: 'worktree_required_for_mutation',
+            autoEnter: true,
+            autoExit: true,
+            summaryTool: 'BriefTool',
+            discoveryTool: 'ToolSearchTool',
+          },
+        },
+      },
+    }),
+  );
   writeFileSync(join(dir, 'agent.md'), '# Code Reviewer\n\nReview with care.');
   writeFileSync(join(dir, 'diff-reader-universal.md'), '# diff-reader\n\nParse diffs universally.');
   writeFileSync(join(dir, 'diff-reader-claude.md'), '# diff-reader\n\nUse Claude-specific diff tools.');
@@ -47,8 +65,10 @@ function createManifest() {
 
 describe('ClaudeAdapter', () => {
   const createdDirs: string[] = [];
+  const originalCwd = process.cwd();
 
   afterEach(() => {
+    process.chdir(originalCwd);
     for (const dir of createdDirs.splice(0)) {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -57,6 +77,7 @@ describe('ClaudeAdapter', () => {
   it('materializes a markdown agent file', () => {
     const packageDir = createPackageDir();
     createdDirs.push(packageDir);
+    process.chdir(packageDir);
     const targetDir = join(packageDir, 'out');
     const adapter = new ClaudeAdapter();
     const compiled = adapter.compile({ manifest: createManifest(), packageDir });
@@ -67,10 +88,18 @@ describe('ClaudeAdapter', () => {
     expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('---');
     expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('name: code-reviewer');
     expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('description: "Review pull requests carefully."');
+    expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('permissionModel: explicit_allow_all');
+    expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('writeIsolation: {"mode":"worktree_required_for_mutation","autoEnter":true,"autoExit":true,"summaryTool":"BriefTool","discoveryTool":"ToolSearchTool"}');
+    expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('runtimeDependencies: {"discoveryTool":"ToolSearchTool","enterTool":"EnterWorktreeTool","summaryTool":"BriefTool","exitTool":"ExitWorktreeTool"}');
     expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('skills:');
     expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('  - diff-reader');
     expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('Review with care.');
     expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('spwnr inject "Code Reviewer" --host claude_code --scope project');
+    expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('## Runtime Dependencies');
+    expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('ToolSearchTool');
+    expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('EnterWorktreeTool');
+    expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('BriefTool');
+    expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).toContain('ExitWorktreeTool');
     expect(readFileSync(join(targetDir, 'code-reviewer.md'), 'utf-8')).not.toContain('## System Prompt');
     expect(readFileSync(join(packageDir, 'skills', 'diff-reader', 'SKILL.md'), 'utf-8')).toContain('Use Claude-specific diff tools.');
     expect(readFileSync(join(packageDir, 'skills', 'diff-reader', 'SKILL.md'), 'utf-8')).not.toContain('Parse diffs universally.');
@@ -80,6 +109,7 @@ describe('ClaudeAdapter', () => {
   it('composes a claude session bundle', () => {
     const packageDir = createPackageDir();
     createdDirs.push(packageDir);
+    process.chdir(packageDir);
     const adapter = new ClaudeAdapter();
     const compiled = adapter.compile({ manifest: createManifest(), packageDir });
 
@@ -90,10 +120,58 @@ describe('ClaudeAdapter', () => {
         'code-reviewer': expect.objectContaining({
             description: 'Review pull requests carefully.',
             skills: ['diff-reader', 'repo-navigator'],
+            permissionModel: 'explicit_allow_all',
+            writeIsolation: {
+              mode: 'worktree_required_for_mutation',
+              autoEnter: true,
+              autoExit: true,
+              summaryTool: 'BriefTool',
+              discoveryTool: 'ToolSearchTool',
+            },
+            runtimeDependencies: {
+              discoveryTool: 'ToolSearchTool',
+              enterTool: 'EnterWorktreeTool',
+              summaryTool: 'BriefTool',
+              exitTool: 'ExitWorktreeTool',
+            },
             prompt: expect.stringContaining('## Preloaded Skills'),
           }),
       }),
     );
     expect(result.shellCommand).toContain('claude --agents');
+  });
+
+  it('lets manifest-level permission and tool policies override the repo default fields', () => {
+    const packageDir = createPackageDir();
+    createdDirs.push(packageDir);
+    process.chdir(packageDir);
+    const adapter = new ClaudeAdapter();
+    const manifest = createManifest();
+    manifest.spec.permissions = {
+      filesystem: [{ pattern: 'src/**', decision: 'allow' }],
+    };
+    manifest.spec.tools = {
+      allow: ['Read', 'Write'],
+      deny: ['Bash'],
+    };
+
+    const compiled = adapter.compile({ manifest, packageDir });
+    const result = adapter.composeSession(compiled, { scope: 'project' });
+
+    expect(result.descriptor).toEqual(
+      expect.objectContaining({
+        'code-reviewer': expect.objectContaining({
+          permissionModel: 'manifest_declared',
+          permissions: {
+            filesystem: [{ pattern: 'src/**', decision: 'allow' }],
+          },
+          tools: {
+            allow: ['Read', 'Write'],
+            deny: ['Bash'],
+          },
+          prompt: expect.stringContaining('manifest-level permission policy'),
+        }),
+      }),
+    );
   });
 });

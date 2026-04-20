@@ -26,7 +26,6 @@ Default workflow:
 
 - Use `/spwnr-task` after the task already has a ready active revision.
 - `/spwnr-task` should read the latest active revision with `Read`, append `Approved Execution Spec` with `Edit`, resolve registry candidates with `resolve-workers`, build per-unit coverage with repeatable `--unit "<unit-id>::<brief>"` inputs when needed, and route implementation through the helper docs in `skills/spwnr-task/task-pipeline.md` or `skills/spwnr-task/task-team.md`.
-- If the approved mode is `team`, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is required. If teams are unavailable, `/spwnr-task` must say so explicitly instead of silently downgrading.
 - If registry resolution cannot satisfy the approved capability requirements, stop and direct the user to `/spwnr-worker-audit` before retrying `/spwnr-task`.
 
 ## Alternate Lanes

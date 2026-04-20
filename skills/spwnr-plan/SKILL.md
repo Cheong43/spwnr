@@ -76,6 +76,7 @@ When `team` is selected, also state whether parallel units have disjoint file ow
 `Plan Review Loop` must record the latest execution confirmation state, user feedback summary, and revision summary. Do not recreate the old `needs-confirmation` or `approved-plan-ready` state machine in the plan file.
 `Pending Handoff Notes` should contain only execution-relevant reminders, not internal planning transcript.
 Each `Execution Unit` must include the full schema from `spwnr-principle`, including `risk level`, `file ownership hints`, `worker plan approval`, and a pipeline pattern reference or override.
+Render each execution-unit field as a one-line bullet marker. Prefer `- **unit_id**: unit-1`; compatible variants like `- **unit_id:** unit-1` are acceptable, but do not hide `unit_id` inside tables or narrative paragraphs.
 Each `Execution Unit` must stay lightweight but executable: use concise operational language, prefer artifact-producing steps over generic verbs, keep acceptance checks objective and local, keep ownership, dependencies, and escalation explicit, and do not add extra fields unless they reduce ambiguity.
 The persisted artifact keeps the full execution-unit schema for compatibility. You may present a more concise rendering in chat, but the durable plan on disk must remain execution-safe and machine-checkable.
 

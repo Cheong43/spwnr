@@ -35,12 +35,27 @@ function buildPlanArtifactContents({
   unitIds = ['unit-01'],
   includeApprovedExecutionSpec = true,
   approvedExecutionSpecHeading = '## Approved Execution Spec',
+  unitLineStyle = 'canonical',
 }: {
   revisionStatus?: 'active' | 'superseded';
   unitIds?: string[];
   includeApprovedExecutionSpec?: boolean;
   approvedExecutionSpecHeading?: string;
+  unitLineStyle?: 'canonical' | 'bold-colon-inside' | 'plain' | 'fullwidth-colon';
 }) {
+  const renderUnitLine = (unitId: string) => {
+    switch (unitLineStyle) {
+      case 'bold-colon-inside':
+        return `- **unit_id:** ${unitId}`;
+      case 'plain':
+        return `- unit_id: ${unitId}`;
+      case 'fullwidth-colon':
+        return `- **unit_id**： ${unitId}`;
+      default:
+        return `- **unit_id**: \`${unitId}\``;
+    }
+  };
+
   return [
     '# Metadata',
     '',
@@ -50,7 +65,7 @@ function buildPlanArtifactContents({
     '',
     '### Execution Units',
     '',
-    ...unitIds.flatMap((unitId) => [`- **unit_id**: \`${unitId}\``, '']),
+    ...unitIds.flatMap((unitId) => [renderUnitLine(unitId), '']),
     includeApprovedExecutionSpec
       ? [approvedExecutionSpecHeading, '', '- mode: pipeline', ''].join('\n')
       : ['## Plan Review Loop', '', '- latest decision: continue', ''].join('\n'),
@@ -70,12 +85,25 @@ const validTaskDescription = [
   'Plan: .claude/plans/spwnr-demo-2026-04-11.md',
   'Unit: unit-01',
   'Mode: pipeline',
-  'Worktree: not-required',
+  'Worktree: required',
   'Blocked: no',
   'Owner: builder',
   'Files: src/app.tsx, src/app.test.tsx',
   'Claim-Policy: assigned',
   'Risk: medium',
+  'Plan-Approval: not-required',
+].join('\n');
+
+const reviewTaskDescription = [
+  'Plan: .claude/plans/spwnr-demo-2026-04-11.md',
+  'Unit: review',
+  'Mode: pipeline',
+  'Worktree: not-required',
+  'Blocked: no',
+  'Owner: reviewer',
+  'Files: none',
+  'Claim-Policy: assigned',
+  'Risk: low',
   'Plan-Approval: not-required',
 ].join('\n');
 
@@ -119,6 +147,36 @@ describe('TaskCreated guard', () => {
         cwd: dir,
       }),
     ).toEqual({ exitCode: 0 });
+  });
+
+  it('allows task creation when the plan unit_id marker uses colon-inside-bold markdown', () => {
+    const dir = makeTempDir();
+    writePlanArtifact(dir, buildPlanArtifactContents({ unitLineStyle: 'bold-colon-inside' }));
+
+    expect(
+      evaluateTaskCreated({
+        hook_event_name: 'TaskCreated',
+        task_subject: 'Execute unit-01',
+        task_description: validTaskDescription,
+        cwd: dir,
+      }),
+    ).toEqual({ exitCode: 0 });
+  });
+
+  it('allows task creation when the plan unit_id marker uses plain or fullwidth-colon variants', () => {
+    for (const unitLineStyle of ['plain', 'fullwidth-colon'] as const) {
+      const dir = makeTempDir();
+      writePlanArtifact(dir, buildPlanArtifactContents({ unitLineStyle }));
+
+      expect(
+        evaluateTaskCreated({
+          hook_event_name: 'TaskCreated',
+          task_subject: 'Execute unit-01',
+          task_description: validTaskDescription,
+          cwd: dir,
+        }),
+      ).toEqual({ exitCode: 0 });
+    }
   });
 
   it('allows task creation when sequencing is recorded in Depends-On while Blocked stays clear', () => {
@@ -206,7 +264,7 @@ describe('TaskCreated guard', () => {
     expect(result.stderr).toContain('plan approval');
   });
 
-  it('blocks task creation when multi-agent no-worktree tasks omit explicit file ownership', () => {
+  it('blocks task creation when a Claude mutating task tries to skip required worktree isolation', () => {
     const dir = makeTempDir();
     writePlanArtifact(dir, buildPlanArtifactContents({}));
 
@@ -214,51 +272,27 @@ describe('TaskCreated guard', () => {
       hook_event_name: 'TaskCreated',
       task_subject: 'Execute unit-01',
       task_description: validTaskDescription
-        .replace('Mode: pipeline', 'Mode: team')
-        .replace('Files: src/app.tsx, src/app.test.tsx', 'Files: none'),
+        .replace('Worktree: required', 'Worktree: not-required'),
       cwd: dir,
     });
 
     expect(result.exitCode).toBe(2);
-    expect(result.stderr).toContain('Files');
-    expect(result.stderr).toContain('ownership boundaries');
+    expect(result.stderr).toContain('Claude mutating tasks');
+    expect(result.stderr).toContain('Worktree: required');
   });
 
-  it('blocks task creation when no-worktree file ownership overlaps across teammates', () => {
-    const claudeHome = makeTempDir();
-    const taskDir = join(claudeHome, 'tasks', 'session-1');
-    const workspace = makeTempDir();
-    mkdirSync(taskDir, { recursive: true });
-    writePlanArtifact(workspace, buildPlanArtifactContents({}));
-    writeFileSync(
-      join(taskDir, '1.json'),
-      JSON.stringify({
-        id: '1',
-        subject: 'Execute existing-unit',
-        description: validTaskDescription
-          .replace('Mode: pipeline', 'Mode: team')
-          .replace('Unit: unit-01', 'Unit: existing-unit')
-          .replace('Owner: builder', 'Owner: reviewer'),
-        status: 'in_progress',
-      }),
-    );
+  it('allows read-only review tasks to keep Worktree: not-required', () => {
+    const dir = makeTempDir();
+    writePlanArtifact(dir, buildPlanArtifactContents({ unitIds: ['review'] }));
 
-    const result = evaluateTaskCreated(
-      {
+    expect(
+      evaluateTaskCreated({
         hook_event_name: 'TaskCreated',
-        task_subject: 'Execute unit-01',
-        task_description: validTaskDescription.replace('Mode: pipeline', 'Mode: team'),
-        session_id: 'session-1',
-        cwd: workspace,
-      },
-      {
-        CLAUDE_HOME: claudeHome,
-      },
-    );
-
-    expect(result.exitCode).toBe(2);
-    expect(result.stderr).toContain('overlaps');
-    expect(result.stderr).toContain('src/app.tsx');
+        task_subject: 'Review unit-01 output',
+        task_description: reviewTaskDescription,
+        cwd: dir,
+      }),
+    ).toEqual({ exitCode: 0 });
   });
 
   it('ignores the current task mirror when conflict detection reads session task state', () => {
@@ -456,6 +490,20 @@ describe('TaskCompleted guard', () => {
     ).toEqual({ exitCode: 0 });
   });
 
+  it('allows completion for read-only review tasks with Worktree: not-required', () => {
+    const dir = makeTempDir();
+    writePlanArtifact(dir, buildPlanArtifactContents({ unitIds: ['review'] }));
+
+    expect(
+      evaluateTaskCompleted({
+        hook_event_name: 'TaskCompleted',
+        task_subject: 'Review unit-01 output',
+        task_description: reviewTaskDescription,
+        cwd: dir,
+      }),
+    ).toEqual({ exitCode: 0 });
+  });
+
   it('allows completion when legacy single-lane metadata is still present', () => {
     const dir = makeTempDir();
     writePlanArtifact(dir, buildPlanArtifactContents({}));
@@ -509,6 +557,58 @@ describe('TaskCompleted guard', () => {
     expect(result.exitCode).toBe(2);
     expect(result.stderr).toContain('Plan-Approval');
     expect(result.stderr).toContain('approved');
+  });
+
+  it('blocks completion when the required worktree lifecycle is incomplete in the transcript', () => {
+    const dir = makeTempDir();
+    const transcript = join(dir, 'transcript.jsonl');
+    writePlanArtifact(dir, buildPlanArtifactContents({}));
+    writeFileSync(
+      transcript,
+      [
+        '{"tool_name":"ToolSearchTool"}',
+        '{"tool_name":"EnterWorktreeTool"}',
+        '{"tool_name":"BriefTool"}',
+      ].join('\n'),
+    );
+
+    const result = evaluateTaskCompleted({
+      hook_event_name: 'TaskCompleted',
+      task_subject: 'Execute unit-01',
+      task_description: validTaskDescription,
+      cwd: dir,
+      transcript_path: transcript,
+    });
+
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('worktree lifecycle evidence');
+    expect(result.stderr).toContain('ExitWorktreeTool');
+  });
+
+  it('blocks completion when the transcript still shows a permission denial', () => {
+    const dir = makeTempDir();
+    const transcript = join(dir, 'transcript.jsonl');
+    writePlanArtifact(dir, buildPlanArtifactContents({}));
+    writeFileSync(
+      transcript,
+      [
+        '{"tool_name":"ToolSearchTool"}',
+        '{"tool_name":"EnterWorktreeTool"}',
+        '{"hook_event_name":"PermissionDenied"}',
+      ].join('\n'),
+    );
+
+    const result = evaluateTaskCompleted({
+      hook_event_name: 'TaskCompleted',
+      task_subject: 'Execute unit-01',
+      task_description: validTaskDescription,
+      cwd: dir,
+      transcript_path: transcript,
+    });
+
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('PermissionDenied');
+    expect(result.stderr).toContain('blocked or failed');
   });
 
   it('blocks completion when the referenced plan revision is superseded', () => {

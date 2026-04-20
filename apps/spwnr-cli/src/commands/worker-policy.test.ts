@@ -29,6 +29,18 @@ describe('loadWorkerPolicy', () => {
           minAgents: 0,
           maxAgents: 0,
         },
+        launchPolicy: {
+          claude_code: {
+            permissionModel: 'custom',
+            writeIsolation: {
+              mode: 'optional',
+              autoEnter: 'yes',
+              autoExit: 1,
+              summaryTool: 'WrongTool',
+              discoveryTool: 'WrongTool',
+            },
+          },
+        },
       }),
     )
 
@@ -42,6 +54,18 @@ describe('loadWorkerPolicy', () => {
         lineup: {
           minAgents: 1,
           maxAgents: 1,
+        },
+        launchPolicy: {
+          claude_code: {
+            permissionModel: 'explicit_allow_all',
+            writeIsolation: {
+              mode: 'worktree_required_for_mutation',
+              autoEnter: true,
+              autoExit: true,
+              summaryTool: 'BriefTool',
+              discoveryTool: 'ToolSearchTool',
+            },
+          },
         },
       },
     })
@@ -77,6 +101,57 @@ describe('loadWorkerPolicy', () => {
       lineup: {
         minAgents: 2,
         maxAgents: 4,
+      },
+    })
+  })
+
+  it('uses the repo-global Claude launch policy defaults when the file is missing', () => {
+    expect(loadWorkerPolicy(tempDir)).toMatchObject({
+      source: 'default',
+      policy: {
+        launchPolicy: {
+          claude_code: {
+            permissionModel: 'explicit_allow_all',
+            writeIsolation: {
+              mode: 'worktree_required_for_mutation',
+              autoEnter: true,
+              autoExit: true,
+              summaryTool: 'BriefTool',
+              discoveryTool: 'ToolSearchTool',
+            },
+          },
+        },
+      },
+    })
+  })
+
+  it('preserves valid Claude launch policy overrides from workers.json', () => {
+    writeFileSync(
+      join(tempDir, '.claude-plugin', 'workers.json'),
+      JSON.stringify({
+        launchPolicy: {
+          claude_code: {
+            permissionModel: 'explicit_allow_all',
+            writeIsolation: {
+              mode: 'worktree_required_for_mutation',
+              autoEnter: false,
+              autoExit: false,
+              summaryTool: 'BriefTool',
+              discoveryTool: 'ToolSearchTool',
+            },
+          },
+        },
+      }),
+    )
+
+    expect(loadWorkerPolicy(tempDir).policy.launchPolicy.claude_code).toEqual({
+      permissionModel: 'explicit_allow_all',
+      writeIsolation: {
+        mode: 'worktree_required_for_mutation',
+        autoEnter: false,
+        autoExit: false,
+        summaryTool: 'BriefTool',
+        discoveryTool: 'ToolSearchTool',
       },
     })
   })

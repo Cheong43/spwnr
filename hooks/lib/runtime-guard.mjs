@@ -21,6 +21,13 @@ const PLAN_APPROVAL_VALUES = new Set(['not-required', 'required', 'approved']);
 const MULTI_AGENT_MODES = new Set(['team']);
 const UNASSIGNED_OWNER_VALUES = new Set(['', 'unassigned', 'none', 'pool']);
 const NON_EXPLICIT_FILE_SCOPE_VALUES = new Set(['', 'none', 'unscoped']);
+const REVIEW_LIKE_TASK_PATTERNS = [/\breview\b/i, /\baudit\b/i, /\binspect\b/i];
+const REQUIRED_WORKTREE_TOOL_SEQUENCE = [
+  'ToolSearchTool',
+  'EnterWorktreeTool',
+  'BriefTool',
+  'ExitWorktreeTool',
+];
 
 const RECENT_TEAM_SIGNAL_PATTERNS = [
   /\bTaskUpdate\b/,
@@ -33,7 +40,7 @@ const PLAN_REVISION_FILENAME_PATTERN = /^(spwnr-.+?-\d{4}-\d{2}-\d{2})(?:-r(\d+)
 const PLAN_REVISION_STATUS_PATTERN =
   /^\s*(?:[-*]\s*)?(?:\*\*)?Revision Status(?:\*\*)?\s*:\s*`?(active|superseded)`?\s*$/gim;
 const PLAN_UNIT_ID_PATTERN =
-  /^\s*(?:[-*]\s*)?(?:\*\*)?unit_id(?:\*\*)?\s*:\s*`?([^`\n]+?)`?\s*$/gim;
+  /^\s*(?:[-*]\s*)?(?:\*\*)?unit_id(?:(?:\s*[:：]\s*\*\*)|(?:\*\*)?\s*[:：])\s*`?([^`\n]+?)`?\s*$/gim;
 
 function normalizeText(value) {
   return typeof value === 'string' ? value : '';
@@ -41,6 +48,20 @@ function normalizeText(value) {
 
 function hasClearBlockedMarker(description) {
   return /\bBlocked:\s*(no|false|none)\b/i.test(normalizeText(description));
+}
+
+function resolveWorkspaceRoots(input = {}) {
+  return [
+    input.cwd,
+    input.working_directory,
+    input.workspace_path,
+    input.workspace_root,
+    input.project_path,
+    input.project_root,
+    input.repo_path,
+    process.env.PWD,
+    process.cwd(),
+  ].filter(Boolean);
 }
 
 function buildBlockedMarkerError(phase) {
@@ -161,6 +182,110 @@ function hasExplicitFileScope(files) {
   );
 }
 
+function readClaudeLaunchPolicy(input = {}) {
+  const defaultPolicy = {
+    permissionModel: 'explicit_allow_all',
+    writeIsolation: {
+      mode: 'worktree_required_for_mutation',
+      autoEnter: true,
+      autoExit: true,
+      summaryTool: 'BriefTool',
+      discoveryTool: 'ToolSearchTool',
+    },
+  };
+
+  for (const root of resolveWorkspaceRoots(input)) {
+    const policyPath = resolve(root, '.claude-plugin', 'workers.json');
+    if (!existsSync(policyPath)) {
+      continue;
+    }
+
+    try {
+      const raw = JSON.parse(readFileSync(policyPath, 'utf-8'));
+      const launchPolicy =
+        raw && typeof raw === 'object' && raw.launchPolicy && typeof raw.launchPolicy === 'object'
+          ? raw.launchPolicy
+          : {};
+      const claudeCodePolicy =
+        launchPolicy &&
+        typeof launchPolicy === 'object' &&
+        launchPolicy.claude_code &&
+        typeof launchPolicy.claude_code === 'object'
+          ? launchPolicy.claude_code
+          : {};
+      const writeIsolation =
+        claudeCodePolicy &&
+        typeof claudeCodePolicy === 'object' &&
+        claudeCodePolicy.writeIsolation &&
+        typeof claudeCodePolicy.writeIsolation === 'object'
+          ? claudeCodePolicy.writeIsolation
+          : {};
+
+      return {
+        permissionModel: 'explicit_allow_all',
+        writeIsolation: {
+          mode: 'worktree_required_for_mutation',
+          autoEnter:
+            typeof writeIsolation.autoEnter === 'boolean'
+              ? writeIsolation.autoEnter
+              : defaultPolicy.writeIsolation.autoEnter,
+          autoExit:
+            typeof writeIsolation.autoExit === 'boolean'
+              ? writeIsolation.autoExit
+              : defaultPolicy.writeIsolation.autoExit,
+          summaryTool:
+            writeIsolation.summaryTool === 'BriefTool'
+              ? 'BriefTool'
+              : defaultPolicy.writeIsolation.summaryTool,
+          discoveryTool:
+            writeIsolation.discoveryTool === 'ToolSearchTool'
+              ? 'ToolSearchTool'
+              : defaultPolicy.writeIsolation.discoveryTool,
+        },
+      };
+    } catch {
+      return defaultPolicy;
+    }
+  }
+
+  return defaultPolicy;
+}
+
+function taskIsReadOnlyReview(input, contract) {
+  const units = extractTaskUnits(input.task_description).map((unitId) => unitId.toLowerCase());
+  if (units.length > 0 && units.every((unitId) => unitId === 'review')) {
+    return true;
+  }
+
+  if (hasExplicitFileScope(contract.files)) {
+    return false;
+  }
+
+  const subject = normalizeText(input.task_subject);
+  return REVIEW_LIKE_TASK_PATTERNS.some((pattern) => pattern.test(subject));
+}
+
+function validateClaudeMutationIsolation(input, contract, phase) {
+  const launchPolicy = readClaudeLaunchPolicy(input);
+  if (launchPolicy.writeIsolation.mode !== 'worktree_required_for_mutation') {
+    return null;
+  }
+
+  if (taskIsReadOnlyReview(input, contract)) {
+    return null;
+  }
+
+  if (contract.worktree !== 'required') {
+    if (phase === 'creation') {
+      return 'Task metadata is invalid. Claude mutating tasks must declare `Worktree: required` when the repo launch policy enforces worktree isolation. Reserve `Worktree: not-required` for read-only review or audit tasks.';
+    }
+
+    return 'Task completion blocked. Claude mutating tasks must keep `Worktree: required` through completion when the repo launch policy enforces worktree isolation.';
+  }
+
+  return null;
+}
+
 function detectFileScopeOverlap(leftFiles, rightFiles) {
   if (!hasExplicitFileScope(leftFiles) || !hasExplicitFileScope(rightFiles)) {
     return [];
@@ -194,6 +319,11 @@ function validateTaskContractMetadata(input, phase, env = process.env) {
     return 'Task metadata is invalid. Assigned tasks must declare a concrete `Owner:`.';
   }
 
+  const mutationIsolationError = validateClaudeMutationIsolation(input, contract, phase);
+  if (mutationIsolationError) {
+    return mutationIsolationError;
+  }
+
   if (
     MULTI_AGENT_MODES.has(contract.mode) &&
     contract.worktree === 'not-required' &&
@@ -215,6 +345,46 @@ function validateTaskContractMetadata(input, phase, env = process.env) {
     if (conflict) {
       return `Task creation blocked. File ownership overlaps with task ${conflict.task.id}:${conflict.task.subject} on ${conflict.overlaps.join(', ')}. Split the files, assign the same owner, or require a worktree before continuing.`;
     }
+  }
+
+  return null;
+}
+
+function validateWorktreeLifecycleOnCompletion(input, contract) {
+  if (contract.worktree !== 'required' || taskIsReadOnlyReview(input, contract)) {
+    return null;
+  }
+
+  const transcript = readRecentTranscript(input.transcript_path);
+  if (!transcript) {
+    return null;
+  }
+
+  if (/\bPermissionDenied\b/.test(transcript)) {
+    return 'Task completion blocked. The transcript still shows a `PermissionDenied` incident. Mark the task blocked or failed instead of completing it.';
+  }
+
+  if (/\bworktree failure\b/i.test(transcript) || /\bfailed tool\b/i.test(transcript)) {
+    return 'Task completion blocked. The transcript still shows a worktree or tool failure. Keep the task blocked or failed until the isolation flow succeeds.';
+  }
+
+  const seenAnyLifecycleTool = REQUIRED_WORKTREE_TOOL_SEQUENCE.some((toolName) => transcript.includes(toolName));
+  if (!seenAnyLifecycleTool) {
+    return null;
+  }
+
+  let lastIndex = -1;
+  for (const toolName of REQUIRED_WORKTREE_TOOL_SEQUENCE) {
+    const index = transcript.indexOf(toolName);
+    if (index === -1) {
+      return `Task completion blocked. Required worktree lifecycle evidence is incomplete. The transcript must show ${REQUIRED_WORKTREE_TOOL_SEQUENCE.join(' -> ')} before completion.`;
+    }
+
+    if (index < lastIndex) {
+      return `Task completion blocked. Required worktree lifecycle evidence is out of order. The transcript must show ${REQUIRED_WORKTREE_TOOL_SEQUENCE.join(' -> ')} before completion.`;
+    }
+
+    lastIndex = index;
   }
 
   return null;
@@ -502,6 +672,14 @@ export function evaluateTaskCompleted(input, env = process.env) {
     return {
       exitCode: 2,
       stderr: metadataError,
+    };
+  }
+
+  const lifecycleError = validateWorktreeLifecycleOnCompletion(input, readTaskContract(description));
+  if (lifecycleError) {
+    return {
+      exitCode: 2,
+      stderr: lifecycleError,
     };
   }
 

@@ -6,6 +6,19 @@ export interface DynamicWorkerLineupPolicy {
   maxAgents: number
 }
 
+export interface ClaudeWriteIsolationPolicy {
+  mode: 'worktree_required_for_mutation'
+  autoEnter: boolean
+  autoExit: boolean
+  summaryTool: 'BriefTool'
+  discoveryTool: 'ToolSearchTool'
+}
+
+export interface ClaudeLaunchPolicy {
+  permissionModel: 'explicit_allow_all'
+  writeIsolation: ClaudeWriteIsolationPolicy
+}
+
 export interface DynamicWorkerPolicy {
   selectionMode: 'dynamic'
   registrySource: 'local'
@@ -13,6 +26,9 @@ export interface DynamicWorkerPolicy {
   missingPolicy: 'auto_install_local'
   preferredDomain?: string | undefined
   lineup: DynamicWorkerLineupPolicy
+  launchPolicy: {
+    claude_code: ClaudeLaunchPolicy
+  }
 }
 
 export interface LoadedWorkerPolicy {
@@ -30,6 +46,18 @@ const DEFAULT_POLICY: DynamicWorkerPolicy = {
     minAgents: 1,
     maxAgents: 4,
   },
+  launchPolicy: {
+    claude_code: {
+      permissionModel: 'explicit_allow_all',
+      writeIsolation: {
+        mode: 'worktree_required_for_mutation',
+        autoEnter: true,
+        autoExit: true,
+        summaryTool: 'BriefTool',
+        discoveryTool: 'ToolSearchTool',
+      },
+    },
+  },
 } satisfies DynamicWorkerPolicy
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -45,6 +73,7 @@ function normalizePreferredDomain(input: unknown): string | undefined {
 function normalizeDynamicWorkerPolicy(input: unknown): DynamicWorkerPolicy {
   const raw = isRecord(input) ? input : {}
   const lineupInput = isRecord(raw.lineup) ? raw.lineup : undefined
+  const launchPolicyInput = isRecord(raw.launchPolicy) ? raw.launchPolicy : undefined
 
   return {
     selectionMode: 'dynamic',
@@ -55,6 +84,12 @@ function normalizeDynamicWorkerPolicy(input: unknown): DynamicWorkerPolicy {
       ? { preferredDomain: normalizePreferredDomain(raw.preferredDomain) }
       : {}),
     lineup: sanitizeLineupPolicy(lineupInput, DEFAULT_POLICY.lineup),
+    launchPolicy: {
+      claude_code: sanitizeClaudeLaunchPolicy(
+        launchPolicyInput?.claude_code,
+        DEFAULT_POLICY.launchPolicy.claude_code,
+      ),
+    },
   }
 }
 
@@ -68,6 +103,37 @@ function sanitizeLineupPolicy(
   return {
     minAgents,
     maxAgents,
+  }
+}
+
+function sanitizeClaudeLaunchPolicy(
+  input: unknown,
+  fallback: ClaudeLaunchPolicy,
+): ClaudeLaunchPolicy {
+  const raw = isRecord(input) ? input : {}
+  const writeIsolationInput = isRecord(raw.writeIsolation) ? raw.writeIsolation : undefined
+
+  return {
+    permissionModel: 'explicit_allow_all',
+    writeIsolation: {
+      mode: 'worktree_required_for_mutation',
+      autoEnter:
+        typeof writeIsolationInput?.autoEnter === 'boolean'
+          ? writeIsolationInput.autoEnter
+          : fallback.writeIsolation.autoEnter,
+      autoExit:
+        typeof writeIsolationInput?.autoExit === 'boolean'
+          ? writeIsolationInput.autoExit
+          : fallback.writeIsolation.autoExit,
+      summaryTool:
+        writeIsolationInput?.summaryTool === 'BriefTool'
+          ? 'BriefTool'
+          : fallback.writeIsolation.summaryTool,
+      discoveryTool:
+        writeIsolationInput?.discoveryTool === 'ToolSearchTool'
+          ? 'ToolSearchTool'
+          : fallback.writeIsolation.discoveryTool,
+    },
   }
 }
 
