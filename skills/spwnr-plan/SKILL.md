@@ -8,9 +8,9 @@ Use `spwnr-principle` as the shared source of truth for context inspection, plan
 
 ## Planning Tool Protocol
 - Use `Skill` to load `spwnr-principle` and `spwnr-plan`.
-- Use `Read` before asking for clarification.
+- Review the relevant context before asking for clarification.
 - Use `TodoWrite` to keep readiness fields, blockers, and the latest active revision visible.
-- Use `Write` or `Edit` to persist the plan artifact; do not leave the durable plan only in chat state.
+- Persist or update the plan artifact on disk; do not leave the durable plan only in chat state.
 - Use `AskUserQuestion` for material decisions and the execution review loop.
 - You MAY derive planning-only experts with `Agent` only after a draft plan is visible.
 
@@ -30,7 +30,7 @@ Use `spwnr-principle` as the shared source of truth for context inspection, plan
 - The active revision must be detailed enough for a fresh worker to act without rereading the full thread.
 
 ## Planning Checklist
-1. Restate the task in 1 to 2 sentences and inspect relevant context with `Read`.
+1. Restate the task in 1 to 2 sentences and inspect relevant context.
 2. Normalize the request into one coherent plan or a small set of independent efforts.
 3. Compare 2 to 3 plausible approaches, recommend one, and record the tradeoff.
 4. Capture readiness fields in `TodoWrite` and open or create the latest active revision.

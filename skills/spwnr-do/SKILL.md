@@ -14,7 +14,7 @@ Use `spwnr-worker-audit` only when worker coverage is weak or missing and `/spwn
 
 ## Execution Tool Protocol
 
-- Use `Skill`, `Read`, `Write`, `Edit`, and `Agent`.
+- Use `Skill` and `Agent`, and inspect or update local files and notes as needed.
 - Use `spwnr resolve-workers --search "<brief>" --host claude_code --format json` for dynamic worker selection.
 - You may use at most 3 direct workers in one `/spwnr-do` run.
 - Do NOT use task-queue APIs, team orchestration APIs, or lead-messaging APIs from this skill.
@@ -77,7 +77,7 @@ Selection rules:
 
 ## Execution Flow
 
-1. Inspect local context with `Read`.
+1. Inspect local context.
 2. Decide whether the task stays in `/spwnr-do` or should escalate to `/spwnr-plan`.
 3. Open the lightweight note and record the request plus readiness state.
 4. Select up to 3 workers, either from an explicit user choice or from `spwnr resolve-workers`.

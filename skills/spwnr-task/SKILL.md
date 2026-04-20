@@ -16,7 +16,7 @@ Use `task-team.md` in this folder when the approved plan selects `team`.
 
 ## Orchestration Tool Protocol
 
-- Use `Skill`, `AskUserQuestion`, `TodoWrite`, `Read`, `Write`, and `Edit` for the planning gate and plan maintenance.
+- Use `Skill`, `AskUserQuestion`, and `TodoWrite` for the planning gate, and keep the active plan revision updated on disk during plan maintenance.
 - Use `TaskCreate`, `TaskGet`, `TaskList`, and `TaskUpdate` only after the current run explicitly approves execution and the routed helper document has taken over.
 - Resolve registry candidates with `spwnr resolve-workers --search "<keyword>" --host claude_code --format json`, plus repeatable `--unit "<unit-id>::<brief>"` queries for per-unit coverage when the plan has multiple execution units.
 - Use `TeamCreate`, `SendMessage`, and `TeamDelete` only when `task-team.md` requires Claude team features.
@@ -41,7 +41,7 @@ Before any `TaskCreate`:
 6. If the selected mode is `team`, validate whether the plan expects one shared queue or multiple pipelines launched in parallel.
 7. In `team` mode, default the task graph toward parallel tasks with disjoint `Files:` ownership. If the plan needs shared-file collaboration, validate that the exception is explicit and that the plan defines worktree isolation or one concrete owner for that file.
 8. If `team` is required but `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is unavailable, stop and say so explicitly instead of silently downgrading.
-9. Append `Approved Execution Spec` to the active revision with `Edit`, including the selected mode, routing target, normalized registry lookup brief, and per-unit coverage summary.
+9. Append `Approved Execution Spec` to the active revision, including the selected mode, routing target, normalized registry lookup brief, and per-unit coverage summary.
 
 ## Routing Decision
 

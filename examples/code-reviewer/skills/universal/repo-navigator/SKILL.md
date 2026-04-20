@@ -1,6 +1,6 @@
 # repo-navigator
 
-Navigates repository structure and reads relevant source files.
+Navigates repository structure and inspects relevant source files.
 
 ## Tool Binding Notes
 
@@ -9,6 +9,6 @@ Use the file-reading and search bindings exposed by the current host. Keep this 
 ## Capabilities
 
 - List files matching glob patterns
-- Read file contents
+- Inspect file contents
 - Resolve import and dependency relationships
 - Find nearby tests and implementation files

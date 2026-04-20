@@ -363,9 +363,7 @@ describe('workflow docs', () => {
 
     expect(doSkill).toContain('/spwnr-do');
     expect(doSkill).toContain('Agent');
-    expect(doSkill).toContain('Read');
-    expect(doSkill).toContain('Write');
-    expect(doSkill).toContain('Edit');
+    expect(doSkill).toContain('inspect or update local files and notes as needed');
     expect(doSkill).toContain('spwnr resolve-workers');
     expect(doSkill).toContain('at most 3 direct workers');
     expect(doSkill).toContain('/spwnr-worker-audit');
@@ -383,7 +381,8 @@ describe('workflow docs', () => {
     expect(principleSkill).toContain('Load the primary workflow skill with `Skill`');
     expect(principleSkill).toContain('Use `AskUserQuestion`');
     expect(principleSkill).toContain('Use `TodoWrite`');
-    expect(principleSkill).toContain('Persist the shared plan artifact');
+    expect(principleSkill).toContain('Inspect repository or supplied context before asking the user anything.');
+    expect(principleSkill).toContain('Persist the shared plan artifact to disk');
     expect(principleSkill).toContain('latest active plan revision');
     expect(principleSkill).toContain('planning-only `Agent` pass is allowed only after a draft plan is visible');
     expect(principleSkill).toContain('Do not call `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `TeamDelete`, or `SendMessage`');
@@ -510,9 +509,9 @@ describe('workflow docs', () => {
     expect(sessionStartHook).toContain('Skill');
     expect(sessionStartHook).toContain('AskUserQuestion');
     expect(sessionStartHook).toContain('TodoWrite');
-    expect(sessionStartHook).toContain('Read');
-    expect(sessionStartHook).toContain('Write');
-    expect(sessionStartHook).toContain('Edit');
+    expect(sessionStartHook).toContain('inspect local context');
+    expect(sessionStartHook).toContain('persist the detailed plan');
+    expect(sessionStartHook).toContain('reviews the latest active revision');
     expect(sessionStartHook).toContain('.claude/do/spwnr-do-');
     expect(sessionStartHook).toContain('1-3');
     expect(sessionStartHook).toContain('planning expert loop');

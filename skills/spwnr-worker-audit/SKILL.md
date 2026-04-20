@@ -14,7 +14,7 @@ It is a health-check and recovery surface, not a prerequisite step for `/spwnr-t
 ## Required Checks
 
 1. Check whether `.claude-plugin/workers.json` exists.
-2. If it exists, read `.claude-plugin/workers.json` with `Read`. If it does not exist, treat the project as using the default dynamic worker policy.
+2. If it exists, inspect `.claude-plugin/workers.json`. If it does not exist, treat the project as using the default dynamic worker policy.
 3. Confirm the worker policy is in dynamic mode. Missing config still means dynamic mode is active by default.
 4. Check project-scoped agents under `.claude/agents/`.
 5. Check user-scoped agents under `~/.claude/agents/`.

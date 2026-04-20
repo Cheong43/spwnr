@@ -10,11 +10,11 @@ Use this skill as the shared ruleset behind Spwnr workflow planning and orchestr
 ## Shared Expectations
 
 - Load the primary workflow skill with `Skill` before applying plan-specific or task-specific behavior.
-- Inspect repository or supplied context with `Read` before asking the user anything.
+- Inspect repository or supplied context before asking the user anything.
 - For non-trivial work, enter a plan-first gate before delegation or implementation.
 - Use `AskUserQuestion` for material clarification decisions when 2 to 4 concrete options are available.
 - Use `TodoWrite` to keep the draft plan, blockers, readiness fields, and approval condition visible through the planning gate.
-- Persist the shared plan artifact with `Write` or `Edit`, and treat the latest active plan revision as the durable source of truth for later tasks and registry-selected agents.
+- Persist the shared plan artifact to disk, and treat the latest active plan revision as the durable source of truth for later tasks and registry-selected agents.
 - Compare at least 2 plausible approaches when the path is not obvious, state the recommended approach, and explain why it fits best.
 - Convert blocking uncertainty into 2 to 4 concrete options, mark one as recommended, and give a one-line tradeoff for each option.
 - Keep the work moving with a provisional default when the user has not chosen yet.
