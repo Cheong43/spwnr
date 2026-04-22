@@ -1,0 +1,6 @@
+interface:
+  display_name: "Spwnr"
+  short_description: "Repo-specific patterns and workflows for spwnr"
+  default_prompt: "Use the spwnr repo skill to follow existing architecture, testing, and workflow conventions."
+policy:
+  allow_implicit_invocation: true
