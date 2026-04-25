@@ -1,86 +1,69 @@
 ---
 name: spwnr-principle
-description: Shared controller rules for executable planning, approval-gated orchestration, registry-guided agent selection, and runtime guardrails.
+description: Shared Spwnr planning and orchestration rules.
 ---
 
 # Spwnr Principle
 
-Use this skill as the shared ruleset behind Spwnr workflow planning and orchestration.
+Use this skill as the shared rulebook for Spwnr planning, approval-gated execution, registry-guided worker selection, and runtime guardrails.
 
 ## Shared Expectations
 
-- Load the primary workflow skill with `Skill` before applying plan-specific or task-specific behavior.
-- Inspect repository or supplied context with `Read` before asking the user anything.
-- For non-trivial work, enter a plan-first gate before delegation or implementation.
-- Use `AskUserQuestion` for material clarification decisions when 2 to 4 concrete options are available.
-- Use `TodoWrite` to keep the draft plan, blockers, readiness fields, and approval condition visible through the planning gate.
-- Persist the shared plan artifact with `Write` or `Edit`, and treat the latest active plan revision as the durable source of truth for later tasks and registry-selected agents.
-- Compare at least 2 plausible approaches when the path is not obvious, state the recommended approach, and explain why it fits best.
-- Convert blocking uncertainty into 2 to 4 concrete options, mark one as recommended, and give a one-line tradeoff for each option.
-- Keep the work moving with a provisional default when the user has not chosen yet.
-- If the repository is empty or underspecified, propose sensible defaults and label them clearly.
-- During `/spwnr-plan`, a planning-only `Agent` pass is allowed only after a draft plan is visible and only for sequential expert `research`, `draft`, and `review` passes backed by registry preview.
-- Do not call `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `TeamDelete`, or `SendMessage` for non-trivial work until a draft plan is visible and the user has clearly approved it.
-- Treat plan approval as thread-local and conversational. Clear approval signals include phrases like `continue`, `execute`, and `go ahead`.
-- Treat a material re-plan as any change to the goal, deliverable type, or execution-unit graph. Minor refinements stay in the same active revision; material re-plans create the next revision file and supersede the older revision.
-
-## Plan-First Gate
-
-- A ready plan must lock the goal, success criteria, scope boundaries, constraints, open risks, and approval condition.
-- A ready plan must exist on disk at `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD-HHMMSS>-<GOAL>.md` or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD-HHMMSS>-<GOAL>-rN.md`.
-- A ready plan must be explicit enough for a later agent to execute without reconstructing intent from chat history.
-- Keep asking structured follow-up questions while unresolved details still change decomposition, sequencing, acceptance criteria, or execution topology.
-- Keep the current draft visible while clarifying so the user can react to something concrete.
-- If uncertainty is still material, stop in planning mode and ask for confirmation instead of drifting into execution.
+- Load the primary workflow skill with `Skill` before acting.
+- Inspect local context before asking the user.
+- For non-trivial work, plan before delegation or implementation.
+- Use `AskUserQuestion` for material decisions with 2 to 4 concrete options.
+- Use `TodoWrite` for blockers, readiness fields, and approval condition.
+- Persist the shared plan artifact with targeted `Write` or `Edit`.
+- Ask structured questions only when the answer changes decomposition, sequencing, acceptance criteria, or execution topology.
+- Persist the latest active plan revision on disk and treat it as the source of truth.
+- Compare plausible approaches when the path is not obvious.
+- Keep provisional defaults explicit when the user has not chosen.
+- During `/spwnr-plan`, a planning-only `Agent` pass is allowed only after a draft plan is visible.
+- Do not call `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `TeamCreate`, `TeamDelete`, or `SendMessage` for non-trivial work until a draft plan exists and the current run has approved execution.
+- Treat material re-plans as changes to goal, deliverable type, or execution-unit graph; create a new revision for those.
 
 ## Request Normalization
 
-- Translate the user's raw wording into a structured task brief before choosing the approach.
-- Extract the decision goal, stated and implied constraints, time horizon when relevant, evaluation criteria, comparable options, risk surface, and expected deliverable.
-- When a request is broad, colloquial, or underspecified, default to this route: break down the goal, define the evaluation framework, compare viable options, then surface risks and evidence gaps.
-- Do not require the user to rewrite the prompt when the controller can infer sensible defaults safely.
-- In high-risk or sensitive domains, keep the work useful by reframing toward decision-support materials, due diligence, option comparison, and explicit boundaries instead of a final directive.
+- Translate the user's raw wording into a structured task brief.
+- Do not require the user to rewrite the prompt when safe defaults are inferable.
+- For high-risk or sensitive work, prefer decision-support materials with explicit boundaries.
+- Convert blocking uncertainty into 2 to 4 concrete options.
 
-## Clarification Style
+## Prompt Economy
 
-- Ask only after request normalization has exposed a decision that materially changes the approach.
-- Never ask only open-ended clarification questions when concrete options are possible.
-- Prefer `AskUserQuestion` over free-form questioning when it can carry the decision cleanly.
-- Ask at most 3 decision questions in one response.
-- Prefer repeated short clarification rounds over one overloaded questionnaire.
-- Keep the current draft or current direction visible while waiting for the user's choice.
-
-## Thinking Standard
-
-- Do not jump from the first idea straight into a plan.
-- Think carefully before answering.
-- Compare viable directions, choose deliberately, then explain the choice.
-- For broad research or implementation tasks, prefer a professional analytical structure over generic brainstorming.
+- Prefer section-scoped reads and targeted edits over full-file loops.
+- After editing a plan, verify only the changed section unless the whole artifact may be invalid.
+- Brief workers with concise goals, plan path, exact section names or line ranges, owned files, expected output, acceptance check, and stop conditions.
+- Avoid passing full thread history, full plan text, or full edited-file attachments unless targeted context is insufficient.
+- Ask agents for deltas, findings, or patchable section text by default.
 
 ## Plan Artifact Convention
 
 - Revision 1 path: `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD-HHMMSS>-<GOAL>.md`
-- Later material re-plans on the same day: `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD-HHMMSS>-<GOAL>-r2.md`, `-r3.md`, and so on
-- When a new revision is created, mark the previous revision `Revision Status: superseded`, record `Superseded By`, and treat the newer file as the latest active revision.
-- Every plan artifact must include `Revision`, `Revision Status`, `Supersedes`, and `Superseded By`.
-- Superseded revisions and their tasks are audit-only.
+- Later material re-plans: same path with `-r2`, `-r3`, and so on.
+- Every plan records `Revision`, `Revision Status`, `Supersedes`, and `Superseded By`.
+- New revisions mark the previous revision `superseded`; only the latest active revision is executable.
+
+## Ready Plan Contract
+
+A ready plan must lock goal, success criteria, scope boundaries, constraints, assumptions, risks, approval condition, active artifact path, execution strategy, executable units, capability requirements, failure rules, and ownership boundaries.
+
+It must be explicit enough for a fresh worker to execute from the artifact without reconstructing intent from chat.
 
 ## Execution Strategy Recommendation Contract
 
-- Every ready plan must choose exactly one execution mode before approval: `pipeline` or `team`.
-- Record the selected mode, the rationale for that mode, and the execution pattern shape in `Execution Strategy Recommendation`.
-- If the selected mode is `pipeline`, also persist:
-  - `pattern name`
-  - ordered `stages`
-  - per stage: `stage_id`, `role`, `objective`, `inputs`, `expected output`, `acceptance check`, `preferred capability tags`, and `handoff target`
-- If the selected mode is `team`, say whether the plan should launch multiple bounded pipelines in parallel or run one shared queue without pipeline fanout.
-- `team` plans should default to parallel units that own disjoint files or disjoint worktree roots; do not default to multiple teammates editing the same file in parallel.
-- Preserve shared-file team execution as an explicit exception only when the plan records why file-level decomposition is not viable and how ownership will be isolated or serialized.
-- `pipeline` must remain executable without Claude team features; `team` is the only mode that may require Claude team features.
+- Every ready plan chooses exactly one mode before approval: `pipeline` or `team`.
+- Record selected mode, rationale, and pattern shape in `Execution Strategy Recommendation`.
+- For `pipeline`, persist pattern name, ordered stages, stage objectives, inputs, outputs, acceptance checks, capability tags, and handoffs.
+- For `team`, state whether to launch multiple bounded pipelines or one shared queue.
+- Team plans default to disjoint file ownership; do not default to multiple teammates editing the same file in parallel.
+- multiple bounded pipelines in parallel are allowed only when the plan says so.
+- `pipeline` must work without Claude team features.
 
 ## Execution Unit Schema
 
-Every `Execution Unit` in the plan artifact must include:
+Each `Execution Unit` must include:
 
 - `unit_id`
 - `objective`
@@ -98,15 +81,11 @@ Every `Execution Unit` in the plan artifact must include:
 - `worker plan approval`
 - `pipeline pattern reference or override`
 
-Render execution-unit field labels as single-line bullet markers so runtime hooks can parse them reliably. Preferred exact format:
-
-- `- **unit_id**: unit-1`
-
-Compatible fallbacks such as `- **unit_id:** unit-1`, `- unit_id: unit-1`, or a full-width colon variant are allowed, but do not invent alternate casing, table-only encodings, or bury `unit_id` inside prose.
+Render field labels as single-line bullets. Preferred marker: `- **unit_id**: unit-1`. Compatible fallbacks include `- **unit_id:** unit-1`, `- unit_id: unit-1`, and full-width colon variants; do not hide `unit_id` in tables or prose.
 
 ## Execution Task Contract
 
-Every execution, integration, and review task created with `TaskCreate` must include these exact fields in the task description:
+Every execution, integration, and review task created with `TaskCreate` must include:
 
 - `Plan: <path>`
 - `Unit: <unit-id>`
@@ -119,63 +98,38 @@ Every execution, integration, and review task created with `TaskCreate` must inc
 - `Risk: <low|medium|high>`
 - `Plan-Approval: <not-required|required|approved>`
 
-New tasks must write `Blocked: no` literally. Put prerequisites in `Depends-On:`, plan `dependencies`, or task graph relations instead of encoding them in `Blocked:`.
-
-These fields are mandatory because runtime hooks use them as the minimum contract for task creation and completion. The plan file referenced by `Plan:` must contain an `Approved Execution Spec` section before task creation is allowed. High-risk tasks must not complete while `Plan-Approval:` is still `required`.
-
-When the active repo launch policy targets Claude Code with worktree-required mutation isolation, any mutating execution task must declare `Worktree: required`. Reserve `Worktree: not-required` for read-only review or audit tasks only.
-
-For Claude mutating work, the execution contract is: discover runtime tools with `ToolSearchTool`, enter isolation with `EnterWorktreeTool`, perform the work inside the git worktree, generate a closing summary with `BriefTool`, and exit cleanly with `ExitWorktreeTool` before the task is considered complete.
-
-`Blocked:` is reserved for current block state only. Never place unit ids, stage ids, prerequisites, or dependency labels in `Blocked:`. New tasks should start with `Blocked: no`; keep sequencing in plan `dependencies`, `Depends-On:`, or task graph relations instead.
+The referenced plan must contain `Approved Execution Spec`. `Blocked:` is reserved for current block state only. New tasks write `Blocked: no`; sequencing belongs in plan dependencies, graph edges, or `Depends-On:`.
 
 ### Compatibility Matrix
 
-- `Claim-Policy: assigned` -> `Owner` must be a concrete owner such as an agent name or `controller`; never use `unassigned`
-- `Claim-Policy: self-claim` -> `Owner` must start as exactly `unassigned`
-- `Risk: high` -> `Plan-Approval` must be `required` or `approved`; never use `not-required`
+- `Claim-Policy: assigned` requires a concrete `Owner`.
+- `Claim-Policy: self-claim` starts with `Owner: unassigned`.
+- `Risk: high` requires `Plan-Approval: required` or `approved`.
+
+When the launch policy targets Claude Code with worktree-required mutation isolation, Claude mutating tasks default to `Worktree: required`; reserve `Worktree: not-required` for read-only review/audit. Mutating work must discover `ToolSearchTool`, enter with `EnterWorktreeTool`, summarize with `BriefTool`, and exit with `ExitWorktreeTool`.
 
 ### TaskCreate Preflight
 
-Before the first `TaskCreate`, the controller must check every draft task description against this exact checklist:
-
-- every required marker is present exactly once with a concrete value
-- `Owner` and `Claim-Policy` satisfy the compatibility matrix
-- `Risk` and `Plan-Approval` satisfy the compatibility matrix
-- `Blocked:` starts as `no`; sequencing lives in `Depends-On:`, task graph relations, or plan `dependencies`, never in `Blocked:`
-- `team` graphs default to disjoint `Files:` ownership across concurrent tasks instead of overlapping claims on one file
-- multi-agent no-worktree tasks have explicit `Files:` ownership boundaries instead of `none`
-- any shared-file exception is documented in the plan and uses either worktree isolation or one concrete owner controlling the shared file
-- Claude mutating tasks default to `Worktree: required`; only read-only review or audit tasks may use `Worktree: not-required`
-- high-risk units are already marked for worker plan approval before task creation
-- `pipeline` initial graphs default to `Owner: unassigned` plus `Claim-Policy: self-claim` unless the controller intentionally binds the task
+Before the first `TaskCreate`, check marker presence, compatibility matrix, `Blocked: no`, disjoint team file ownership, shared-file exceptions, worktree policy, and high-risk approval state.
 
 ## Execution Review Loop
 
-Every time a plan artifact is written or revised, immediately run the execution review loop with `AskUserQuestion`. The three options are fixed:
+After every plan write or revision, ask:
 
-- `Execute current plan` — the only execution permission signal; hands off into `spwnr-task`
-- `Continue improving plan` — do not execute; collect feedback; revise the same active revision when the execution shape still fits, or create the next revision when the request becomes a material re-plan; then repeat the loop
-- `End this round` — preserve the artifact, stop cleanly, and do not continue asking
+- `Execute current plan` — only execution permission signal; hand off to `/spwnr-task`
+- `Continue improving plan` — revise the same active revision unless this becomes a material re-plan
+- `End this round` — preserve the artifact and stop cleanly
 
-Do not recreate a `needs-confirmation` or `approved-plan-ready` state machine in the plan file. Record review loop history in the artifact, not a persistent execution state.
+Record review history in the artifact; do not recreate a persistent approval state machine.
 
-## Risk-Gated Units
+## Risk And Readiness
 
-For any execution unit marked high risk, the controller must:
+High-risk units require `Risk: high`, `Plan-Approval: required`, a teammate mini-plan, controller approval, then `Plan-Approval: approved` before mutation.
 
-1. Create the task with `Risk: high` and `Plan-Approval: required`.
-2. Require the assigned teammate to produce a mini-plan before implementation.
-3. Review that mini-plan against the latest active revision and reject any scope drift.
-4. Update the task to `Plan-Approval: approved` before the teammate mutates repository state.
-5. Stop the task if approval is still missing instead of letting the teammate improvise.
+When registry or capability gaps block progress, stop with:
 
-## Worker Readiness Required Pattern
-
-Use this pattern whenever a registry or capability gap blocks forward progress. Stop and emit these five sections:
-
-1. `Plan Artifact` — state the current artifact path
-2. `Readiness Gap` — name the specific missing capabilities or packages
-3. `Missing <Capability Type>` — list exactly what is needed
-4. `Recovery Steps` — direct the user to `/spwnr-worker-audit`, preserve the same active revision, state that work should resume from the same active revision after readiness is restored, and never silently downgrade
-5. `Next Step` — confirm the handoff path
+1. `Plan Artifact`
+2. `Readiness Gap`
+3. `Missing <Capability Type>`
+4. `Recovery Steps` — direct to `/spwnr-worker-audit`, preserve the active revision, and never silently downgrade
+5. `Next Step`

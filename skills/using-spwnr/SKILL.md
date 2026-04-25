@@ -1,48 +1,33 @@
 ---
 name: using-spwnr
-description: Use for /using-spwnr. Route non-trivial work through /spwnr-plan, then /spwnr-task, while keeping /spwnr-do and /spwnr-worker-audit as alternate lanes.
+description: Router for Spwnr commands.
 ---
 
 # Using Spwnr
 
-Use this skill as the main entry router for the Spwnr Claude Code plugin.
+Use this skill as the lightweight router for `/using-spwnr`.
 
-This plugin is a controller, not the worker itself.
+Spwnr is a controller. Load the target command skill before applying its workflow.
 
-Default workflow:
+## Route
 
-1. `/spwnr-plan`
-2. `/spwnr-task`
-3. implement
+- Use `/spwnr-do` for bounded one-shot work that can finish in the current run.
+- Use `/spwnr-plan` for non-trivial work that needs a durable plan.
+- Use `/spwnr-task` only after the current run has approved the latest active plan.
+- Use `/spwnr-worker-audit` for registry, package, or injected-agent readiness recovery.
 
-## Main Route
+Default non-trivial route: `/spwnr-plan` -> `/spwnr-task` -> implementation.
 
-- Start with `/spwnr-plan` for non-trivial work that needs a locked executable plan before implementation.
-- `/spwnr-plan` should load `spwnr-principle` plus `spwnr-plan`, inspect context with `Read`, ask only material follow-up questions with `AskUserQuestion`, keep blockers visible with `TodoWrite`, and persist the latest active revision under `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>.md` or `.claude/plans/spwnr-<project-folder-name>-<YYYY-MM-DD>-rN.md`.
-- Planning should run a sequential expert loop with `spwnr resolve-workers` plus planning-only `Agent` passes for `research`, `draft`, and `review`.
-- Planning must choose `pipeline` or `team`, explain why, and persist the execution pattern.
-- After each write or revision, `/spwnr-plan` should run the execution review loop with `AskUserQuestion`, using `Execute current plan`, `Continue improving plan`, and `End this round`.
-- `Execute current plan` is the handoff signal into `/spwnr-task`.
+## Token-Sensitive Habits
 
-- Use `/spwnr-task` after the task already has a ready active revision.
-- `/spwnr-task` should read the latest active revision with `Read`, append `Approved Execution Spec` with `Edit`, resolve registry candidates with `resolve-workers`, build per-unit coverage with repeatable `--unit "<unit-id>::<brief>"` inputs when needed, and route implementation through the helper docs in `skills/spwnr-task/task-pipeline.md` or `skills/spwnr-task/task-team.md`.
-- If registry resolution cannot satisfy the approved capability requirements, stop and direct the user to `/spwnr-worker-audit` before retrying `/spwnr-task`.
-
-## Alternate Lanes
-
-- Use `/spwnr-do` for a bounded small task that can be handled directly in the current run without the full plan artifact flow.
-- `/spwnr-do` writes a lightweight runtime note under `.claude/do/spwnr-do-<project-folder-name>-<YYYY-MM-DD-HHMMSS>-<slug>.md`.
-- `/spwnr-do` may use `Read`, `Write`, `Edit`, `Agent`, and `spwnr resolve-workers`, but it must never create tasks or teams.
-- `/spwnr-do` may invoke at most 3 direct workers.
-- If `/spwnr-do` finds a worker gap, redirect to `/spwnr-worker-audit`.
-- If `/spwnr-do` discovers the task is broad, multi-stage, risky, or planning-sensitive, redirect to `/spwnr-plan`.
-
-- Use `/spwnr-worker-audit` when registry health, local package availability, injected agent visibility, or readiness recovery is unclear.
-- `/spwnr-worker-audit` is the deeper audit and recovery lane for install, inject, and sync guidance.
+- Prefer targeted reads and edits over full-file loops.
+- Brief workers with the plan path, exact section names, concise goal, and expected delta.
+- Do not pass full thread history or complete plan text to agents unless a section-level brief is insufficient.
+- Route to `/spwnr-worker-audit` only after a real readiness or resolution gap.
 
 ## Quick Examples
 
-- Broad coding or research request with several execution units -> `/spwnr-plan`, then `/spwnr-task`, then implement
-- Approved plan already exists and the user wants execution now -> `/spwnr-task`
-- Small follow-up fix after a completed workflow -> `/spwnr-do`
-- Missing local packages, injection, or registry readiness -> `/spwnr-worker-audit`
+- Broad coding or research request -> `/spwnr-plan`
+- Approved plan and user asks to execute -> `/spwnr-task`
+- Small follow-up fix -> `/spwnr-do`
+- Missing local packages or agent readiness -> `/spwnr-worker-audit`

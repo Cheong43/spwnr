@@ -1,81 +1,70 @@
 ---
 name: spwnr-task
-description: Use for /spwnr-task. Reuse the planning gate, require explicit execution approval, then route approved general-task work into pipeline or team execution helpers.
+description: Execute an approved Spwnr plan.
 ---
 
 # Spwnr Task
 
-Use this skill for non-trivial general work that benefits from a controller plus routed execution guidance.
+Use this skill for `/spwnr-task`. It validates the latest active approved plan, appends an `Approved Execution Spec`, resolves workers, and routes to `task-pipeline.md` or `task-team.md`.
 
-This skill owns the routing behavior for `/spwnr-task`.
+Use `spwnr-principle` for shared plan, task, approval, and readiness contracts. Use `spwnr-worker-audit` only after a concrete registry or capability resolution failure.
 
-Use `spwnr-principle` as the shared source of truth for the planning gate, plan artifact conventions, execution task contract, risk-gated approvals, worker readiness required pattern, approach comparison, and sensible defaults.
-Use `spwnr-worker-audit` only when the user explicitly needs a deeper registry readiness audit or the normal registry lookup path fails.
-Use `task-pipeline.md` in this folder when the approved plan selects `pipeline`.
-Use `task-team.md` in this folder when the approved plan selects `team`.
+## Tool Protocol
 
-## Orchestration Tool Protocol
-
-- Use `Skill`, `AskUserQuestion`, `TodoWrite`, `Read`, `Write`, and `Edit` for the planning gate and plan maintenance.
-- Use `TaskCreate`, `TaskGet`, `TaskList`, and `TaskUpdate` only after the current run explicitly approves execution and the routed helper document has taken over.
-- Resolve registry candidates with `spwnr resolve-workers --search "<keyword>" --host claude_code --format json`, plus repeatable `--unit "<unit-id>::<brief>"` queries for per-unit coverage when the plan has multiple execution units.
-- Use `TeamCreate`, `SendMessage`, and `TeamDelete` only when `task-team.md` requires Claude team features.
+- Use `Skill`, `AskUserQuestion`, `TodoWrite`, `Read`, `Write`, and targeted `Edit` while validating or maintaining the plan.
+- Use `TaskCreate`, `TaskGet`, `TaskList`, and `TaskUpdate` only after `Execute current plan` is confirmed in the current run and the routed helper has taken over.
+- Use `TeamCreate`, `SendMessage`, and `TeamDelete` only through `task-team.md`.
+- Resolve workers with concise `spwnr resolve-workers --search "<brief>" --host claude_code --format json`; use repeatable `--unit "<unit-id>::<brief>"` only when per-unit coverage matters.
 
 ## Planning Gate
 
-- Reuse the plan-first gate from `spwnr-principle` before any delegation.
-- Resolve and read the latest active revision first; if it is missing, create revision 1 with the same structure used by `/spwnr-plan`.
-- Keep goal, success criteria, scope boundaries, constraints, open risks, approval condition, current-run execution confirmation, plan artifact path, and executable `Execution Units` visible in `TodoWrite`.
-- Treat only the latest active revision as executable. Superseded revisions and their tasks are audit-only.
-- If the current run has not yet received `Execute current plan`, stay in the execution review loop instead of delegating.
+- Resolve the latest active revision first; if none exists, create revision 1 using `/spwnr-plan` conventions.
+- If the current run has not received `Execute current plan`, stay in the execution review loop.
+- Treat only the latest active revision as executable. Superseded revisions are audit-only.
+- Keep the active plan path, approval condition, selected mode, blockers, and unit summary visible in `TodoWrite`.
+
+## Token-Sensitive Validation
+
+Read only the sections needed for the current check:
+
+- `Metadata` and `Plan Review Loop` for active revision and approval state
+- `Execution Strategy Recommendation` for selected mode and routing target
+- `Agent Capability Requirements` plus `Execution Units` for worker coverage
+- `Environment And Preconditions` and `Failure And Escalation Rules` for execution safety
+- `Approved Execution Spec` only when checking whether it already exists or appending to it
+
+Avoid re-reading or re-attaching the full plan after every edit. When briefing helpers or workers, pass concise unit/stage briefs plus the plan path and section names.
 
 ## Approved Execution Spec
 
 Before any `TaskCreate`:
 
-1. Validate that the latest active revision contains executable `Execution Units`, `Environment And Preconditions`, `Execution Strategy Recommendation`, `Agent Capability Requirements`, and `Failure And Escalation Rules`.
-2. Produce a short plan summary, a normalized registry lookup brief, and one concise per-unit coverage brief for each execution unit.
-3. Resolve the candidate pool from the local registry. If multiple units exist, use per-unit coverage to prove the lineup that covers every execution unit.
-4. Read the selected mode and execution pattern from `Execution Strategy Recommendation` instead of inventing them at execution time.
-5. If the selected mode is `pipeline`, validate that the pattern name, ordered stages, and stage handoffs are present.
-6. If the selected mode is `team`, validate whether the plan expects one shared queue or multiple pipelines launched in parallel.
-7. In `team` mode, default the task graph toward parallel tasks with disjoint `Files:` ownership. If the plan needs shared-file collaboration, validate that the exception is explicit and that the plan defines worktree isolation or one concrete owner for that file.
-8. Append `Approved Execution Spec` to the active revision with `Edit`, including the selected mode, routing target, normalized registry lookup brief, and per-unit coverage summary.
-9. Before any `TaskCreate`, normalize every referenced execution-unit marker to a runtime-guard-safe one-line label. Prefer `- **unit_id**: unit-1`.
-10. Before any `TaskCreate`, ensure every new task starts with the literal marker `Blocked: no`; place sequencing in `Depends-On:`, plan `dependencies`, or task graph relations instead.
-11. For Claude Code mutating tasks, default every execution task to `Worktree: required`. Keep `Worktree: not-required` only for read-only review or audit tasks.
-12. For Claude Code mutating tasks, execution must follow this lifecycle: use `ToolSearchTool`, then `EnterWorktreeTool`, run inside the worktree, finish with `BriefTool`, and only then call `ExitWorktreeTool`.
+1. Confirm the plan has executable units, selected mode, capability requirements, and failure rules.
+2. Produce a short plan summary, normalized registry lookup brief, and concise per-unit coverage brief for each unit.
+3. Resolve the candidate pool and verify a lineup that covers every execution unit.
+4. Read the selected execution pattern from the plan; do not invent it at execution time.
+5. Validate `pipeline` pattern details or `team` queue/fanout shape as applicable.
+6. In `team` mode, confirm concurrent tasks default to disjoint `Files:` ownership unless a shared-file exception is explicit.
+7. Append `Approved Execution Spec` with selected mode, routing target, registry brief, and coverage summary.
+8. Normalize `unit_id` markers. Prefer `- **unit_id**: unit-1`. Ensure each new task starts with `Blocked: no`.
+9. For Claude mutating tasks, default to `Worktree: required`; discover `ToolSearchTool`, enter with `EnterWorktreeTool`, summarize with `BriefTool`, and exit with `ExitWorktreeTool`.
 
 ## Routing Decision
 
-- Route to `task-pipeline.md` when the approved mode is `pipeline`.
-- Route to `task-team.md` when the approved mode is `team`.
-- Read the routed helper document and apply its execution contract before creating tasks.
-- `pipeline` must remain available without Claude team features.
-- `team` may launch multiple bounded pipelines in parallel when the approved plan says so.
-- `team` should not default to multiple parallel tasks editing the same file unless the approved plan explicitly marks that as an exception.
-- Mutating Claude child-agent work should not run in the main tree; route it through automatic worktree isolation instead.
-- Do not silently reroute a `team` plan into `pipeline` when team prerequisites fail.
+- Route `pipeline` plans to `skills/spwnr-task/task-pipeline.md`.
+- Route `team` plans to `skills/spwnr-task/task-team.md`.
+- Read only the selected helper.
+- Do not silently downgrade `team` to `pipeline`.
+- If lineup resolution fails, stop with the `Worker Readiness Required` shape from `spwnr-principle` and direct recovery to `/spwnr-worker-audit`.
 
 ## Worker Readiness Required
 
-If `/spwnr-task` cannot form a usable lineup, stop with these sections:
-
-1. `Plan Artifact`
-2. `Readiness Gap`
-3. `Missing Capabilities`
-4. `Recovery Steps`
-5. `Next Step`
-
-The recovery steps must list the missing capabilities or packages, tell the user to run `/spwnr-worker-audit`, tell them to install or inject the missing agents, and say that execution should resume from the same active revision after readiness is restored.
+List missing capabilities or packages, tell the user to install or inject the missing agents, and resume from the same active revision after recovery.
 
 ## Rules
 
-- Do not delegate before the current run explicitly chooses `Execute current plan`.
-- Do not mutate state from the planning phase of `/spwnr-task`.
-- Do not keep executing against a superseded plan revision when a material re-plan has created a newer active revision.
-- Do not skip the review stage.
-- Do not let the reviewer invent new scope.
-- Treat the plan file as the source of truth; later agents should not reconstruct it from chat alone.
-- Treat the registry candidate pool and per-unit coverage plan as the source of truth for lineup selection.
-- Tailor the output contract to the routed helper document's job.
+- Do not delegate before current-run approval.
+- Do not mutate state during the planning gate.
+- Do not execute against superseded revisions.
+- Do not skip the review stage or let reviewers add scope.
+- Treat the plan file, registry candidate pool, and per-unit coverage plan as the sources of truth.
